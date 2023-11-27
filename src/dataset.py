@@ -154,16 +154,17 @@ class ProcessImage:
         img = torch.unsqueeze(img,0)
         spike_maker = SetImageAsSpikes()
         img = spike_maker(img)
-        img = torch.squeeze(img,0)
 
         return img
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True):
+                 skip=1, max_samples=None, test=True, is_spiking=True, time_window=100):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
+        self.is_spiking = is_spiking
+        self.time_window = time_window
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
         self.img_labels = []
@@ -196,13 +197,16 @@ class CustomImageDataset(Dataset):
         img_path = self.img_labels.iloc[idx]['file_path']
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"No file found for index {idx} at {img_path}.")
-            
-        image = read_image(img_path)
+
+        image = read_image(img_path)  # image is now a tensor
         label = self.img_labels.iloc[idx, 1]
-        
+
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
-            
+        
+        if self.is_spiking:
+            image = (torch.rand(self.time_window, *image.shape) < image).float()
+
         return image, label

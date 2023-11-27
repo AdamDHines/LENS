@@ -43,15 +43,9 @@ def model_logger(model):
     model.logger.info('MIT license - https://github.com/QVPR/VPRTempo')
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
     model.logger.info('')
-    if torch.cuda.is_available():
-        model.logger.info('CUDA available: ' + str(torch.cuda.is_available()))
-        device = "cuda:0"
-        current_device = torch.cuda.current_device()
-        model.logger.info('Current device is: ' + str(torch.cuda.get_device_name(current_device)))
-    else:
-        model.logger.info('CUDA available: ' + str(torch.cuda.is_available()))
-        model.logger.info('Current device is: CPU')
-        device = "cpu"
+    model.logger.info('CUDA available: ' + str(torch.cuda.is_available()))
+    model.logger.info('Current device is: CPU')
+    device = "cpu"
     model.logger.info('')
 
     return device

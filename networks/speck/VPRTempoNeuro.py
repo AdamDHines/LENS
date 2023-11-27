@@ -45,6 +45,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
 from metrics import recallAtK
+from sinabs.backend.dynapcnn.specksim import from_sequential
+from sinabs.backend.dynapcnn import DynapcnnNetwork
 
 class VPRTempo(nn.Module):
     def __init__(self, args):
@@ -116,21 +118,32 @@ class VPRTempo(nn.Module):
         pbar = tqdm(total=self.num_places,
                     desc="Running the test network",
                     position=0)
-        
+        in_channels = out_channels = 1
+        #nn.init.eye_(self.inert_conv_layer.weight)
         self.inference = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.ReLU(),
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
         )
 
-        input_shape = (1, self.dims[0] * self.dims[1])
+        input_shape = (1, 1, self.dims[0] * self.dims[1])
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
                                 batch_size=1,
                                 add_spiking_output=True,
-                                synops=False,
                                 )
+        
+        dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
+                                   input_shape=input_shape, 
+                                   discretize=True, 
+                                   dvs_input=False)
+        devkit_name = "speck2fdevkit"
+
+        # use the `to` method of DynapcnnNetwork to deploy the SNN to the devkit
+        dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
         # Initiliaze the output spikes variable
         out = []
         # Run inference for the specified number of timesteps
