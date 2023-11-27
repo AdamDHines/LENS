@@ -24,14 +24,16 @@
 Imports
 '''
 import argparse
+import torch
 import sys
 sys.path.append('./networks/base')
 sys.path.append('./networks/quantized')
+sys.path.append('./networks/speck')
 
 import torch.quantization as quantization
 
 from VPRTempoTrain import VPRTempoTrain, generate_model_name, check_pretrained_model, train_new_model
-from VPRTempo import VPRTempo, run_inference
+from VPRTempoNeuro import VPRTempo, run_inference
 from VPRTempoQuantTrain import VPRTempoQuantTrain, generate_model_name_quant, train_new_model_quant
 from VPRTempoQuant import VPRTempoQuant, run_inference_quant
 
@@ -61,23 +63,24 @@ def initialize_and_run_model(args):
             train_new_model(model, model_name)
     # Run the inference network
     else:
-        # Set the quantization configuration
-        if args.quantize:
-            # Initialize the quantized model
-            model = VPRTempoQuant(args)
-            # Get the quantization config
-            qconfig = quantization.get_default_qat_qconfig('fbgemm')
-            # Generate the model name
-            model_name = generate_model_name_quant(model)
-            # Run the quantized inference model
-            run_inference_quant(model, model_name, qconfig)
-        else:
-            # Initialize the model
-            model = VPRTempo(args)
-            # Generate the model name
-            model_name = generate_model_name(model)
-            # Run the inference model
-            run_inference(model, model_name)
+        with torch.no_grad():
+            # Set the quantization configuration
+            if args.quantize:
+                # Initialize the quantized model
+                model = VPRTempoQuant(args)
+                # Get the quantization config
+                qconfig = quantization.get_default_qat_qconfig('fbgemm')
+                # Generate the model name
+                model_name = generate_model_name_quant(model)
+                # Run the quantized inference model
+                run_inference_quant(model, model_name, qconfig)
+            else:
+                # Initialize the model
+                model = VPRTempo(args)
+                # Generate the model name
+                model_name = generate_model_name(model)
+                # Run the inference model
+                run_inference(model, model_name)
 
 def parse_network(use_quantize=False, train_new_model=False):
     '''
@@ -106,9 +109,9 @@ def parse_network(use_quantize=False, train_new_model=False):
                             help="Number of epochs to train the model")
 
     # Define image transformation parameters
-    parser.add_argument('--patches', type=int, default=15,
+    parser.add_argument('--patches', type=int, default=7,
                             help="Number of patches to generate for patch normalization image into")
-    parser.add_argument('--dims', nargs='+', type=int, default=[56,56],
+    parser.add_argument('--dims', nargs='+', type=int, default=[28,28],
                             help="Dimensions to resize the image to")
 
     # Define the network functionality
