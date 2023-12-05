@@ -34,6 +34,7 @@ import torch.quantization as quantization
 
 from VPRTempoTrain import VPRTempoTrain, generate_model_name, check_pretrained_model, train_new_model
 from VPRTempoNeuro import VPRTempo, run_inference
+from VPRTempoRaster import VPRTempoRaster, run_inference_raster
 from VPRTempoQuantTrain import VPRTempoQuantTrain, generate_model_name_quant, train_new_model_quant
 from VPRTempoQuant import VPRTempoQuant, run_inference_quant
 
@@ -65,15 +66,13 @@ def initialize_and_run_model(args):
     else:
         with torch.no_grad():
             # Set the quantization configuration
-            if args.quantize:
+            if args.raster:
                 # Initialize the quantized model
-                model = VPRTempoQuant(args)
-                # Get the quantization config
-                qconfig = quantization.get_default_qat_qconfig('fbgemm')
+                model = VPRTempoRaster(args)
                 # Generate the model name
-                model_name = generate_model_name_quant(model)
+                model_name = generate_model_name(model)
                 # Run the quantized inference model
-                run_inference_quant(model, model_name, qconfig)
+                run_inference_raster(model, model_name)
             else:
                 # Initialize the model
                 model = VPRTempo(args)
@@ -82,49 +81,49 @@ def initialize_and_run_model(args):
                 # Run the inference model
                 run_inference(model, model_name)
 
-def parse_network(use_quantize=False, train_new_model=False):
+def parse_network(use_raster=False, train_new_model=False):
     '''
     Define the base parameter parser (configurable by the user)
     '''
     parser = argparse.ArgumentParser(description="Args for base configuration file")
 
     # Define the dataset arguments
-    parser.add_argument('--dataset', type=str, default='nordland',
+    parser.add_argument('--dataset', type=str, default='event',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--num_places', type=int, default=500,
+    parser.add_argument('--num_places', type=int, default=25,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--num_modules', type=int, default=1,
                             help="Number of expert modules to use split images into")
-    parser.add_argument('--database_dirs', nargs='+', default=['spring', 'fall'],
+    parser.add_argument('--database_dirs', nargs='+', default=['database'],
                             help="Directories to use for training")
-    parser.add_argument('--query_dir', nargs='+', default=['summer'],
+    parser.add_argument('--query_dir', nargs='+', default=['database'],
                             help="Directories to use for testing")
 
     # Define training parameters
-    parser.add_argument('--filter', type=int, default=8,
+    parser.add_argument('--filter', type=int, default=5,
                             help="Images to skip for training and/or inferencing")
     parser.add_argument('--epoch', type=int, default=4,
                             help="Number of epochs to train the model")
 
     # Define image transformation parameters
-    parser.add_argument('--patches', type=int, default=7,
+    parser.add_argument('--patches', type=int, default=3,
                             help="Number of patches to generate for patch normalization image into")
-    parser.add_argument('--dims', nargs='+', type=int, default=[28,28],
+    parser.add_argument('--dims', nargs='+', type=int, default=[14,14],
                             help="Dimensions to resize the image to")
 
     # Define the network functionality
     parser.add_argument('--train_new_model', action='store_true',
                             help="Flag to run the training or inferencing model")
-    parser.add_argument('--quantize', action='store_true',
+    parser.add_argument('--raster', action='store_true',
                             help="Enable/disable quantization for the model")
     
     # If the function is called with specific arguments, override sys.argv
-    if use_quantize or train_new_model:
+    if use_raster or train_new_model:
         sys.argv = ['']
-        if use_quantize:
-            sys.argv.append('--quantize')
+        if use_raster:
+            sys.argv.append('--raster')
         if train_new_model:
             sys.argv.append('--train_new_model')
 
@@ -136,5 +135,5 @@ def parse_network(use_quantize=False, train_new_model=False):
 
 if __name__ == "__main__":
     # User input to determine if using quantized network or to train new model 
-    parse_network(use_quantize=False, 
+    parse_network(use_raster=False, 
                   train_new_model=False)
