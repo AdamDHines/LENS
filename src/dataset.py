@@ -11,150 +11,58 @@ import torch.quantization as tq
 from torchvision.io import read_image
 from torch.utils.data import Dataset
 
-class GetPatches2D:
-    def __init__(self, patch_size, image_pad):
-        self.patch_size = patch_size
-        self.image_pad = image_pad
-    
-    def __call__(self, img):
+class GenerateTemporalCode:
+    def __init__(self, img):
+        super(GenerateTemporalCode, self).__init__()
+        self.img = img
+        self.img = torch.squeeze(self.img,0)
+        self.img_shape = self.img.shape
 
-        # Assuming image_pad is already a PyTorch tensor. If not, you can convert it:
-        # image_pad = torch.tensor(image_pad).to(torch.float64)
+    def get_pixel_indices(self):
+        """
+        Get the indices of pixels in an image where the intensity is greater than 0.
+        """
+        self.gz_idx = torch.argwhere(self.img > 0)
 
-        # Using unfold to get 2D sliding windows.
-        unfolded = self.image_pad.unfold(0, self.patch_size[0], 1).unfold(1, self.patch_size[1], 1)
-        # The size of unfolded will be [nrows, ncols, patch_size[0], patch_size[1]]
+    def generate_temporal_code(self):
+        """
+        Generate a temporal code where the pixel index determines a value in the range [0, 1].
+        The top left pixel index will be the highest value (1) and the bottom right pixel will be the lowest non-zero value.
+        """
+        total_pixels = np.prod(self.img_shape)
+        self.tempcode = np.linspace(1, 0, total_pixels, endpoint=False).reshape(self.img_shape)
 
-        # Reshaping the tensor to the desired shape
-        patches = unfolded.permute(2, 3, 0, 1).contiguous().view(self.patch_size[0]*self.patch_size[1], -1)
+    def match_pixels_to_index(self):
+        """
+        Match pixels from the codes to the given pixel_index array.
+        For each code, create a 1D numpy array with the same length as the number of points in pixel_index.
+        Populate this array with values from the code corresponding to the positions in pixel_index.
+        If a pixel is found to be above 0, fill it in the corresponding index of the new array.
+        """
+        pixel_index = np.load('./dataset/pixel_selection.npy')
+        img = np.zeros(len(pixel_index))
+        pixel_index_div = divmod(pixel_index, self.img_shape[0])
+        pixel_index_div_xy = np.column_stack((pixel_index_div[0], pixel_index_div[1]))
+        for i, (y, x) in enumerate(pixel_index_div_xy):
+            if self.img[x, y] > 0:
+               img[i] = self.tempcode[x, y]
 
-        return patches
+        return img
 
+    def main(self):
+        self.get_pixel_indices()
+        self.generate_temporal_code()
+        img = self.match_pixels_to_index()
 
-class PatchNormalisePad:
-    def __init__(self, patches):
-        self.patches = patches
-
-    
-    def nanstd(self,input_tensor, dim=None, unbiased=True):
-        if dim is not None:
-            valid_count = torch.sum(~torch.isnan(input_tensor), dim=dim, dtype=torch.float)
-            mean = torch.nansum(input_tensor, dim=dim) / valid_count
-            diff = input_tensor - mean.unsqueeze(dim)
-            variance = torch.nansum(diff * diff, dim=dim) / valid_count
-
-            # Bessel's correction for unbiased estimation
-            if unbiased:
-                variance = variance * (valid_count / (valid_count - 1))
-        else:
-            valid_count = torch.sum(~torch.isnan(input_tensor), dtype=torch.float)
-            mean = torch.nansum(input_tensor) / valid_count
-            diff = input_tensor - mean
-            variance = torch.nansum(diff * diff) / valid_count
-            
-            # Bessel's correction for unbiased estimation
-            if unbiased:
-                variance = variance * (valid_count / (valid_count - 1))
-
-        return torch.sqrt(variance)
-   
-    def __call__(self, img):
-        img = torch.squeeze(img,0)
-        patch_size = (self.patches, self.patches)
-        patch_half_size = [int((p-1)/2) for p in patch_size ]
+        return img
         
-        # Compute the padding. If patch_half_size is a scalar, the same value will be used for all sides.
-        if isinstance(patch_half_size, int):
-            pad = (patch_half_size, patch_half_size, patch_half_size, patch_half_size)  # left, right, top, bottom
-        else:
-            # If patch_half_size is a tuple, then we'll assume it's in the format (height, width)
-            pad = (patch_half_size[1], patch_half_size[1], patch_half_size[0], patch_half_size[0])  # left, right, top, bottom
-
-        # Apply padding
-        image_pad = F.pad(img, pad, mode='constant', value=float('nan'))
-
-        nrows = img.shape[0] 
-        ncols = img.shape[1]
-        patcher = GetPatches2D(patch_size,image_pad)
-        patches = patcher(img)
-        mus = torch.nanmean(patches, dim=0)
-        stds = self.nanstd(patches, dim=0)
-        with np.errstate(divide='ignore', invalid='ignore'):
-            im_norm = (img - mus.reshape(nrows, ncols)) / stds.reshape(nrows, ncols)
-        
-        im_norm[torch.isnan(im_norm)] = 0.0
-        im_norm[im_norm < -1.0] = -1.0
-        im_norm[im_norm > 1.0] = 1.0
-        
-        return im_norm
-
-class SetImageAsSpikes:
-    def __init__(self, intensity=255, test=True):
-        self.intensity = intensity
-        
-        # Setup QAT FakeQuantize for the activations (your spikes)
-        self.fake_quantize = torch.quantization.FakeQuantize(
-            observer=torch.quantization.MovingAverageMinMaxObserver, 
-            quant_min=0, 
-            quant_max=255, 
-            dtype=torch.quint8, 
-            qscheme=torch.per_tensor_affine, 
-            reduce_range=False
-        )
-        
-    def train(self):
-        self.fake_quantize.train()
-
-    def eval(self):
-        self.fake_quantize.eval()    
-    
-    def __call__(self, img_tensor):
-        N, W, H = img_tensor.shape
-        reshaped_batch = img_tensor.view(N, 1, -1)
-        
-        # Divide all pixel values by 255
-        normalized_batch = reshaped_batch / self.intensity
-        normalized_batch = torch.squeeze(normalized_batch, 0)
-
-        # Apply FakeQuantize
-        spikes = self.fake_quantize(normalized_batch)
-        
-        if not self.fake_quantize.training:
-            scale, zero_point = self.fake_quantize.calculate_qparams()
-            spikes = torch.quantize_per_tensor(spikes, float(scale), int(zero_point), dtype=torch.quint8)
-
-        return spikes
-
 class ProcessImage:
-    def __init__(self, dims, patches):
-        self.dims = dims
-        self.patches = patches
+    def __init__(self):
+        super(ProcessImage, self).__init__()
         
     def __call__(self, img):
-        # Convert the image to grayscale using the standard weights for RGB channels
-        if img.shape[0] == 3:
-            img = 0.299 * img[0] + 0.587 * img[1] + 0.114 * img[2]
-         # Add a channel dimension to the resulting grayscale image
-        img= img.unsqueeze(0)
-
-        # gamma correction
-        mid = 0.5
-        mean = torch.mean(img)
-        gamma = math.log(mid * 255) / math.log(mean)
-        img = torch.pow(img, gamma).clip(0, 255)
-        
-        # resize and patch normalize        
-        if len(img.shape) == 3:
-            img = img.unsqueeze(0)
-        img = F.interpolate(img, size=self.dims, mode='bilinear', align_corners=False)
-        img = img.squeeze(0)
-        patch_normaliser = PatchNormalisePad(self.patches)
-        im_norm = patch_normaliser(img) 
-        img = (255.0 * (1 + im_norm) / 2.0).to(dtype=torch.uint8)
-        img = torch.unsqueeze(img,0)
-        spike_maker = SetImageAsSpikes()
-        img = spike_maker(img)
-
+        GTC = GenerateTemporalCode(img)
+        img = GTC.main()
         return img
 
 class CustomImageDataset(Dataset):
@@ -205,7 +113,7 @@ class CustomImageDataset(Dataset):
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
-        
+        image=torch.tensor(image)
         if self.is_spiking:
             image = (torch.rand(self.time_window, *image.shape) < image).float()
 

@@ -64,7 +64,7 @@ class VPRTempoTrain(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input * 2)
+        self.feature = int(self.input)
         self.output = int(args.num_places / args.num_modules)
 
         # Set the total timestep count

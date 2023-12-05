@@ -37,6 +37,7 @@ import blitnet as bn
 import numpy as np
 import torch.nn as nn
 import sinabs.layers as sl
+import matplotlib.pyplot as plt
 
 from loggers import model_logger
 from sinabs.from_torch import from_model
@@ -131,6 +132,7 @@ class VPRTempo(nn.Module):
                                 add_spiking_output=True,
                                 synops=False,
                                 )
+        
         # Initiliaze the output spikes variable
         out = []
         # Run inference for the specified number of timesteps
