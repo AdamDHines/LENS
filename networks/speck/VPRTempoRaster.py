@@ -224,7 +224,8 @@ def run_inference_raster(model, model_name):
                                       img_dirs=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places)
+                                      max_samples=model.num_places,
+                                      is_spiking=False)
 
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 

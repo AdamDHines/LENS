@@ -114,7 +114,9 @@ class CustomImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         image=torch.tensor(image)
+        image = (torch.rand(self.time_window, *image.shape) < image).float()
         if self.is_spiking:
-            image = (torch.rand(self.time_window, *image.shape) < image).float()
-
+            sqrt_div = math.sqrt(image[-1].size()[0])
+            image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
+            image = image.unsqueeze(1)
         return image, label
