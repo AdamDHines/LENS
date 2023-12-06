@@ -98,7 +98,7 @@ def parse_network(use_raster=False, train_new_model=False):
                             help="Number of expert modules to use split images into")
     parser.add_argument('--database_dirs', nargs='+', default=['database'],
                             help="Directories to use for training")
-    parser.add_argument('--query_dir', nargs='+', default=['database'],
+    parser.add_argument('--query_dir', nargs='+', default=['query'],
                             help="Directories to use for testing")
 
     # Define training parameters

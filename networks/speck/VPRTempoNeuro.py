@@ -27,6 +27,8 @@ Imports
 import os
 import torch
 import samna
+import samnagui
+import time
 import gc
 import sys
 sys.path.append('./src')
@@ -39,12 +41,14 @@ import numpy as np
 import torch.nn as nn
 import sinabs.layers as sl
 import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
 
 from loggers import model_logger
 from sinabs.from_torch import from_model
 from dataset import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from multiprocessing import Process
 from prettytable import PrettyTable
 from metrics import recallAtK
 from sinabs.backend.dynapcnn.specksim import from_sequential
@@ -57,6 +61,7 @@ from sinabs.backend.dynapcnn.io import (
     reset_timestamps,)
 from collections import Counter
 from sinabs.activation import MembraneSubtract, SingleSpike, SingleExponential
+from timeit import default_timer as timer
 
 class VPRTempo(nn.Module):
     def __init__(self, args):
@@ -117,13 +122,25 @@ class VPRTempo(nn.Module):
         self.layer_dict[name] = self.layer_counter
         self.layer_counter += 1                           
 
-    def evaluate(self, model, test_loader, layers=None):
+    def evaluate(self, test_loader):
         """
         Run the inferencing model and calculate the accuracy.
 
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
+        # Rehsape output spikes into a similarity matrix
+        def create_frequency_array(freq_dict, num_places):
+            # Initialize the array with zeros
+            frequency_array = np.zeros(num_places)
+
+            # Populate the array with frequency values
+            for key, value in freq_dict.items():
+                if key < num_places:
+                    frequency_array[key] = value
+
+            return frequency_array
+        
         #nn.init.eye_(self.inert_conv_layer.weight)
         self.inference = nn.Sequential(
             nn.Flatten(),
@@ -136,15 +153,15 @@ class VPRTempo(nn.Module):
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
-                                batch_size=1,
+                                batch_size=16,
                                 add_spiking_output=True,
                                 spike_fn=SingleSpike
                                 )
         
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                   input_shape=input_shape, 
-                                   discretize=True, 
-                                   dvs_input=False)
+                                    input_shape=input_shape, 
+                                    discretize=True, 
+                                    dvs_input=False)
         devkit_name = "speck2fdevkit"
         # use the `to` method of DynapcnnNetwork to deploy the SNN to the devkit
         self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
@@ -152,51 +169,61 @@ class VPRTempo(nn.Module):
         factory = ChipFactory(devkit_name)
         first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
 
+        # Initiliaze the output spikes variable
+        all_arrays = []
+
         # Initialize the tqdm progress bar
         pbar = tqdm(total=self.num_places,
                     desc="Running the test network",
                     position=0)
-        # Initiliaze the output spikes variable
-        out = []
         # Run inference for the specified number of timesteps
         for spikes, labels in test_loader:
-            self.dynapcnn.reset_states()
-            spikes = spikes.unsqueeze(2)
+            spikes = spikes.squeeze(0)
+
             # create samna Spike events stream
             events_in = factory.raster_to_events(spikes, 
-                                                 layer=first_layer_idx, 
-                                                 dt = 0.00000)
+                                                layer=first_layer_idx,
+                                                dt=1e-6)
             # Forward pass
             events_out = self.forward(events_in)
-
             # Get prediction
             neuron_idx = [each.feature for each in events_out]
             if len(neuron_idx) != 0:
                 frequent_counter = Counter(neuron_idx)
-                prediction = frequent_counter.most_common(1)[0][0]
-                print(f"The top prediction was neuron {prediction}")
+                #prediction = frequent_counter.most_common(1)[0][0]
+                freq_array = create_frequency_array(frequent_counter, self.num_places)
+                all_arrays.append(freq_array)
             pbar.update(1)
 
         # Close the tqdm progress bar
-       # pbar.close()
-        # Rehsape output spikes into a similarity matrix
-       # out = np.reshape(np.array(out),(model.num_places,model.num_places))
+        pbar.close()
+        
+        # Convert output to numpy
+        all_arrays = np.array(all_arrays).T
 
         # Recall@N
-        #N = [1,5,10,15,20,25] # N values to calculate
-        #R = [] # Recall@N values
+        N = [1,5,10,15,20,25] # N values to calculate
+        R = [] # Recall@N values
         # Create GT matrix
-        #GT = np.zeros((model.num_places,model.num_places), dtype=int)
-        #for n in range(len(GT)):
-        #    GT[n,n] = 1
+        GT = np.zeros((self.num_places,self.num_places), dtype=int)
+        for n in range(len(GT)):
+            GT[n,n] = 1
         # Calculate Recall@N
-        #for n in N:
-        #    R.append(round(recallAtK(out,GThard=GT,K=n),2))
+        for n in N:
+            R.append(round(recallAtK(all_arrays,GThard=GT,K=n),2))
         # Print the results
-        #table = PrettyTable()
-        #table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        #table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        #model.logger.info(table)
+        table = PrettyTable()
+        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        print(table)
+
+        # Plot similarity matrix
+        plt.matshow(all_arrays)
+        plt.colorbar(shrink=0.75,label="Number of output spikes")
+        plt.title('Similarity matrix')
+        plt.xlabel("Query")
+        plt.ylabel("Database")
+        plt.show()
 
     def forward(self, spikes):
         """
@@ -208,9 +235,7 @@ class VPRTempo(nn.Module):
         Returns:
         - Tensor: Output after processing.
         """
-        
         spikes = self.dynapcnn(spikes)
-        
         return spikes
         
     def load_model(self, model_path):
@@ -255,4 +280,4 @@ def run_inference(model, model_name):
     layer_names = list(model.layer_dict.keys())
 
     # Use evaluate method for inference accuracy
-    model.evaluate(model, test_loader, layers=layer_names)
+    model.evaluate(test_loader)
