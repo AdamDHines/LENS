@@ -55,14 +55,17 @@ class EventStats:
             self.pixel_count += (img_data > 0)
 
     def find_most_active_pixels(self):
+        num_images = len(self.images)
+
+        # Identify hot and dead pixels
+        hot_pixels = self.pixel_count == len(self.images)
+        dead_pixels = self.pixel_count == 0
+
         if self.event_type == "max":
-            hot_pixels = self.pixel_count == len(self.images)
-            dead_pixels = self.pixel_count == 0
             active_pixels = np.where(~hot_pixels & ~dead_pixels, self.freq, 0)
             self.selection = np.unravel_index(np.argsort(-active_pixels.ravel())[:self.max_pixels], active_pixels.shape)
             np.save('./dataset/pixel_selection.npy',self.selection[0])
         elif self.event_type == "variance":
-            num_images = len(self.images)
 
             # Calculate the probability of each pixel being active
             p_active = self.pixel_count / num_images
@@ -73,8 +76,39 @@ class EventStats:
             # Find the indices of pixels with the highest variance
             self.selection = np.unravel_index(np.argsort(-variance.ravel())[:self.max_pixels], variance.shape)
             np.save('./dataset/pixel_selection.npy',self.selection[0])
-        
+        elif self.event_type == "random":
+            # Filter out hot and dead pixels
+            valid_pixels = np.where(~hot_pixels & ~dead_pixels)
+
+            # Flatten the array to get linear indices of valid pixels
+            valid_linear_indices = np.ravel_multi_index(valid_pixels, self.pixel_count.shape)
+
+            # Select a random number of pixels from the valid ones
+            num_random_pixels = min(self.max_pixels, len(valid_linear_indices))
+            random_indices = np.random.choice(valid_linear_indices, num_random_pixels, replace=False)
+
+            # Convert linear indices to multidimensional indices
+            self.selection = np.unravel_index(random_indices, self.pixel_count.shape)
+            np.save('./dataset/random_pixel_selection.npy', self.selection[0])
+
+    def clear_output_folder(self, output_folder):
+        """
+        Clears all contents of the output folder if it exists.
+        """
+        if os.path.exists(output_folder):
+            # Remove all files in the directory
+            for file in os.listdir(output_folder):
+                file_path = os.path.join(output_folder, file)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    print('Failed to delete %s. Reason: %s' % (file_path, e))   
+
     def reconstruct_images(self,output_folder):
+        self.clear_output_folder(output_folder)
         os.makedirs(output_folder, exist_ok=True)
 
         reconstructed_images = []  # List to store the reconstructed images
@@ -145,12 +179,12 @@ class EventStats:
 
     def main(self):
         # Load the images
-        self.load_images_from_folder(folder=self.model.trainingPath+self.model.location)
+        self.load_images_from_folder(folder=self.model.data_dir+'database')
         # Calculate pixel frequency
         self.calculate_pixel_frequency()
         # Calculate pixel activity, based on type of activity wanted to measure
         self.find_most_active_pixels()
         # Reconstruct images for both query sets
         self.reconstruct_images('./dataset/database_filtered')
-        self.load_images_from_folder(folder=self.model.trainingPath+self.model.test_locations)
+        self.load_images_from_folder(folder=self.model.data_dir+'query')
         self.reconstruct_images('./dataset/query_filtered')

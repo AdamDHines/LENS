@@ -67,11 +67,12 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=True, time_window=100):
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
         self.is_spiking = is_spiking
+        self.is_raster = is_raster
         self.time_window = time_window
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
@@ -114,7 +115,9 @@ class CustomImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         image=torch.tensor(image)
-        image = (torch.rand(self.time_window, *image.shape) < image).float()
+
+        if self.is_raster:
+            image = (torch.rand(self.time_window, *image.shape) < image).float()
         if self.is_spiking:
             sqrt_div = math.sqrt(image[-1].size()[0])
             image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))

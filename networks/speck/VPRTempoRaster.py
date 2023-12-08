@@ -78,7 +78,7 @@ class VPRTempoRaster(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input)
+        self.feature = int(self.input*2)
         self.output = int(args.num_places / args.num_modules)
 
         """
@@ -225,7 +225,7 @@ def run_inference_raster(model, model_name):
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.num_places,
-                                      is_spiking=False)
+                                      is_raster=True)
 
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
