@@ -84,7 +84,7 @@ class VPRTempo(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input)
+        self.feature = int(self.input*2)
         self.output = int(args.num_places / args.num_modules)
 
         """
@@ -153,9 +153,8 @@ class VPRTempo(nn.Module):
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
-                                batch_size=16,
-                                add_spiking_output=True,
-                                spike_fn=SingleSpike
+                                batch_size=1,
+                                add_spiking_output=True
                                 )
         
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
@@ -177,27 +176,28 @@ class VPRTempo(nn.Module):
                     desc="Running the test network",
                     position=0)
         # Run inference for the specified number of timesteps
-        for spikes, labels in test_loader:
-            spikes = spikes.squeeze(0)
+        with torch.no_grad():
+            for spikes, labels in test_loader:
+                spikes = spikes.squeeze(0)
 
-            # create samna Spike events stream
-            events_in = factory.raster_to_events(spikes, 
-                                                layer=first_layer_idx,
-                                                dt=1e-6)
-            # Forward pass
-            events_out = self.forward(events_in)
-            # Get prediction
-            neuron_idx = [each.feature for each in events_out]
-            if len(neuron_idx) != 0:
-                frequent_counter = Counter(neuron_idx)
-                #prediction = frequent_counter.most_common(1)[0][0]
-                freq_array = create_frequency_array(frequent_counter, self.num_places)
-                all_arrays.append(freq_array)
-            pbar.update(1)
+                # create samna Spike events stream
+                events_in = factory.raster_to_events(spikes, 
+                                                    layer=first_layer_idx,
+                                                    dt=1e-6)
+                # Forward pass
+                events_out = self.forward(events_in)
+                # Get prediction
+                neuron_idx = [each.feature for each in events_out]
+                if len(neuron_idx) != 0:
+                    frequent_counter = Counter(neuron_idx)
+                    #prediction = frequent_counter.most_common(1)[0][0]
+                    freq_array = create_frequency_array(frequent_counter, self.num_places)
+                    all_arrays.append(freq_array)
+                pbar.update(1)
 
         # Close the tqdm progress bar
         pbar.close()
-        
+        self.dynapcnn.reset_states()
         # Convert output to numpy
         all_arrays = np.array(all_arrays).T
 
@@ -262,7 +262,9 @@ def run_inference(model, model_name):
                                       img_dirs=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places)
+                                      max_samples=model.num_places,
+                                      is_raster=True,
+                                      is_spiking=True)
 
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 

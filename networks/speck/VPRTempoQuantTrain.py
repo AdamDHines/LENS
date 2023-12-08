@@ -36,27 +36,33 @@ sys.path.append('./dataset')
 import blitnet as bn
 import numpy as np
 import torch.nn as nn
+import torch.quantization as quantization
 import torchvision.transforms as transforms
 
-from loggers import model_logger
+from loggers import model_logger_quant
 from dataset import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
+from torch.ao.quantization import QuantStub, DeQuantStub
 from tqdm import tqdm
 
-class VPRTempoTrain(nn.Module):
+class VPRTempoQuantTrain(nn.Module):
     def __init__(self, args):
-        super(VPRTempoTrain, self).__init__()
+        super(VPRTempoQuantTrain, self).__init__()
 
         # Set the arguments
         self.args = args
         for arg in vars(args):
             setattr(self, arg, getattr(args, arg))
 
+        # Configure the network
+        self.device = model_logger_quant(self)
+
         # Set the dataset file
         self.dataset_file = os.path.join('./dataset', self.dataset + '.csv')
 
-        # Configure the model logger and get the device
-        self.device = model_logger(self)  
+        # Add quantization stubs for Quantization Aware Training (QAT)
+        self.quant = QuantStub()
+        self.dequant = DeQuantStub()   
 
         # Layer dict to keep track of layer names and their order
         self.layer_dict = {}
@@ -89,8 +95,8 @@ class VPRTempoTrain(nn.Module):
             dims=[self.feature, self.output],
             ip_rate=0.15,
             stdp_rate=0.005,
-            p=[0.25, 0.75],
             spk_force=True,
+            p=[0.25, 0.75],
             device=self.device
         )
         
@@ -103,8 +109,8 @@ class VPRTempoTrain(nn.Module):
         :param kwargs: Hyperparameters for the layer
         """
         # Check for layer name duplicates
-        if name in self.layer_dict:
-            raise ValueError(f"Layer with name {name} already exists.")
+        #if name in self.layer_dict:
+        #    raise ValueError(f"Layer with name {name} already exists.")
         
         # Add a new SNNLayer with provided kwargs
         setattr(self, name, bn.SNNLayer(**kwargs))
@@ -112,12 +118,6 @@ class VPRTempoTrain(nn.Module):
         # Add layer name and index to the layer_dict
         self.layer_dict[name] = self.layer_counter
         self.layer_counter += 1                           
-        
-    def model_logger(self):
-        """
-        Log the model configuration to the console.
-        """
-        model_logger(self)
 
     def _anneal_learning_rate(self, layer, mod, itp, stdp):
         """
@@ -149,7 +149,7 @@ class VPRTempoTrain(nn.Module):
         init_stdp = layer.eta_stdp.detach()
         mod = 0  # Used to determine the learning rate annealment, resets at each epoch
         # Run training for the specified number of epochs
-        for _ in range(self.epoch):
+        for epoch in range(self.epoch):
             # Run training for the specified number of timesteps
             for spikes, labels in train_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
@@ -180,11 +180,6 @@ class VPRTempoTrain(nn.Module):
         # Close the tqdm progress bar
         pbar.close()
 
-        # Free up memory
-        if self.device == "cuda:0":
-            torch.cuda.empty_cache()
-            gc.collect()
-
     def forward(self, spikes, layer):
         """
         Compute the forward pass of the model.
@@ -196,21 +191,54 @@ class VPRTempoTrain(nn.Module):
         - Tensor: Output after processing.
         """
         
+        spikes = self.quant(spikes)
         spikes = layer.w(spikes)
+        spikes = self.dequant(spikes)
         
-        return spikes 
+        return spikes
     
+    def manual_convert(self,model):
+        """
+        Manually convert the model to a quantized model.
+        """
+        temp_weight_f = model.feature_layer.w.weight().int_repr()
+        temp_weight_o = model.output_layer.w.weight().int_repr()
+        # Convert the feature layer
+        self.add_layer(
+            'feature_layer',
+            dims=[self.input, self.feature],
+            thr_range=[0, 0.5],
+            fire_rate=[0.2, 0.9],
+            ip_rate=0.15,
+            stdp_rate=0.005,
+            p=[0.1, 0.5],
+            device=self.device
+        )
+        self.add_layer(
+            'output_layer',
+            dims=[self.feature, self.output],
+            ip_rate=0.15,
+            stdp_rate=0.005,
+            spk_force=True,
+            p=[1.0, 1.0],
+            device=self.device
+        )
+        model.feature_layer.w.weight = nn.Parameter(temp_weight_f,
+                                                    requires_grad=False)
+        # Convert the output layer
+        model.output_layer.w.weight = nn.Parameter(temp_weight_o,
+                                                    requires_grad=False)
     def save_model(self, model_out):    
         """
         Save the trained model to models output folder.
         """
         torch.save(self.state_dict(), model_out) 
             
-def generate_model_name(model):
+def generate_model_name_quant(model):
     """
     Generate the model name based on its parameters.
     """
-    return ("VPRTempo" +
+    return ("VPRTempoQuant" +
             str(model.input) +
             str(model.feature) +
             str(model.output) +
@@ -227,7 +255,7 @@ def check_pretrained_model(model_name):
         return retrain == 'n'
     return False
 
-def train_new_model(model, model_name):
+def train_new_model_quant(model, model_name, qconfig):
     """
     Train a new model.
 
@@ -254,8 +282,15 @@ def train_new_model(model, model_name):
                               persistent_workers=True)
     # Set the model to training mode and move to device
     model.train()
+    model.to('cpu')
+    model.qconfig = qconfig
+
+    # Apply quantization configurations to the model
+    model = quantization.prepare_qat(model, inplace=False)
+
     # Keep track of trained layers to pass data through them
     trained_layers = [] 
+
     # Training each layer
     for layer_name, _ in sorted(model.layer_dict.items(), key=lambda item: item[1]):
         print(f"Training layer: {layer_name}")
@@ -266,6 +301,8 @@ def train_new_model(model, model_name):
         # After training the current layer, add it to the list of trained layers
         trained_layers.append(layer_name)
     # Convert the model to a quantized model
-    model.eval()
+    model = quantization.convert(model, inplace=False)
     # Save the model
-    model.save_model(os.path.join('./models', model_name))    
+    model.manual_convert(model)
+    model.eval()
+    model.save_model(os.path.join('./models', model_name))

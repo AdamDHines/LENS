@@ -113,6 +113,8 @@ class SNNLayer(nn.Module):
             self.havconnCombinedExc = self.w.weight > 0
             self.havconnCombinedInh = self.w.weight < 0
 
+            del self.exc, self.inh
+
     def addWeights(self,W_range=[0,0],p=[0,0],dims=[0,0],device=None):
 
         # Get torch device  
@@ -146,6 +148,7 @@ class SNNLayer(nn.Module):
         # Remove weights based on connection probability
         setzero = np.random.rand(nrow,ncol) > p
         if setzero.any():
+           setzero = torch.from_numpy(setzero)
            W[setzero] = 0.0
     
         # Normalise the weights
