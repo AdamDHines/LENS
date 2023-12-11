@@ -48,14 +48,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
 from metrics import recallAtK
-from sinabs.backend.dynapcnn.specksim import from_sequential
-from sinabs.backend.dynapcnn import DynapcnnNetwork
-from sinabs.backend.dynapcnn.chip_factory import ChipFactory
-from sinabs.backend.dynapcnn.io import (
-    open_device,
-    enable_timestamps,
-    disable_timestamps,
-    reset_timestamps,)
+
 
 class VPRTempoRaster(nn.Module):
     def __init__(self, args):
