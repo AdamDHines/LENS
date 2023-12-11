@@ -34,66 +34,41 @@ from event_stats import EventStats
 
 # Training modules
 from VPRTempoTrain import VPRTempoTrain, generate_model_name, train_new_model, check_pretrained_model
-from VPRTempoQuantTrain import VPRTempoQuantTrain, generate_model_name_quant, train_new_model_quant
 # Inference modules
-from VPRTempoNeuro import VPRTempo, run_inference
+from VPRTempoNeuro import VPRTempoNeuro, run_inference
 from VPRTempoRaster import VPRTempoRaster, run_inference_raster
 
 def initialize_and_run_model(args):
     # If user wants to train a new network
     if args.train_new_model:
-        # If using quantization aware training
-        if args.quantize:
+        # Initialize the model
+        model = VPRTempoTrain(args)
+        eventModel = EventStats(model,event_type="max",max_pixels=args.pixels) # Initialize EventStats model
+        eventModel.main() # Run the event statistics
+        # Generate the model name
+        model_name = generate_model_name(model)
+        # Check if the model has been trained before
+        check_pretrained_model(model_name)
+        # Train the model
+        train_new_model(model, model_name)
+    else: # Run the inference network
+        # Set the quantization configuration
+        if args.raster:
             # Initialize the quantized model
-            model = VPRTempoQuantTrain(args)
-            # Get the filtered pixels
-            eventModel = EventStats(model,event_type="variance",max_pixels=args.pixels) # Initialize EventStats model
-            eventModel.main() # Run the event statistics
-            # Get the quantization config
-            qconfig = quantization.get_default_qat_qconfig('fbgemm')
-            # Generate the model name
-            model_name = generate_model_name_quant(model)
-            # Check if the model has been trained before
-            check_pretrained_model(model_name)
-            # Train the model
-            train_new_model_quant(model, model_name, qconfig)
-        else: # Normal model
-            # Initialize the model
-            model = VPRTempoTrain(args)
-            eventModel = EventStats(model,event_type="max",max_pixels=args.pixels) # Initialize EventStats model
-            eventModel.main() # Run the event statistics
+            model = VPRTempoRaster(args)
             # Generate the model name
             model_name = generate_model_name(model)
-            # Check if the model has been trained before
-            check_pretrained_model(model_name)
-            # Train the model
-            train_new_model(model, model_name)
-    # Run the inference network
-    else:
-        with torch.no_grad():
-            # Set the quantization configuration
-            if args.raster:
-                # Initialize the quantized model
-                model = VPRTempoRaster(args)
-                # Generate the model name
-                if args.quantize:
-                    model_name = generate_model_name_quant(model)
-                else:
-                    model_name = generate_model_name(model)
-                # Run the quantized inference model
-                run_inference_raster(model, model_name)
-            else:
-                # Initialize the model
-                model = VPRTempo(args)
-                # Generate the model name
-                if args.quantize:
-                    model_name = generate_model_name_quant(model)
-                else:
-                    model_name = generate_model_name(model)
-                # Run the inference model
-                run_inference(model, model_name)
+            # Run the quantized inference model
+            run_inference_raster(model, model_name)
+        else:
+            # Initialize the model
+            model = VPRTempoNeuro(args)
+            # Generate the model name
+            model_name = generate_model_name(model)
+            # Run the inference model
+            run_inference(model, model_name)
 
-def parse_network(quantize=False, use_raster=False, train_new_model=False):
+def parse_network(use_raster=False, train_new_model=False):
     '''
     Define the base parameter parser (configurable by the user)
     '''
@@ -112,7 +87,7 @@ def parse_network(quantize=False, use_raster=False, train_new_model=False):
                             help="Directories to use for training")
     parser.add_argument('--query_dir', nargs='+', default=['query_filtered'],
                             help="Directories to use for testing")
-    parser.add_argument('--pixels', type=int, default=196,
+    parser.add_argument('--pixels', type=int, default=112,
                         help="Number of places to use for training and/or inferencing")
 
     # Define training parameters
@@ -122,28 +97,28 @@ def parse_network(quantize=False, use_raster=False, train_new_model=False):
                             help="Number of epochs to train the model")
 
     # Define image transformation parameters
-    parser.add_argument('--patches', type=int, default=7,
-                            help="Number of patches to generate for patch normalization image into")
     parser.add_argument('--dims', nargs='+', type=int, default=[11,11],
                             help="Dimensions to resize the image to")
 
     # Define the network functionality
-    parser.add_argument('--quantize', action='store_true',
-                            help="Enable/disable quantization for the model")
     parser.add_argument('--train_new_model', action='store_true',
                             help="Flag to run the training or inferencing model")
     parser.add_argument('--raster', action='store_true',
-                            help="Enable/disable quantization for the model")
+                            help="Run the raster version of VPRTempo, for non-neuromorphic chip inferencing")
+    
+    # On-chip specific parameters
+    parser.add_argument('--power_monitor', action='store_true',
+                            help="Whether or not to use the power monitor")
+    parser.add_argument('--raster_device', type=str, default='cpu',
+                            help="When using raster analysis, use CPU or GPU")
     
     # If the function is called with specific arguments, override sys.argv
-    if use_raster or train_new_model or quantize:
+    if use_raster or train_new_model:
         sys.argv = ['']
         if use_raster:
             sys.argv.append('--raster')
         if train_new_model:
             sys.argv.append('--train_new_model')
-        if quantize:
-            sys.argv.append('--quantize')
 
     # Output base configuration
     args = parser.parse_args()
@@ -154,7 +129,6 @@ def parse_network(quantize=False, use_raster=False, train_new_model=False):
 if __name__ == "__main__":
     # User input to determine if using quantized network or to train new model 
     parse_network(
-                quantize=False,
                 use_raster=False, 
                 train_new_model=False
                 )
