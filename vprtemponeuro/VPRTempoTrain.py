@@ -27,19 +27,14 @@ Imports
 import os
 import torch
 import gc
-import sys
-sys.path.append('./src')
-sys.path.append('./models')
-sys.path.append('./output')
-sys.path.append('./dataset')
 
-import blitnet as bn
+import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
 import torchvision.transforms as transforms
 
-from loggers import model_logger
-from dataset import CustomImageDataset, ProcessImage
+from vprtemponeuro.src.loggers import model_logger
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -53,7 +48,7 @@ class VPRTempoTrain(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
 
         # Configure the model logger and get the device
         self.device = model_logger(self)  
@@ -221,7 +216,7 @@ def check_pretrained_model(model_name):
     """
     Check if a pre-trained model exists and prompt the user to retrain if desired.
     """
-    if os.path.exists(os.path.join('./models', model_name)):
+    if os.path.exists(os.path.join('./vprtemponeuro/models', model_name)):
         prompt = "A network with these parameters exists, re-train network? (y/n):\n"
         retrain = input(prompt).strip().lower()
         return retrain == 'n'
@@ -268,4 +263,4 @@ def train_new_model(model, model_name):
     # Convert the model to a quantized model
     model.eval()
     # Save the model
-    model.save_model(os.path.join('./models', model_name))    
+    model.save_model(os.path.join('./vprtemponeuro/models', model_name))    

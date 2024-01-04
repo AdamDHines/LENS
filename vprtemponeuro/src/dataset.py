@@ -39,7 +39,7 @@ class GenerateTemporalCode:
         Populate this array with values from the code corresponding to the positions in pixel_index.
         If a pixel is found to be above 0, fill it in the corresponding index of the new array.
         """
-        pixel_index = np.load('./dataset/pixel_selection.npy')
+        pixel_index = np.load('./vprtemponeuro/dataset/pixel_selection.npy')
         img = np.zeros(len(pixel_index))
         pixel_index_div = divmod(pixel_index, self.img_shape[0])
         pixel_index_div_xy = np.column_stack((pixel_index_div[0], pixel_index_div[1]))

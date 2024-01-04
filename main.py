@@ -24,19 +24,13 @@
 Imports
 '''
 import argparse
-import torch
 import sys
-sys.path.append('./networks/speck')
-sys.path.append('./src')
 
-import torch.quantization as quantization
-from event_stats import EventStats
+from vprtemponeuro.src.event_stats import EventStats
 
-# Training modules
-from VPRTempoTrain import VPRTempoTrain, generate_model_name, train_new_model, check_pretrained_model
-# Inference modules
-from VPRTempoNeuro import VPRTempoNeuro, run_inference
-from VPRTempoRaster import VPRTempoRaster, run_inference_raster
+from vprtemponeuro.VPRTempoNeuro import VPRTempoNeuro, run_inference
+from vprtemponeuro.VPRTempoRaster import VPRTempoRaster, run_inference_raster
+from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, generate_model_name, train_new_model, check_pretrained_model
 
 def initialize_and_run_model(args):
     # If user wants to train a new network
@@ -77,7 +71,7 @@ def parse_network(use_raster=False, train_new_model=False):
     # Define the dataset arguments
     parser.add_argument('--dataset', type=str, default='event',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--data_dir', type=str, default='./dataset/',
+    parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
     parser.add_argument('--num_places', type=int, default=25,
                             help="Number of places to use for training and/or inferencing")
@@ -87,7 +81,7 @@ def parse_network(use_raster=False, train_new_model=False):
                             help="Directories to use for training")
     parser.add_argument('--query_dir', nargs='+', default=['query_filtered'],
                             help="Directories to use for testing")
-    parser.add_argument('--pixels', type=int, default=112,
+    parser.add_argument('--pixels', type=int, default=121,
                         help="Number of places to use for training and/or inferencing")
 
     # Define training parameters

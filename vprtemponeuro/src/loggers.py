@@ -10,10 +10,10 @@ def model_logger(model):
     """   
     if os.path.isdir('../output'):
         now = datetime.now()
-        model.output_folder = '../output/' + now.strftime("%d%m%y-%H-%M-%S")
+        model.output_folder = '../vprtemponeuro/output/' + now.strftime("%d%m%y-%H-%M-%S")
     else:
         now = datetime.now()
-        model.output_folder = './output/' + now.strftime("%d%m%y-%H-%M-%S")
+        model.output_folder = './vprtemponeuro/output/' + now.strftime("%d%m%y-%H-%M-%S")
     
     os.mkdir(model.output_folder)
     # Create the logger
