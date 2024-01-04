@@ -3,6 +3,7 @@ Imports
 '''
 import os
 import csv
+import shutil
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -64,7 +65,7 @@ class EventStats:
         if self.event_type == "max":
             active_pixels = np.where(~hot_pixels & ~dead_pixels, self.freq, 0)
             self.selection = np.unravel_index(np.argsort(-active_pixels.ravel())[:self.max_pixels], active_pixels.shape)
-            np.save('./dataset/pixel_selection.npy',self.selection[0])
+            np.save('./vprtemponeuro/dataset/pixel_selection.npy',self.selection[0])
         elif self.event_type == "variance":
 
             # Calculate the probability of each pixel being active
@@ -75,7 +76,7 @@ class EventStats:
 
             # Find the indices of pixels with the highest variance
             self.selection = np.unravel_index(np.argsort(-variance.ravel())[:self.max_pixels], variance.shape)
-            np.save('./dataset/pixel_selection.npy',self.selection[0])
+            np.save('./vprtemponeuro/dataset/pixel_selection.npy',self.selection[0])
         elif self.event_type == "random":
             # Filter out hot and dead pixels
             valid_pixels = np.where(~hot_pixels & ~dead_pixels)
@@ -89,7 +90,7 @@ class EventStats:
 
             # Convert linear indices to multidimensional indices
             self.selection = np.unravel_index(random_indices, self.pixel_count.shape)
-            np.save('./dataset/random_pixel_selection.npy', self.selection[0])
+            np.save('./vprtemponeuro/dataset/random_pixel_selection.npy', self.selection[0])
 
     def clear_output_folder(self, output_folder):
         """
@@ -141,7 +142,7 @@ class EventStats:
 
         print(f"Images saved to {output_folder}")
         # Save the CSV file
-        csv_file_path = os.path.join('./dataset', self.model.dataset + '.csv')
+        csv_file_path = os.path.join('./vprtemponeuro/dataset', self.model.dataset + '.csv')
         with open(csv_file_path, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['Image_name', 'Index'])  # Write the header
@@ -185,6 +186,6 @@ class EventStats:
         # Calculate pixel activity, based on type of activity wanted to measure
         self.find_most_active_pixels()
         # Reconstruct images for both query sets
-        self.reconstruct_images('./dataset/database_filtered')
+        self.reconstruct_images('./vprtemponeuro/dataset/database_filtered')
         self.load_images_from_folder(folder=self.model.data_dir+'query')
-        self.reconstruct_images('./dataset/query_filtered')
+        self.reconstruct_images('./vprtemponeuro/dataset/query_filtered')

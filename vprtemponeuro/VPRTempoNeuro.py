@@ -29,26 +29,21 @@ import torch
 import samna
 import time
 import gc
-import sys
-sys.path.append('./src')
-sys.path.append('./models')
-sys.path.append('./output')
-sys.path.append('./dataset')
 
-import blitnet as bn
+import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
 import sinabs.layers as sl
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 
-from loggers import model_logger
+from vprtemponeuro.src.loggers import model_logger
 from sinabs.from_torch import from_model
-from dataset import CustomImageDataset, ProcessImage
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
-from metrics import recallAtK
+from vprtemponeuro.src.metrics import recallAtK
 from sinabs.backend.dynapcnn import DynapcnnNetwork
 from sinabs.backend.dynapcnn.chip_factory import ChipFactory
 from collections import Counter

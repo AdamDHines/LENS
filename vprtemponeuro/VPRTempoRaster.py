@@ -26,28 +26,21 @@ Imports
 
 import os
 import torch
-import samna
-import gc
-import sys
-sys.path.append('./src')
-sys.path.append('./models')
-sys.path.append('./output')
-sys.path.append('./dataset')
 
-import blitnet as bn
+import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
 import sinabs.layers as sl
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 
-from loggers import model_logger
+from vprtemponeuro.src.loggers import model_logger
 from sinabs.from_torch import from_model
-from dataset import CustomImageDataset, ProcessImage
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
-from metrics import recallAtK
+from vprtemponeuro.src.metrics import recallAtK
 
 
 class VPRTempoRaster(nn.Module):
@@ -60,7 +53,7 @@ class VPRTempoRaster(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -230,7 +223,7 @@ def run_inference_raster(model, model_name):
     model.eval()
 
     # Load the model
-    model.load_model(os.path.join('./models', model_name))
+    model.load_model(os.path.join('./vprtemponeuro/models', model_name))
 
     # Retrieve layer names for inference
     layer_names = list(model.layer_dict.keys())
