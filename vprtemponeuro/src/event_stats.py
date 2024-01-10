@@ -19,7 +19,7 @@ class EventStats:
         - "max" - find the top most active event pixels
     max_pixels - defines the number of pixels to send to VPRTempo
     '''
-    def __init__(self, model, event_type="variance", max_pixels=25):
+    def __init__(self, model, event_type="max", max_pixels=25):
         super(EventStats, self).__init__()
 
         # Define the model parameters

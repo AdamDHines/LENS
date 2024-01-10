@@ -24,13 +24,24 @@ class GenerateTemporalCode:
         """
         self.gz_idx = torch.argwhere(self.img > 0)
 
-    def generate_temporal_code(self):
-        """
-        Generate a temporal code where the pixel index determines a value in the range [0, 1].
-        The top left pixel index will be the highest value (1) and the bottom right pixel will be the lowest non-zero value.
-        """
-        total_pixels = np.prod(self.img_shape)
-        self.tempcode = np.linspace(1, 0, total_pixels, endpoint=False).reshape(self.img_shape)
+
+    def generate_temporal_code(self, repeat):
+            """
+            Generate a temporal code with repeated values even when the total number
+            of pixels is not divisible by the repeat value.
+
+            Args:
+            repeat (int): The number of times each number should be repeated.
+
+            Returns:
+            numpy.ndarray: An array of temporal codes.
+            """
+            total_pixels = np.prod(self.img_shape)
+            unique_values = total_pixels // repeat
+            if total_pixels % repeat != 0:
+                unique_values += 1  # Increase the unique values to accommodate the last set
+            self.tempcode = np.linspace(1, 0, unique_values, endpoint=False)
+            self.tempcode = np.repeat(self.tempcode, repeat)[:total_pixels].reshape(self.img_shape)
 
     def match_pixels_to_index(self):
         """
@@ -51,7 +62,7 @@ class GenerateTemporalCode:
 
     def main(self):
         self.get_pixel_indices()
-        self.generate_temporal_code()
+        self.generate_temporal_code(64)
         img = self.match_pixels_to_index()
 
         return img
@@ -67,7 +78,7 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100):
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=255):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip

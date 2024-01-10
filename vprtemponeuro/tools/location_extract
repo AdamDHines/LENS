@@ -1,0 +1,103 @@
+import pynmea2
+import numpy as np
+import random
+
+def get_gps(nmea_file_path):
+    nmea_file = open(nmea_file_path, encoding='utf-8')
+
+    latitudes, longitudes, timestamps = [], [], []
+
+    first_timestamp = None
+    previous_lat, previous_lon = 0, 0
+
+    for line in nmea_file.readlines():
+        try:
+            msg = pynmea2.parse(line)
+            if first_timestamp is None:
+                first_timestamp = msg.timestamp
+            if msg.sentence_type not in ['GSV', 'VTG', 'GSA']:
+                # print(msg.timestamp, msg.latitude, msg.longitude)
+                # print(repr(msg.latitude))
+                dist_to_prev = np.linalg.norm(np.array([msg.latitude, msg.longitude]) - np.array([previous_lat, previous_lon]))
+                if msg.latitude != 0 and msg.longitude != 0 and msg.latitude != previous_lat and msg.longitude != previous_lon and dist_to_prev > 0.0001:
+                    timestamp_diff = (msg.timestamp.hour - first_timestamp.hour) * 3600 + (msg.timestamp.minute - first_timestamp.minute) * 60 + (msg.timestamp.second - first_timestamp.second)
+                    latitudes.append(msg.latitude); longitudes.append(msg.longitude); timestamps.append(timestamp_diff)
+                    previous_lat, previous_lon = msg.latitude, msg.longitude
+
+        except pynmea2.ParseError as e:
+            # print('Parse error: {} {}'.format(msg.sentence_type, e))
+            continue
+
+    return np.array(np.vstack((latitudes, longitudes, timestamps))).T
+
+def filter_unique_locations(gps_data, min_distance=0.0005):
+    """
+    Filter GPS data to ensure locations are not too close to each other.
+    Args:
+    - gps_data (np.array): Array of latitude, longitude, and timestamp data.
+    - min_distance (float): Minimum distance between points (in degrees).
+    Returns:
+    - np.array: Filtered GPS data.
+    """
+    unique_locations = []
+    last_lat, last_lon = 0, 0
+
+    for data in gps_data:
+        lat, lon, _ = data
+        if np.linalg.norm(np.array([lat, lon]) - np.array([last_lat, last_lon])) > min_distance:
+            unique_locations.append(data)
+            last_lat, last_lon = lat, lon
+
+    return np.array(unique_locations)
+
+def select_frames(gps_data, frame_rate, num_frames=140):
+    """
+    Selects frames based on GPS data.
+    Args:
+    - gps_data (np.array): Array of latitude, longitude, and timestamp data.
+    - frame_rate (int): Frame rate of the video.
+    - num_frames (int): Number of frames to select.
+    Returns:
+    - list: List of selected frame numbers.
+    """
+    if len(gps_data) < num_frames:
+        raise ValueError("Not enough unique locations to select from.")
+
+    # Randomly select 'num_frames' locations
+    selected_locations = random.sample(list(gps_data), num_frames)
+
+    # Calculate corresponding frame numbers
+    frame_numbers = []
+    for _, _, timestamp in selected_locations:
+        frame_number = int(timestamp * frame_rate)
+        frame_numbers.append(frame_number)
+
+    return frame_numbers
+
+# Example usage
+nmea_file_path = '/home/adam/repo/rpg_e2vid/scripts/extracted_data/20200422_172431-sunset2_concat.nmea'
+gps_data = get_gps(nmea_file_path)
+filtered_gps_data = filter_unique_locations(gps_data)
+frame_numbers = select_frames(filtered_gps_data, 40) # Video at 40 fps
+
+
+def find_matching_gps_points(selected_gps_data, second_gps_data):
+    """
+    Find the closest matching GPS points in the second dataset for each selected GPS point from the first dataset.
+    Args:
+    - selected_gps_data (np.array): Array of selected GPS data (lat, lon) from the first dataset.
+    - second_gps_data (np.array): Array of GPS data (lat, lon) from the second dataset.
+    Returns:
+    - list: Indices of matching GPS points in the second dataset.
+    """
+    matching_indices = []
+    for lat1, lon1 in selected_gps_data:
+        closest_dist = float('inf')
+        closest_index = -1
+        for index, (lat2, lon2) in enumerate(second_gps_data):
+            dist = np.linalg.norm(np.array([lat1, lon1]) - np.array([lat2, lon2]))
+            if dist < closest_dist:
+                closest_dist = dist
+                closest_index = index
+        matching_indices.append(closest_index)
+    return matching_indices

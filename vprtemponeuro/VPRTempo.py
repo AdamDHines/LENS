@@ -42,10 +42,9 @@ from tqdm import tqdm
 from prettytable import PrettyTable
 from vprtemponeuro.src.metrics import recallAtK
 
-
-class VPRTempoRaster(nn.Module):
+class VPRTempo(nn.Module):
     def __init__(self, args):
-        super(VPRTempoRaster, self).__init__()
+        super(VPRTempo, self).__init__()
 
         # Set the arguments
         self.args = args
@@ -116,14 +115,6 @@ class VPRTempoRaster(nn.Module):
             self.output_layer.w,
         )
 
-        input_shape = (1, 1, self.dims[0] * self.dims[1])
-        self.sinabs_model = from_model(
-                                self.inference, 
-                                input_shape=input_shape,
-                                batch_size=1,
-                                add_spiking_output=True,
-                                )
-
         # Initialize the tqdm progress bar
         pbar = tqdm(total=self.num_places,
                     desc="Running the test network",
@@ -131,15 +122,16 @@ class VPRTempoRaster(nn.Module):
         # Initiliaze the output spikes variable
         out = []
         # Run inference for the specified number of timesteps
-        for spikes, labels in test_loader:
-            spikes, labels = spikes.to(self.device), labels.to(self.device)
-            spikes = sl.FlattenTime()(spikes)
-            # Forward pass
-            spikes = self.forward(spikes)
-            output = spikes.sum(dim=0).squeeze()
-            # Add output spikes to list
-            out.append(output.detach().cpu().tolist())
-            pbar.update(1)
+        with torch.no_grad():
+            for spikes, labels in test_loader:
+                spikes, labels = spikes.to(self.device), labels.to(self.device)
+                spikes = spikes.squeeze(0)
+                spikes = spikes.to(torch.float32)
+                # Forward pass
+                spikes = self.forward(spikes)
+                # Add output spikes to list
+                out.append(spikes.detach().cpu().tolist())
+                pbar.update(1)
 
         # Close the tqdm progress bar
         pbar.close()
@@ -182,7 +174,7 @@ class VPRTempoRaster(nn.Module):
         - Tensor: Output after processing.
         """
         
-        spikes = self.sinabs_model(spikes)
+        spikes = self.inference(spikes)
         
         return spikes
         
@@ -193,7 +185,7 @@ class VPRTempoRaster(nn.Module):
         self.load_state_dict(torch.load(model_path, map_location=self.device),
                              strict=False)
 
-def run_inference_raster(model, model_name):
+def run_inference_norm(model, model_name):
     """
     Run inference on a pre-trained model.
 
@@ -211,7 +203,7 @@ def run_inference_raster(model, model_name):
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.num_places,
-                                      is_raster=True)
+                                      is_raster=False)
     print(str(model.data_dir+model.query_dir[0]))
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
