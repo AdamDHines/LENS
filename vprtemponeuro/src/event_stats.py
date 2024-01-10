@@ -4,6 +4,7 @@ Imports
 import os
 import csv
 import shutil
+import math
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,13 +20,14 @@ class EventStats:
         - "max" - find the top most active event pixels
     max_pixels - defines the number of pixels to send to VPRTempo
     '''
-    def __init__(self, model, event_type="max", max_pixels=25):
+    def __init__(self, model, event_type="max", max_pixels=25, total_patches=8):
         super(EventStats, self).__init__()
 
         # Define the model parameters
         self.model = model
         self.event_type = event_type
         self.max_pixels = max_pixels
+        self.total_patches = total_patches
 
     def load_images_from_folder(self,folder=None):
         self.images = []
@@ -36,61 +38,119 @@ class EventStats:
                     # Convert to grayscale
                     gray_img = img.convert('L')
                     width, height = gray_img.size
-                    cropped_img = gray_img.crop((0, 0, width, height - 60))
+                    cropped_img = gray_img.crop((0, 0, width - 2, height - 60))
                     self.images.append(cropped_img.copy())
 
-    def calculate_pixel_frequency(self):
-        if not self.images:
-            return None, None
+    
+    def split_into_patches(self, image):
+        width, height = image.size
+        self.image_width = width
+        self.patches = []
+        self.patch_info = []
 
-        sample_image = self.images[0]
-        width, height = sample_image.size
-        total_pixels = width * height
-        self.freq = np.zeros(total_pixels)
-        self.pixel_count = np.zeros(total_pixels)
+        def closest_factors(total_patches):
+            # Find factors of total_patches
+            factors = [(i, total_patches // i) for i in range(1, int(math.sqrt(total_patches)) + 1) if total_patches % i == 0]
+
+            # Choose the pair where the difference between factors is minimized
+            return min(factors, key=lambda x: abs(x[0] - x[1]))
+
+        # Calculate the number of patches in each dimension
+        patches_per_row, patches_per_col = closest_factors(self.total_patches)
+
+        # Calculate the basic dimensions of each patch
+        basic_patch_width = width // patches_per_row
+        basic_patch_height = height // patches_per_col
+
+        # Calculate the number of pixels remaining after the basic division
+        extra_width = width % patches_per_row
+        extra_height = height % patches_per_col
+
+        for i in range(patches_per_col):
+            for j in range(patches_per_row):
+                # Determine the actual size of this patch
+                patch_width = basic_patch_width + (1 if j < extra_width else 0)
+                patch_height = basic_patch_height + (1 if i < extra_height else 0)
+
+                # Calculate the position of the patch
+                left = sum(basic_patch_width + (1 if x < extra_width else 0) for x in range(j))
+                upper = sum(basic_patch_height + (1 if y < extra_height else 0) for y in range(i))
+                right = left + patch_width
+                lower = upper + patch_height
+
+                # Create the patch and add it to the list
+                patch = image.crop((left, upper, right, lower))
+                self.patches.append(patch)
+                
+                 # Store patch information
+                self.patch_info.append((left, upper, patch_width, patch_height))
+
+    def calculate_pixel_frequency(self):
+        # Initialize dictionaries to hold frequency and pixel count for each patch
+        self.freq_per_patch = {}
+        self.pixel_count_per_patch = {}
 
         for img in tqdm(self.images, desc="Calculating Pixel Frequency"):
-            img_data = np.array(img).flatten()
-            indices = np.arange(total_pixels)
-            self.freq += np.bincount(indices, weights=img_data, minlength=total_pixels)
-            self.pixel_count += (img_data > 0)
+            self.split_into_patches(img)  # Assuming split_into_patches returns patches and patch info
+            for patch_idx, patch in enumerate(self.patches):
+                patch_data = np.array(patch).flatten()
+                total_pixels = patch_data.size
+
+                if patch_idx not in self.freq_per_patch:
+                    self.freq_per_patch[patch_idx] = np.zeros(total_pixels)
+                    self.pixel_count_per_patch[patch_idx] = np.zeros(total_pixels)
+
+                patch_freq = np.bincount(np.arange(total_pixels), weights=patch_data, minlength=total_pixels)
+                patch_pixel_count = (patch_data > 0)
+
+                # Accumulate the data for this patch across all images
+                self.freq_per_patch[patch_idx] += patch_freq
+                self.pixel_count_per_patch[patch_idx] += patch_pixel_count
 
     def find_most_active_pixels(self):
-        num_images = len(self.images)
+        total_patches = self.total_patches  # Total number of patches
+        patch_active_pixels = {}
 
-        # Identify hot and dead pixels
-        hot_pixels = self.pixel_count == len(self.images)
-        dead_pixels = self.pixel_count == 0
+        # Calculate the number of pixels to select from each patch
+        pixels_per_patch = self.max_pixels // total_patches
+        if self.max_pixels % total_patches != 0:
+            pixels_per_patch += 1  # Adjust if not divisible evenly
 
-        if self.event_type == "max":
-            active_pixels = np.where(~hot_pixels & ~dead_pixels, self.freq, 0)
-            self.selection = np.unravel_index(np.argsort(-active_pixels.ravel())[:self.max_pixels], active_pixels.shape)
-            np.save('./vprtemponeuro/dataset/pixel_selection.npy',self.selection[0])
-        elif self.event_type == "variance":
+        for patch_index in range(total_patches):
+            patch_freq = self.freq_per_patch[patch_index]
+            patch_pixel_count = self.pixel_count_per_patch[patch_index]
 
-            # Calculate the probability of each pixel being active
-            p_active = self.pixel_count / num_images
+            # Identify hot and dead pixels in the patch
+            hot_pixels = patch_pixel_count == len(self.images)
+            dead_pixels = patch_pixel_count == 0
 
-            # Calculate variance for each pixel
-            variance = p_active * (1 - p_active)
+            if self.event_type == "max":
+                # Calculate active pixels for the patch
+                patch_active = np.where(~hot_pixels & ~dead_pixels, patch_freq, 0)
+                top_indices = np.argsort(-patch_active)[:pixels_per_patch]
+                patch_active_pixels[patch_index] = top_indices
 
-            # Find the indices of pixels with the highest variance
-            self.selection = np.unravel_index(np.argsort(-variance.ravel())[:self.max_pixels], variance.shape)
-            np.save('./vprtemponeuro/dataset/pixel_selection.npy',self.selection[0])
-        elif self.event_type == "random":
-            # Filter out hot and dead pixels
-            valid_pixels = np.where(~hot_pixels & ~dead_pixels)
+        # Convert local patch indices to global indices
+        self.selection = []
+        for patch_index, active_indices in patch_active_pixels.items():
+            patch_info = self.patch_info[patch_index]
+            patch_start_x, patch_start_y, patch_width, patch_height = patch_info
 
-            # Flatten the array to get linear indices of valid pixels
-            valid_linear_indices = np.ravel_multi_index(valid_pixels, self.pixel_count.shape)
+            for local_idx in active_indices:
+                # Calculate the local row and column within the patch
+                local_row = local_idx // patch_width
+                local_col = local_idx % patch_width
 
-            # Select a random number of pixels from the valid ones
-            num_random_pixels = min(self.max_pixels, len(valid_linear_indices))
-            random_indices = np.random.choice(valid_linear_indices, num_random_pixels, replace=False)
+                # Convert to global row and column
+                global_row = patch_start_y + local_row
+                global_col = patch_start_x + local_col
 
-            # Convert linear indices to multidimensional indices
-            self.selection = np.unravel_index(random_indices, self.pixel_count.shape)
-            np.save('./vprtemponeuro/dataset/random_pixel_selection.npy', self.selection[0])
+                # Convert to linear index if necessary
+                global_idx = global_row * self.image_width + global_col
+                self.selection.append(global_idx)
+
+        self.selection = np.array(self.selection)
+        np.save('./vprtemponeuro/dataset/pixel_selection.npy',self.selection)
 
     def clear_output_folder(self, output_folder):
         """
@@ -119,7 +179,7 @@ class EventStats:
         height, width = self.images[0].size
 
         for i, img in enumerate(self.images):
-            new_img = np.zeros((height, width), dtype=np.uint8)
+            new_img = np.zeros((width, height), dtype=np.uint8)
 
             # Get the grayscale channel as an array
             grayscale_channel = np.array(img)
@@ -127,9 +187,9 @@ class EventStats:
             # Set the top active pixels
             for idx in self.selection:
                 y, x = divmod(idx, width)
-                new_img[y, x] = grayscale_channel[x, y]
+                new_img[x, y] = grayscale_channel[x, y]
 
-            new_img = new_img.T  # Transpose should be outside the loop
+            #new_img = new_img.T  # Transpose should be outside the loop
 
             # Save the new image
             save_path = os.path.join(output_folder, f'image_{i:04d}.png')

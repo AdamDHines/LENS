@@ -78,7 +78,7 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=255):
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
