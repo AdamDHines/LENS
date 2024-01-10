@@ -212,7 +212,7 @@ def run_inference_raster(model, model_name):
                                       skip=model.filter,
                                       max_samples=model.num_places,
                                       is_raster=True)
-
+    print(str(model.data_dir+model.query_dir[0]))
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 

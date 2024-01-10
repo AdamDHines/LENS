@@ -31,13 +31,14 @@ from vprtemponeuro.src.event_stats import EventStats
 from vprtemponeuro.VPRTempoNeuro import VPRTempoNeuro, run_inference
 from vprtemponeuro.VPRTempoRaster import VPRTempoRaster, run_inference_raster
 from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, generate_model_name, train_new_model, check_pretrained_model
+from vprtemponeuro.VPRTempo import VPRTempo, run_inference_norm
 
 def initialize_and_run_model(args):
     # If user wants to train a new network
     if args.train_new_model:
         # Initialize the model
         model = VPRTempoTrain(args)
-        eventModel = EventStats(model,event_type="max",max_pixels=args.pixels) # Initialize EventStats model
+        eventModel = EventStats(model,event_type="variance",max_pixels=args.pixels) # Initialize EventStats model
         eventModel.main() # Run the event statistics
         # Generate the model name
         model_name = generate_model_name(model)
@@ -54,6 +55,13 @@ def initialize_and_run_model(args):
             model_name = generate_model_name(model)
             # Run the quantized inference model
             run_inference_raster(model, model_name)
+        elif args.norm:
+            # Initialize the model
+            model = VPRTempo(args)
+            # Generate the model name
+            model_name = generate_model_name(model)
+            # Run the inference model
+            run_inference_norm(model, model_name)
         else:
             # Initialize the model
             model = VPRTempoNeuro(args)
@@ -62,7 +70,7 @@ def initialize_and_run_model(args):
             # Run the inference model
             run_inference(model, model_name)
 
-def parse_network(use_raster=False, train_new_model=False):
+def parse_network(use_raster=False, train_new_model=False, norm=False):
     '''
     Define the base parameter parser (configurable by the user)
     '''
@@ -73,7 +81,7 @@ def parse_network(use_raster=False, train_new_model=False):
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--num_places', type=int, default=25,
+    parser.add_argument('--num_places', type=int, default=159,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--num_modules', type=int, default=1,
                             help="Number of expert modules to use split images into")
@@ -85,7 +93,7 @@ def parse_network(use_raster=False, train_new_model=False):
                         help="Number of places to use for training and/or inferencing")
 
     # Define training parameters
-    parser.add_argument('--filter', type=int, default=5,
+    parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
     parser.add_argument('--epoch', type=int, default=4,
                             help="Number of epochs to train the model")
@@ -105,14 +113,18 @@ def parse_network(use_raster=False, train_new_model=False):
                             help="Whether or not to use the power monitor")
     parser.add_argument('--raster_device', type=str, default='cpu',
                             help="When using raster analysis, use CPU or GPU")
+    parser.add_argument('--norm', action='store_true',
+                            help="Run the regular VPRTempo")
     
     # If the function is called with specific arguments, override sys.argv
-    if use_raster or train_new_model:
+    if use_raster or train_new_model or norm:
         sys.argv = ['']
         if use_raster:
             sys.argv.append('--raster')
         if train_new_model:
             sys.argv.append('--train_new_model')
+        if norm:
+            sys.argv.append('--norm')
 
     # Output base configuration
     args = parser.parse_args()
@@ -124,5 +136,6 @@ if __name__ == "__main__":
     # User input to determine if using quantized network or to train new model 
     parse_network(
                 use_raster=False, 
-                train_new_model=False
+                train_new_model=False,
+                norm=False
                 )

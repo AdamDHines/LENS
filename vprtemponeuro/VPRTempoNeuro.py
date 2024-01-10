@@ -58,7 +58,7 @@ class VPRTempoNeuro(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -381,7 +381,7 @@ def run_inference(model, model_name):
     model.eval()
 
     # Load the model
-    model.load_model(os.path.join('./models', model_name))
+    model.load_model(os.path.join('./vprtemponeuro/models', model_name))
 
     # Use evaluate method for inference accuracy
     model.evaluate(test_loader)

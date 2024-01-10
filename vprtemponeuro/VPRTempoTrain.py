@@ -75,7 +75,7 @@ class VPRTempoTrain(nn.Module):
             thr_range=[0, 0.5],
             fire_rate=[0.2, 0.9],
             ip_rate=0.15,
-            stdp_rate=0.005,
+            stdp_rate=0.1,
             p=[0.1, 0.5],
             device=self.device
         )
@@ -83,7 +83,7 @@ class VPRTempoTrain(nn.Module):
             'output_layer',
             dims=[self.feature, self.output],
             ip_rate=0.15,
-            stdp_rate=0.005,
+            stdp_rate=0.1,
             p=[0.25, 0.75],
             spk_force=True,
             device=self.device
@@ -236,7 +236,7 @@ def train_new_model(model, model_name):
                                             ])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       base_dir=model.data_dir,
-                                      img_dirs=model.query_dir,
+                                      img_dirs=model.database_dirs,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.num_places,
