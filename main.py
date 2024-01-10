@@ -38,12 +38,12 @@ def initialize_and_run_model(args):
     if args.train_new_model:
         # Initialize the model
         model = VPRTempoTrain(args)
-        eventModel = EventStats(model,event_type="variance",max_pixels=args.pixels) # Initialize EventStats model
+        eventModel = EventStats(model,event_type="max",max_pixels=args.pixels) # Initialize EventStats model
         eventModel.main() # Run the event statistics
         # Generate the model name
         model_name = generate_model_name(model)
         # Check if the model has been trained before
-        check_pretrained_model(model_name)
+        #check_pretrained_model(model_name)
         # Train the model
         train_new_model(model, model_name)
     else: # Run the inference network
@@ -89,7 +89,7 @@ def parse_network(use_raster=False, train_new_model=False, norm=False):
                             help="Directories to use for training")
     parser.add_argument('--query_dir', nargs='+', default=['query_filtered'],
                             help="Directories to use for testing")
-    parser.add_argument('--pixels', type=int, default=121,
+    parser.add_argument('--pixels', type=int, default=792,
                         help="Number of places to use for training and/or inferencing")
 
     # Define training parameters
@@ -99,7 +99,7 @@ def parse_network(use_raster=False, train_new_model=False, norm=False):
                             help="Number of epochs to train the model")
 
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[11,11],
+    parser.add_argument('--dims', nargs='+', type=int, default=[792,1],
                             help="Dimensions to resize the image to")
 
     # Define the network functionality

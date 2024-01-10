@@ -75,7 +75,7 @@ class VPRTempoTrain(nn.Module):
             thr_range=[0, 0.5],
             fire_rate=[0.2, 0.9],
             ip_rate=0.15,
-            stdp_rate=0.1,
+            stdp_rate=0.05,
             p=[0.1, 0.5],
             device=self.device
         )
@@ -83,7 +83,7 @@ class VPRTempoTrain(nn.Module):
             'output_layer',
             dims=[self.feature, self.output],
             ip_rate=0.15,
-            stdp_rate=0.1,
+            stdp_rate=0.05,
             p=[0.25, 0.75],
             spk_force=True,
             device=self.device
@@ -118,11 +118,11 @@ class VPRTempoTrain(nn.Module):
         """
         Anneal the learning rate for the current layer.
         """
-        if np.mod(mod, 100) == 0: # Modify learning rate every 100 timesteps
+        if np.mod(mod, 10) == 0: # Modify learning rate every 100 timesteps
             pt = pow(float(self.T - mod) / self.T, 2)
             layer.eta_ip = torch.mul(itp, pt) # Anneal intrinsic threshold plasticity learning rate
             layer.eta_stdp = torch.mul(stdp, pt) # Anneal STDP learning rate
-            
+            print(layer.eta_ip, layer.eta_stdp)
         return layer
 
     def train_model(self, train_loader, layer, prev_layers=None):
