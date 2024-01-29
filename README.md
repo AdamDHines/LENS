@@ -26,5 +26,7 @@ cd ~/VPRTempoNeuro
 ## Datasets
 At the moment, using pre-recorded datasets (see Tobi and Gokul) - likely will be using either QCR Event or Brisbane Event datasets for the initial figures and testing of the system.
 
+Using dvs_tools.py is cool and will make nice videos.
+
 ## Issues, bugs, and feature requests
 If you encounter problems whilst running the code or if you have a suggestion for a feature or improvement, please report it as an [issue](https://github.com/AdamDHines/VPRTempoNeuro/issues).
