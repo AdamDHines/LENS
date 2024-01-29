@@ -1,5 +1,6 @@
-__pycache__/
-.ipynb_checkpoints/
-src/__pycache__/
-dataset/
-output/
+vprtemponeuro/__pycache__/
+vprtemponeuro/src/__pycache__/
+vprtemponeuro/dataset/
+vprtemponeuro/output/
+vprtemponeuro/models/
+wandb/

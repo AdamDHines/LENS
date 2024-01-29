@@ -155,12 +155,15 @@ class VPRTempo(nn.Module):
         model.logger.info(table)
 
         # Plot similarity matrix
-        plt.matshow(out)
-        plt.colorbar(shrink=0.75,label="Output spike intensity")
-        plt.title('Similarity matrix')
-        plt.xlabel("Query")
-        plt.ylabel("Database")
-        plt.show()
+        if self.sim_mat:
+            plt.matshow(out)
+            plt.colorbar(shrink=0.75,label="Output spike intensity")
+            plt.title('Similarity matrix')
+            plt.xlabel("Query")
+            plt.ylabel("Database")
+            plt.show()
+
+        return R[0]
 
 
     def forward(self, spikes):
@@ -195,7 +198,7 @@ def run_inference_norm(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-        ProcessImage()
+        ProcessImage(model.repeats)
     ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file, 
                                       base_dir=model.data_dir,
@@ -221,4 +224,5 @@ def run_inference_norm(model, model_name):
     layer_names = list(model.layer_dict.keys())
 
     # Use evaluate method for inference accuracy
-    model.evaluate(model, test_loader, layers=layer_names)
+    R1 = model.evaluate(model, test_loader, layers=layer_names)
+    return R1

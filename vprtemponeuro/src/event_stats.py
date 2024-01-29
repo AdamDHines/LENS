@@ -20,14 +20,28 @@ class EventStats:
         - "max" - find the top most active event pixels
     max_pixels - defines the number of pixels to send to VPRTempo
     '''
-    def __init__(self, model, event_type="max", max_pixels=25, total_patches=8):
+    def __init__(self, model, event_type="max", max_pixels=784, total_patches=16):
         super(EventStats, self).__init__()
 
         # Define the model parameters
         self.model = model
         self.event_type = event_type
         self.max_pixels = max_pixels
-        self.total_patches = total_patches
+        # Calculate the maximum number of patches that can fit into max_pixels
+        max_patches = self.calculate_max_patches(max_pixels, total_patches)
+
+        # Adjust total_patches if it exceeds the limit
+        self.total_patches = min(total_patches, max_patches)
+
+    def calculate_max_patches(self, max_pixels, total_patches):
+        # Assuming square patches for simplicity
+        patch_size = int(math.sqrt(max_pixels / total_patches))
+
+        # Calculate how many patches can fit into max_pixels
+        patches_per_row = int(math.sqrt(max_pixels)) // patch_size
+        max_patches = patches_per_row ** 2
+
+        return max_patches
 
     def load_images_from_folder(self,folder=None):
         self.images = []
@@ -124,11 +138,10 @@ class EventStats:
             hot_pixels = patch_pixel_count == len(self.images)
             dead_pixels = patch_pixel_count == 0
 
-            if self.event_type == "max":
-                # Calculate active pixels for the patch
-                patch_active = np.where(~hot_pixels & ~dead_pixels, patch_freq, 0)
-                top_indices = np.argsort(-patch_active)[:pixels_per_patch]
-                patch_active_pixels[patch_index] = top_indices
+            # Calculate active pixels for the patch
+            patch_active = np.where(~hot_pixels & ~dead_pixels, patch_freq, 0)
+            top_indices = np.argsort(-patch_active)[:pixels_per_patch]
+            patch_active_pixels[patch_index] = top_indices
 
         # Convert local patch indices to global indices
         self.selection = []
@@ -151,6 +164,31 @@ class EventStats:
 
         self.selection = np.array(self.selection)
         np.save('./vprtemponeuro/dataset/pixel_selection.npy',self.selection)
+
+    def random_pixels(self):
+        """
+        Selects a random number of pixel indices from the image and saves them to a file.
+        The number of pixels is determined by self.max_pixels.
+        """
+
+        # Assuming the class has attributes for image dimensions and number of pixels to select
+        # Get the dimensions of the first image
+        # Get the dimensions of the first image
+        if len(self.images) > 0:
+            first_image = self.images[0]
+            image_width, image_height = first_image.size
+        else:
+            raise ValueError("No images available in self.images")
+        num_pixels = self.max_pixels
+
+        # Calculate total number of pixels in the image
+        total_pixels = image_height * image_width
+
+        # Generate random indices
+        self.selection = np.random.choice(total_pixels, num_pixels, replace=False)
+
+        # Save the selection to a file
+        np.save('./vprtemponeuro/dataset/pixel_selection.npy', self.selection)
 
     def clear_output_folder(self, output_folder):
         """
@@ -240,12 +278,15 @@ class EventStats:
 
     def main(self):
         # Load the images
-        self.load_images_from_folder(folder=self.model.data_dir+'database')
+        self.load_images_from_folder(folder=self.model.data_dir+'database_dvs')
         # Calculate pixel frequency
         self.calculate_pixel_frequency()
         # Calculate pixel activity, based on type of activity wanted to measure
-        self.find_most_active_pixels()
+        if self.event_type == "max":
+            self.find_most_active_pixels()
+        else:
+            self.random_pixels()
         # Reconstruct images for both query sets
-        self.reconstruct_images('./vprtemponeuro/dataset/database_filtered')
-        self.load_images_from_folder(folder=self.model.data_dir+'query')
-        self.reconstruct_images('./vprtemponeuro/dataset/query_filtered')
+        self.reconstruct_images(self.model.data_dir+'/database_filtered')
+        self.load_images_from_folder(folder=self.model.data_dir+'query_dvs')
+        self.reconstruct_images(self.model.data_dir+'/query_filtered')

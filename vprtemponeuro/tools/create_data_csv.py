@@ -19,6 +19,6 @@ def create_csv_from_images(folder_path, csv_file_path):
             writer.writerow([image_name, index])
 
 # Example usage
-folder_path = '/home/adam/repo/rpg_e2vid/scripts/extracted_data/gps_matched_reference' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event.csv' # Path for the CSV file
+folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/Brisbane-Event/query' # Replace with your folder path
+csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event_rgb.csv' # Path for the CSV file
 create_csv_from_images(folder_path, csv_file_path)

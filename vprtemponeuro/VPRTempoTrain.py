@@ -72,19 +72,21 @@ class VPRTempoTrain(nn.Module):
         self.add_layer(
             'feature_layer',
             dims=[self.input, self.feature],
-            thr_range=[0, 0.5],
-            fire_rate=[0.2, 0.9],
-            ip_rate=0.15,
-            stdp_rate=0.05,
-            p=[0.1, 0.5],
+            thr_range=[self.thr_l, self.thr_h],
+            fire_rate=[self.fire_l, self.fire_h],
+            ip_rate=self.ip_rate,
+            stdp_rate=self.stdp_rate,
+            p=[self.f_exc, self.f_inh],
             device=self.device
         )
         self.add_layer(
             'output_layer',
             dims=[self.feature, self.output],
-            ip_rate=0.15,
-            stdp_rate=0.05,
-            p=[0.25, 0.75],
+            thr_range=[self.thr_l, self.thr_h],
+            fire_rate=[self.fire_l, self.fire_h],
+            ip_rate=self.ip_rate,
+            stdp_rate=self.stdp_rate,
+            p=[self.o_exc, self.o_inh],
             spk_force=True,
             device=self.device
         )
@@ -122,7 +124,6 @@ class VPRTempoTrain(nn.Module):
             pt = pow(float(self.T - mod) / self.T, 2)
             layer.eta_ip = torch.mul(itp, pt) # Anneal intrinsic threshold plasticity learning rate
             layer.eta_stdp = torch.mul(stdp, pt) # Anneal STDP learning rate
-            print(layer.eta_ip, layer.eta_stdp)
         return layer
 
     def train_model(self, train_loader, layer, prev_layers=None):
@@ -232,7 +233,7 @@ def train_new_model(model, model_name):
     """
     # Initialize the image transforms and datasets
     image_transform = transforms.Compose([
-                                        ProcessImage()
+                                        ProcessImage(model.repeats)
                                             ])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       base_dir=model.data_dir,

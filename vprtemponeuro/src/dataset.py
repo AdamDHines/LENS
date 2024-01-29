@@ -7,16 +7,18 @@ import pandas as pd
 import numpy as np
 import torch.nn.functional as F
 import torch.quantization as tq
+import matplotlib.pyplot as plt
 
 from torchvision.io import read_image
 from torch.utils.data import Dataset
 
 class GenerateTemporalCode:
-    def __init__(self, img):
+    def __init__(self, img, repeat):
         super(GenerateTemporalCode, self).__init__()
         self.img = img
         self.img = torch.squeeze(self.img,0)
         self.img_shape = self.img.shape
+        self.repeat = repeat
 
     def get_pixel_indices(self):
         """
@@ -26,22 +28,46 @@ class GenerateTemporalCode:
 
 
     def generate_temporal_code(self, repeat):
-            """
-            Generate a temporal code with repeated values even when the total number
-            of pixels is not divisible by the repeat value.
+        """
+        Generate a temporal code where repeated values form equal squares in the plotted matrix,
+        filling the entire matrix even if it's not a perfect square.
 
-            Args:
-            repeat (int): The number of times each number should be repeated.
+        Args:
+        repeat (int): The number of elements in each square block (assumed to be a perfect square).
 
-            Returns:
-            numpy.ndarray: An array of temporal codes.
-            """
-            total_pixels = np.prod(self.img_shape)
-            unique_values = total_pixels // repeat
-            if total_pixels % repeat != 0:
-                unique_values += 1  # Increase the unique values to accommodate the last set
-            self.tempcode = np.linspace(1, 0, unique_values, endpoint=False)
-            self.tempcode = np.repeat(self.tempcode, repeat)[:total_pixels].reshape(self.img_shape)
+        Returns:
+        numpy.ndarray: An array of temporal codes arranged in tiled square blocks.
+        """
+        # Check if repeat is a perfect square
+        if int(math.sqrt(repeat))**2 != repeat:
+            raise ValueError("Repeat value must be a perfect square.")
+
+        # Calculate the size of each block
+        block_size = int(math.sqrt(repeat))
+
+        # Calculate the number of blocks needed for width and height
+        blocks_per_row = int(math.ceil(self.img_shape[1] / block_size))
+        blocks_per_col = int(math.ceil(self.img_shape[0] / block_size))
+
+        # Generate unique values for each block
+        total_blocks = blocks_per_row * blocks_per_col
+        unique_values = np.linspace(1, 0, total_blocks, endpoint=False)
+
+        # Create a matrix of blocks
+        self.tempcode = np.zeros(self.img_shape)
+        for i in range(blocks_per_col):
+            for j in range(blocks_per_row):
+                # Determine the value for this block
+                block_value = unique_values[i * blocks_per_row + j]
+                # Fill the block, adjusting for edges
+                row_end = min((i+1)*block_size, self.img_shape[0])
+                col_end = min((j+1)*block_size, self.img_shape[1])
+                self.tempcode[i*block_size:row_end, j*block_size:col_end] = block_value
+        # Plotting the temporal code
+        #plt.imshow(self.tempcode, cmap='viridis')
+        #plt.colorbar()
+        #plt.title("Tiled Temporal Code Matrix")
+        #plt.show()
 
     def match_pixels_to_index(self):
         """
@@ -62,23 +88,23 @@ class GenerateTemporalCode:
 
     def main(self):
         self.get_pixel_indices()
-        self.generate_temporal_code(64)
+        self.generate_temporal_code(self.repeat)
         img = self.match_pixels_to_index()
 
         return img
         
 class ProcessImage:
-    def __init__(self):
+    def __init__(self, repeat):
         super(ProcessImage, self).__init__()
-        
+        self.repeat = repeat
     def __call__(self, img):
-        GTC = GenerateTemporalCode(img)
+        GTC = GenerateTemporalCode(img,self.repeat)
         img = GTC.main()
         return img
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100):
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=50):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip

@@ -5,10 +5,21 @@ from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
+import re
+from prettytable import PrettyTable
+from metrics import recallAtK
+
+def natural_sort_key(s):
+    """
+    A key function for natural (human-like) sorting of strings with numbers.
+    It converts the string into a list of strings and integers.
+    """
+    return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
+
 
 def load_and_preprocess_images(folder_path, skip_factor=5, max_images=1500):
     images = []
-    files = sorted(os.listdir(folder_path))  # Sort the files
+    files = sorted(os.listdir(folder_path), key=natural_sort_key)  # Sort the files
     for idx, filename in enumerate(files):
         if idx >= max_images:
             break
@@ -79,14 +90,14 @@ def processImage(img, imWidth, imHeight, num_patches):
 
     return img
 
-def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=5, max_images=5000):
+def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=0, max_images=5000):
     images = []
-    files = sorted(os.listdir(folder_path))  # Sort the files
+    files = sorted(os.listdir(folder_path),key=natural_sort_key)  # Sort the files
     for idx, filename in enumerate(files):
         if idx >= max_images:
             break
-        if idx % skip_factor != 0:  # Skip images based on the skip factor
-            continue
+        #if idx % skip_factor != 0:  # Skip images based on the skip factor
+        #    continue
         if filename.endswith('.png'):
             img = io.imread(os.path.join(folder_path, filename))
             if len(img.shape) > 2:  # Convert to grayscale if necessary
@@ -96,9 +107,12 @@ def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=5, m
             images.append(img.flatten()) 
     return np.array(images)
 
+def sum_of_absolute_differences(image1, image2):
+    return np.sum(np.abs(image1 - image2))
+
 # Load and preprocess images from both folders
-folder1 = '/home/adam/repo/rpg_e2vid/scripts/extracted_data/gps_matched_reference'
-folder2 = '/home/adam/repo/rpg_e2vid/scripts/extracted_data/gps_matched_query'
+folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/Brisbane-Event/sunset1'
+folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/Brisbane-Event/sunset2'
 
 # First, load and preprocess all images from folder1 without skipping
 all_images1 = load_and_preprocess_images(folder1, skip_factor=1)
@@ -110,6 +124,37 @@ top_pixels = find_top_variable_pixels(all_images1)
 images1 = load_and_preprocess_images_v2(folder1, top_pixels)
 images2 = load_and_preprocess_images_v2(folder2, top_pixels)
 
+#ad_matrix = np.zeros((len(images1), len(images2)))
+
+#for i in range(len(images1)):
+#    for j in range(len(images2)):
+#        sad_matrix[i, j] = sum_of_absolute_differences(images1[i], images2[j])
+
+#sad_matrix = 1/sad_matrix
+
+#plt.figure(figsize=(10, 8))
+#sns.heatmap(sad_matrix, annot=False, cmap='coolwarm')
+#plt.title('Sum of Absolute Differences between Images from Two Folders')
+#plt.xlabel('Images from Folder 2')
+#plt.ylabel('Images from Folder 1')
+#plt.show()
+
+
+# Recall@N
+N = [1,5,10,15,20,25] # N values to calculate
+#R = [] # Recall@N values
+# Create GT matrix
+GT = np.zeros((95,245), dtype=int)
+#for n in range(len(GT)):
+#    GT[n,n] = 1
+# Calculate Recall@N
+#for n in N:
+#    R.append(round(recallAtK(sad_matrix,GThard=GT,K=n),2))
+# Print the results
+#table = PrettyTable()
+#table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+#table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+#print(table)
 # Compute cosine similarity with the modified images
 similarity_matrix = cosine_similarity(images1, images2)
 
@@ -120,3 +165,13 @@ plt.title('Cosine Similarity (Top Variable Pixels) between Images from Two Folde
 plt.xlabel('Images from Folder 2')
 plt.ylabel('Images from Folder 1')
 plt.show()
+
+R = [] # Recall@N values
+# Calculate Recall@N
+for n in N:
+    R.append(round(recallAtK(similarity_matrix,GThard=GT,K=n),2))
+# Print the results
+table = PrettyTable()
+table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+print(table)
