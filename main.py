@@ -38,6 +38,7 @@ from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, generate_model_name, trai
 from vprtemponeuro.VPRTempo import VPRTempo, run_inference_norm
 
 def initialize_and_run_model(args):
+    args.norm = True
     # If user wants to train a new network
     if args.train_new_model:
         # Initialize the model
@@ -166,19 +167,21 @@ def parse_network(use_raster=False, train_new_model=False, norm=False, wandb=Fal
     parser = argparse.ArgumentParser(description="Args for base configuration file")
 
     # Define the dataset arguments
-    parser.add_argument('--dataset', type=str, default='brisbane_event',
+    parser.add_argument('--database', type=str, default='sunset1_gps_refined',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/Brisbane-Event',
+    parser.add_argument('--dataset', type=str, default='sunset2_gps',
+                            help="Dataset to use for training and/or inferencing")
+    parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--database_places', type=int, default=259,
+    parser.add_argument('--database_places', type=int, default=230,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=259,
+    parser.add_argument('--query_places', type=int, default=18873,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--num_modules', type=int, default=1,
                             help="Number of expert modules to use split images into")
-    parser.add_argument('--database_dirs', nargs='+', default=['database_filtered'],
+    parser.add_argument('--database_dirs', nargs='+', default=['sunset1'],
                             help="Directories to use for training")
-    parser.add_argument('--query_dir', nargs='+', default=['query_filtered'],
+    parser.add_argument('--query_dir', nargs='+', default=['sunset2'],
                             help="Directories to use for testing")
     parser.add_argument('--pixels', type=int, default=784,
                         help="Number of places to use for training and/or inferencing")

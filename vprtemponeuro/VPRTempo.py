@@ -25,6 +25,7 @@ Imports
 '''
 
 import os
+import csv
 import torch
 
 import vprtemponeuro.src.blitnet as bn
@@ -114,6 +115,21 @@ class VPRTempo(nn.Module):
             nn.ReLU(),
             self.output_layer.w,
         )
+        # Specify the path to your .csv file
+        csv_file_path = model.data_dir + model.database+'.csv'
+
+        # Initialize an empty list to store the rows
+        data_rows = []
+
+        # Open and read the .csv file
+        with open(csv_file_path, mode='r') as file:
+            # Create a csv reader object
+            csv_reader = csv.reader(file)
+            # Skip the header
+            next(csv_reader)
+            # Read each row after the header
+            for row in csv_reader:
+                data_rows.append(row)
 
         # Initialize the tqdm progress bar
         pbar = tqdm(total=self.query_places,
@@ -121,16 +137,45 @@ class VPRTempo(nn.Module):
                     position=0)
         # Initiliaze the output spikes variable
         out = []
+        correct = 0
+        incorrect = 0
+        counter = 0
+        matches = []
+        misses = []
         # Run inference for the specified number of timesteps
         with torch.no_grad():
-            for spikes, labels in test_loader:
+            for spikes, labels, gps in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.squeeze(0)
                 spikes = spikes.to(torch.float32)
                 # Forward pass
                 spikes = self.forward(spikes)
+
+                # If max spike output is greater than threshold, perform matching
+                if torch.max(spikes) > 0.049:
+                    gps_str = gps[0].strip('[]')
+                    # Split the string by comma
+                    lat_str, long_str = gps_str.split(',')
+                    # Convert to float
+                    lat = round(float(lat_str),3)
+                    long = round(float(long_str),3)
+                    output_idx = torch.argmax(spikes)
+
+                    ref_str = data_rows[output_idx][2].strip('[]')
+                    ref_lat_str, ref_long_str = ref_str.split(',')
+                    ref_lat = round(float(ref_lat_str),3)
+                    ref_long = round(float(ref_long_str),3)
+
+                    if lat == ref_lat and long == ref_long:
+                        correct += 1
+                        matches.append(counter)
+                    else:
+                        incorrect += 1
+                        misses.append(counter)
+                    
                 # Add output spikes to list
                 out.append(spikes.detach().cpu().tolist())
+                counter += 1
                 pbar.update(1)
 
         # Close the tqdm progress bar
@@ -138,6 +183,8 @@ class VPRTempo(nn.Module):
         # Rehsape output spikes into a similarity matrix
         out = np.reshape(np.array(out),(model.query_places,model.database_places))
         np.save('/home/adam/Documents/similarity_matrix.npy', out)
+        np.save('/home/adam/Documents/matches.npy', matches)
+        np.save('/home/adam/Documents/misses.npy', misses)
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values

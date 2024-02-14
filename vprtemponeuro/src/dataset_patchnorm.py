@@ -169,6 +169,7 @@ class CustomImageDataset(Dataset):
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
         self.img_labels = []
+
         for img_dir in img_dirs:
 
             img_labels = pd.read_csv(annotations_file)
@@ -196,6 +197,7 @@ class CustomImageDataset(Dataset):
     
     def __getitem__(self, idx):
         img_path = self.img_labels.iloc[idx]['file_path']
+        gps_coordinate = self.img_labels.iloc[idx,2]
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"No file found for index {idx} at {img_path}.")
         image = read_image(img_path)
@@ -247,4 +249,4 @@ class CustomImageDataset(Dataset):
             sqrt_div = math.sqrt(image[-1].size()[0])
             image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
             image = image.unsqueeze(1)
-        return image, label
+        return image, label, gps_coordinate
