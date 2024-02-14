@@ -34,7 +34,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 
 from vprtemponeuro.src.loggers import model_logger
-from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
+from vprtemponeuro.src.dataset_patchnorm import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -60,11 +60,11 @@ class VPRTempoTrain(nn.Module):
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
         self.feature = int(self.input*2)
-        self.output = int(args.num_places / args.num_modules)
+        self.output = int(args.database_places / args.num_modules)
 
         # Set the total timestep count
         self.location_repeat = len(args.database_dirs) # Number of times to repeat the locations
-        self.T = int((self.num_places / self.num_modules) * self.location_repeat * self.epoch)
+        self.T = int((self.database_places / self.num_modules) * self.location_repeat * self.epoch)
 
         """
         Define trainable layers here
@@ -233,14 +233,14 @@ def train_new_model(model, model_name):
     """
     # Initialize the image transforms and datasets
     image_transform = transforms.Compose([
-                                        ProcessImage(model.repeats)
+                                        ProcessImage(model.dims,model.patches)
                                             ])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       base_dir=model.data_dir,
                                       img_dirs=model.database_dirs,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places,
+                                      max_samples=model.database_places,
                                       test=False)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 

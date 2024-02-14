@@ -147,11 +147,24 @@ class CustomImageDataset(Dataset):
         image = read_image(img_path)  # image is now a tensor
         label = self.img_labels.iloc[idx, 1]
 
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
-        image=torch.tensor(image)
+        pixel_index = np.load('./vprtemponeuro/dataset/pixel_selection.npy')
+        pixel_index_div = divmod(pixel_index, image.shape[2])
+        pixel_index_div_xy = np.column_stack((pixel_index_div[0], pixel_index_div[1]))
+        pixel_index = torch.from_numpy(pixel_index_div_xy)
+
+        # Ensure pixel_index is in the correct shape and format
+        if pixel_index.dim() == 2 and pixel_index.size(1) == 2:
+            # Extract pixels based on pixel_index from the image
+            # Adjust for the fact that image has an additional leading dimension for channels
+            image_1d = image[0, pixel_index[:, 0], pixel_index[:, 1]]
+        image = image_1d/255
+        #print(image)
+        #if self.transform:
+            #image = self.transform(image)
+        #if self.target_transform:
+        #    label = self.target_transform(label)
+        #image=torch.tensor(image)
+
 
         if self.is_raster:
             image = (torch.rand(self.time_window, *image.shape) < image).float()

@@ -9,7 +9,7 @@ def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
 # Specify the directory path
-directory_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/Brisbane-Event/sunset'  # Replace with your directory path
+directory_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/daytime_decay_refined'  # Replace with your directory path
 
 # Read filenames and sort them using the natural sort key
 filenames = sorted(os.listdir(directory_path), key=natural_sort_key)

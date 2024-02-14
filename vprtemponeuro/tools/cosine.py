@@ -103,7 +103,7 @@ def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=0, m
             if len(img.shape) > 2:  # Convert to grayscale if necessary
                 img = color.rgb2gray(img)
             # Select only the top variable pixels
-            img = processImage(img, 56, 56, 15)
+            #img = processImage(img, 56, 56, 15)
             images.append(img.flatten()) 
     return np.array(images)
 
@@ -111,8 +111,8 @@ def sum_of_absolute_differences(image1, image2):
     return np.sum(np.abs(image1 - image2))
 
 # Load and preprocess images from both folders
-folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/Brisbane-Event/sunset1'
-folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/Brisbane-Event/sunset2'
+folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2_decay'
+folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/daytime_decay'
 
 # First, load and preprocess all images from folder1 without skipping
 all_images1 = load_and_preprocess_images(folder1, skip_factor=1)
