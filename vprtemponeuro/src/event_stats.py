@@ -278,7 +278,8 @@ class EventStats:
 
     def main(self):
         # Load the images
-        self.load_images_from_folder(folder=self.model.data_dir+'database_dvs')
+        print('Loaderup')
+        self.load_images_from_folder(folder=self.model.data_dir+'/sunset1_decay_refined')
         # Calculate pixel frequency
         self.calculate_pixel_frequency()
         # Calculate pixel activity, based on type of activity wanted to measure
@@ -288,5 +289,5 @@ class EventStats:
             self.random_pixels()
         # Reconstruct images for both query sets
         self.reconstruct_images(self.model.data_dir+'/database_filtered')
-        self.load_images_from_folder(folder=self.model.data_dir+'query_dvs')
+        self.load_images_from_folder(folder=self.model.data_dir+'/sunset2_decay_refined')
         self.reconstruct_images(self.model.data_dir+'/query_filtered')

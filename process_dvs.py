@@ -5,9 +5,9 @@ The following tools are available:
 
     - extract_rosbag: From a .bag file, extracts the DVS event data into a .zip file with [timestamp x y polarity]
     - simple_rep: Creates a very rudimentary plot of the DVS data over a timebin
-TODO - decay_rep: Creates a plot of the DVS data over a timebin with input decay for improved temporal resolution
+    - decay_rep: Creates a plot of the DVS data over a timebin with input decay for improved temporal resolution
     - video_create: From a series of generated DVS frames, reconstructs into an .avi video file
-TODO - event_stats: Calculates a variety of statistics from the event data, including event rate, event density, and event entropy
+TODO- event_stats: Calculates a variety of statistics from the event data, including event rate, event density, and event entropy
 
 See https://github.com/AdamDHines/VPRTempoNeuro for more details. 
 
@@ -18,7 +18,7 @@ REQUIRED: The output from a DAVIS camera, other sensors/output are not supported
 import sys
 import argparse
 
-from vprtemponeuro.tools.dvstools import ExtractRosbag, SimpleRep, DecayRep, CreateVideo
+from vprtemponeuro.tools.dvstools import ExtractRosbag, FrameRep, CreateVideo
 
 def run_tool(args):
     # Check if a tool was specified
@@ -30,13 +30,10 @@ def run_tool(args):
         extract = ExtractRosbag(args)
         extract.run_extract()
     # Simple representation
-    elif args.tool == 'simple_rep':
-        simple = SimpleRep(args)
-        simple.simple_representation()
-    # Decay representation
-    elif args.tool == 'decay_rep':
-        decay = DecayRep(args)
-        decay.decay_representation()
+    elif args.tool == 'simple_rep' or args.tool == 'decay_rep':
+        rep = FrameRep(args)
+        for _ in rep.event_data():
+            print('Processed')
     # Video creation
     elif args.tool == 'create_video':
         video = CreateVideo(args)
@@ -60,10 +57,18 @@ def dvs_parser():
     parser.add_argument('--dataset_folder', type=str, default='./vprtemponeuro/dataset', help='Dataset folder')
 
     # Define the arguments for the frame representations
-    parser.add_argument('--timebin', type=float, default=30, help='Timebin for frame representation (in fps)')
-    parser.add_argument('--decay_factor', type=float, default=0.95, help='Decay factor for frame representation (0-1)')
-    parser.add_argument('--accum_factor', type=int, default=1, help='Accumulation value for frame representation (1-255)')
-    parser.add_argument('--offset', type=float, default=0, help='Offset for frame representation (in µs)')
+    parser.add_argument('--timebin', type=float, default=30, 
+                            help='Timebin for frame representation (in fps)')
+    parser.add_argument('--decay_factor', type=float, default=10, 
+                            help='Decay factor for frame representation (0-1)')
+    parser.add_argument('--accum_factor', type=float, default=1, 
+                            help='Accumulation value for frame representation (1-255)')
+    parser.add_argument('--offset', type=float, default=0, 
+                            help='Offset for frame representation (in µs)')
+    parser.add_argument('--frames_max', type=int, default=900, 
+                            help='Number of frames to generate (default is 900 for 30s at 30fps)')
+    parser.add_argument('--frame_limit', action='store_true', 
+                            help='Flag to limit frames (True) or just create all frames (False)')
 
     # Parse arguments
     args = parser.parse_args()

@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 
 from vprtemponeuro.src.loggers import model_logger
 from sinabs.from_torch import from_model
-from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
+from vprtemponeuro.src.dataset_patchnorm import CustomImageDataset, ProcessImage
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
@@ -65,7 +65,7 @@ class VPRTempoRaster(nn.Module):
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
         self.feature = int(self.input*2)
-        self.output = int(args.num_places / args.num_modules)
+        self.output = int(args.query_places / args.num_modules)
 
         """
         Define trainable layers here
@@ -125,7 +125,7 @@ class VPRTempoRaster(nn.Module):
                                 )
 
         # Initialize the tqdm progress bar
-        pbar = tqdm(total=self.num_places,
+        pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
         # Initiliaze the output spikes variable
@@ -144,13 +144,13 @@ class VPRTempoRaster(nn.Module):
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
-        out = np.reshape(np.array(out),(model.num_places,model.num_places))
+        out = np.reshape(np.array(out),(model.query_places,model.database_places))
 
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         # Create GT matrix
-        GT = np.zeros((model.num_places,model.num_places), dtype=int)
+        GT = np.zeros((model.query_places,model.database_places), dtype=int)
         for n in range(len(GT)):
             GT[n,n] = 1
         # Calculate Recall@N
@@ -206,14 +206,14 @@ def run_inference_raster(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-        ProcessImage(model.repeats)
-    ])
+                                        ProcessImage(model.dims,model.patches)
+                                            ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file, 
                                       base_dir=model.data_dir,
                                       img_dirs=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places,
+                                      max_samples=model.query_places,
                                       is_raster=True)
     print(str(model.data_dir+model.query_dir[0]))
     # Initialize the data loader
