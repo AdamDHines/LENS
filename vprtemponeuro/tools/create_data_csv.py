@@ -19,7 +19,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=30):
         writer = csv.writer(file)
         if gps_path is not None:
             # Write column headers
-            writer.writerow(['Image_name', 'gps_coordinate'])
+            writer.writerow(['Image_name','index', 'gps_coordinate'])
 
             # Write image names and GPS coordinates
             time_interval = 1/fps
@@ -27,7 +27,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=30):
             gps_index = 0
             for index, image_name in enumerate(png_files):
                 time_counter += time_interval
-                writer.writerow([image_name, [gps[gps_index][0],gps[gps_index][1]]])
+                writer.writerow([image_name, index, [gps[gps_index][0],gps[gps_index][1]]])
                 try:
                     if time_counter >= gps[gps_index+1][2]:
                         gps_index += 1
