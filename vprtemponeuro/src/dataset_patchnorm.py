@@ -113,7 +113,7 @@ class SetImageAsSpikes:
         
         # Divide all pixel values by 255
         normalized_batch = reshaped_batch / self.intensity
-        normalized_batch = torch.squeeze(normalized_batch, 0)
+        normalized_batch  = torch.squeeze(normalized_batch, 0)
 
         # Apply FakeQuantize
         spikes = self.fake_quantize(normalized_batch)
@@ -125,40 +125,42 @@ class SetImageAsSpikes:
         return spikes
 
 class ProcessImage:
-    def __init__(self, dims, patches):
+    def __init__(self, dims, patches, dvs=False):
         self.dims = dims
         self.patches = patches
+        self.is_dvs = dvs
         
     def __call__(self, img):
         # Convert the image to grayscale using the standard weights for RGB channels
         if img.shape[0] == 3:
             img = 0.299 * img[0] + 0.587 * img[1] + 0.114 * img[2]
-         # Add a channel dimension to the resulting grayscale image
-        img= img.unsqueeze(0)
-        img = img.to(dtype=torch.float32)
-        # gamma correction
-        mid = 0.5
-        mean = torch.mean(img)
-        gamma = math.log(mid * 255) / math.log(mean)
-        img = torch.pow(img, gamma).clip(0, 255)
+        #  # Add a channel dimension to the resulting grayscale image
+        # img= img.unsqueeze(0)
+        # img = img.to(dtype=torch.float32)
+        # # gamma correction
+        # mid = 0.5
+        # mean = torch.mean(img)
+        # gamma = math.log(mid * 255) / math.log(mean)
+        # img = torch.pow(img, gamma).clip(0, 255)
         
-        # resize and patch normalize        
-        if len(img.shape) == 3:
-            img = img.unsqueeze(0)
-        img = F.interpolate(img, size=self.dims, mode='bilinear', align_corners=False)
-        img = img.squeeze(0)
-        patch_normaliser = PatchNormalisePad(self.patches)
-        im_norm = patch_normaliser(img) 
-        img = (255.0 * (1 + im_norm) / 2.0).to(dtype=torch.uint8)
-        img = torch.unsqueeze(img,0)
+        # # resize and patch normalize        
+        # if len(img.shape) == 3:
+        #     img = img.unsqueeze(0)
+        # img = F.interpolate(img, size=self.dims, mode='bilinear', align_corners=False)
+        # img = img.squeeze(0)
+        # patch_normaliser = PatchNormalisePad(self.patches)
+        # im_norm = patch_normaliser(img) 
+        # img = (255.0 * (1 + im_norm) / 2.0).to(dtype=torch.uint8)
+        #img = torch.unsqueeze(img,0)
         spike_maker = SetImageAsSpikes()
         img = spike_maker(img)
         img = torch.squeeze(img,0)
 
         return img
 
+
 class CustomImageDataset(Dataset):
-    def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
+    def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
                  skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100):
         self.transform = transform
         self.target_transform = target_transform
@@ -170,23 +172,21 @@ class CustomImageDataset(Dataset):
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
         self.img_labels = []
 
-        for img_dir in img_dirs:
-
-            img_labels = pd.read_csv(annotations_file)
-            img_labels['file_path'] = img_labels.apply(lambda row: os.path.join(base_dir,img_dir, row.iloc[0]), axis=1)
-            
-            # Select specific rows based on the skip parameter
-            img_labels = img_labels.iloc[::skip]
-            
-            # Limit the number of samples to max_samples if specified
-            if max_samples is not None:
-                img_labels = img_labels.iloc[:max_samples]
-            
-            # Determine if the images being fed are training or testing
-            if test:
-                self.img_labels = img_labels
-            else:
-                self.img_labels.append(img_labels)
+        img_labels = pd.read_csv(annotations_file)
+        img_labels['file_path'] = img_labels.apply(lambda row: os.path.join(img_dir, row.iloc[0]), axis=1)
+        
+        # Select specific rows based on the skip parameter
+        img_labels = img_labels.iloc[::skip]
+        
+        # Limit the number of samples to max_samples if specified
+        if max_samples is not None:
+            img_labels = img_labels.iloc[:max_samples]
+        
+        # Determine if the images being fed are training or testing
+        if test:
+            self.img_labels = img_labels
+        else:
+            self.img_labels.append(img_labels)
         
         if isinstance(self.img_labels,list):
             # Concatenate all the DataFrames
@@ -211,7 +211,7 @@ class CustomImageDataset(Dataset):
     
     
 
-        def save_tensor_as_png(tensor, output_path, size=(56, 56)):
+        def save_tensor_as_png(tensor, output_path, size=(10, 10)):
             """
             Save a 1D PyTorch tensor as a PNG image after resizing.
 
@@ -249,4 +249,7 @@ class CustomImageDataset(Dataset):
             sqrt_div = math.sqrt(image[-1].size()[0])
             image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
             image = image.unsqueeze(1)
+
+        #save_tensor_as_png(image, f"/home/adam/Documents/sunset1_100_gamma/image_{idx}.png")
+
         return image, label, gps_coordinate
