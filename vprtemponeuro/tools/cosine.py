@@ -8,6 +8,7 @@ import cv2
 import re
 from prettytable import PrettyTable
 from metrics import recallAtK
+import torch
 
 def natural_sort_key(s):
     """
@@ -17,7 +18,7 @@ def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
 
-def load_and_preprocess_images(folder_path, skip_factor=5, max_images=1500):
+def load_and_preprocess_images(folder_path, skip_factor=1, max_images=1500):
     images = []
     files = sorted(os.listdir(folder_path), key=natural_sort_key)  # Sort the files
     for idx, filename in enumerate(files):
@@ -90,7 +91,7 @@ def processImage(img, imWidth, imHeight, num_patches):
 
     return img
 
-def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=0, max_images=5000):
+def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=0, max_images=1000):
     images = []
     files = sorted(os.listdir(folder_path),key=natural_sort_key)  # Sort the files
     for idx, filename in enumerate(files):
@@ -111,8 +112,8 @@ def sum_of_absolute_differences(image1, image2):
     return np.sum(np.abs(image1 - image2))
 
 # Load and preprocess images from both folders
-folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2_decay'
-folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/daytime_decay'
+folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_49'
+folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49'
 
 # First, load and preprocess all images from folder1 without skipping
 all_images1 = load_and_preprocess_images(folder1, skip_factor=1)
@@ -124,20 +125,23 @@ top_pixels = find_top_variable_pixels(all_images1)
 images1 = load_and_preprocess_images_v2(folder1, top_pixels)
 images2 = load_and_preprocess_images_v2(folder2, top_pixels)
 
-#ad_matrix = np.zeros((len(images1), len(images2)))
+# distances = np.linalg.norm(images1[:, np.newaxis, :] - images2[np.newaxis, :, :], ord=1, axis=2)
+# plt.imshow(np.reshape(distances,(7,7)))
+# plt.show()
+# sad_matrix = np.zeros((len(images1), len(images2)))
 
-#for i in range(len(images1)):
+# for i in range(len(images1)):
 #    for j in range(len(images2)):
 #        sad_matrix[i, j] = sum_of_absolute_differences(images1[i], images2[j])
 
-#sad_matrix = 1/sad_matrix
+# #sad_matrix = 1/sad_matrix
 
-#plt.figure(figsize=(10, 8))
-#sns.heatmap(sad_matrix, annot=False, cmap='coolwarm')
-#plt.title('Sum of Absolute Differences between Images from Two Folders')
-#plt.xlabel('Images from Folder 2')
-#plt.ylabel('Images from Folder 1')
-#plt.show()
+# plt.figure(figsize=(10, 8))
+# sns.heatmap(sad_matrix, annot=False, cmap='coolwarm')
+# plt.title('Sum of Absolute Differences between Images from Two Folders')
+# plt.xlabel('Images from Folder 2')
+# plt.ylabel('Images from Folder 1')
+# plt.show()
 
 
 # Recall@N
@@ -158,6 +162,13 @@ GT = np.zeros((95,245), dtype=int)
 # Compute cosine similarity with the modified images
 similarity_matrix = cosine_similarity(images1, images2)
 
+new_matrix = np.zeros_like(similarity_matrix)
+
+# Iterate through each column and set 1 at the position of the maximum value
+for col_idx in range(similarity_matrix.shape[1]):
+    max_idx = np.argmax(similarity_matrix[:, col_idx])
+    new_matrix[max_idx, col_idx] = 1
+np.save('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gt.npy', new_matrix)
 # Plotting the similarity matrix
 plt.figure(figsize=(10, 8))
 sns.heatmap(similarity_matrix, annot=False, cmap='coolwarm')

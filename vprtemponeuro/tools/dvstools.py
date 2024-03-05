@@ -2,7 +2,7 @@
 import os
 import cv2
 import sys
-import torch
+import json
 import rosbag
 import zipfile
 
@@ -176,8 +176,12 @@ class FrameRep():
             start_timestamp = self.args.offset
             current_time = self.args.offset
 
-        frame_data = np.zeros(self.dimensions, dtype=np.uint8)  # Initialize frame data
+        frame_data = np.zeros(self.args.pixels, dtype=np.uint8)  # Initialize frame data
         activity_duration = np.zeros(self.dimensions) # Initialize frame data
+
+        pixel_activity = []
+        spike_accum = 0
+        plot = False
         if self.is_parquet:
             # Convert all timestamps from microseconds to seconds
             self.event_data['t'] = self.event_data['t'] / 1000000
@@ -213,6 +217,66 @@ class FrameRep():
             last_update = np.zeros(self.dimensions)  # Initialize last update tracker
 
             with zipfile.ZipFile(self.file_path, 'r') as zip_ref:
+
+                if self.args.reference:
+                    # Generate a list of random unique indices within the flat array representation of the matrix
+                    unique_indices = np.random.choice(self.dimensions[0] * self.dimensions[1], size=self.args.pixels, replace=False)
+
+                    # Convert these flat indices to x,y coordinates
+                    # coordinates = np.unravel_index(unique_indices, (self.dimensions[0], self.dimensions[1]))
+                    centroid_coordinate_store = []
+                    coordinate_store = []
+                    # Initialize a dictionary to store centroids with patch coordinates as keys
+                    centroid_coordinates_dict = {}
+
+                    for centroid_index in unique_indices:
+                        # Calculate row and column in matrix from flat index
+                        centroid_row, centroid_col = divmod(centroid_index, self.dimensions[1])
+                        centroid_coordinate_store.append(int(centroid_index))
+                        # Calculate patch coordinates around the centroid
+                        for row in range(centroid_row - 1, centroid_row + 2):
+                            for col in range(centroid_col - 1, centroid_col + 2):
+                                # Check if within bounds
+                                if 0 <= row < self.dimensions[0] and 0 <= col < self.dimensions[1]:
+                                    # Calculate flat index for the patch coordinate
+                                    patch_coordinate = row * self.dimensions[1] + col
+                                    coordinate_store.append(patch_coordinate)
+                                    # Assign or reassign the patch coordinate to point to this centroid
+                                    centroid_coordinates_dict[int(patch_coordinate)] = int(centroid_index)
+                    # The result is a tuple of arrays, where the first array contains the x (row) coordinates
+                    # and the second array contains the y (column) coordinates. To list them as pairs, you can zip them:
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_dict.json'), 'w') as handle:
+                        json.dump(centroid_coordinates_dict, handle)
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_centroid.json'), 'w') as handle:
+                        json.dump(centroid_coordinate_store, handle)
+                    coordinates = np.unravel_index(coordinate_store, (self.dimensions[0], self.dimensions[1]))
+                    coordinates_list = list(zip(coordinates[1], coordinates[0]))
+                    coordinates_list_array = np.array(coordinates_list)
+                    coordinates_array = []
+                    # Assuming coordinates_list is already generated
+                    for n, ndx in enumerate(coordinates_list):
+                        coordinates_array.append(np.array([n]+list(ndx)))
+                    np.savez_compressed(os.path.join(self.args.dataset_folder, self.args.input_file + '_coordinates.npz'), coordinates_list_array)
+                    np.savez_compressed(os.path.join(self.args.dataset_folder, 'unique_indices.npz'), unique_indices)
+                else:
+                    with np.load(os.path.join(self.args.dataset_folder, 'sunset1_coordinates.npz')) as data:
+                        # Assuming 'coordinates_array' is the key used to save the array
+                        loaded_array = data['arr_0']
+                    with np.load(os.path.join(self.args.dataset_folder, 'unique_indices.npz')) as data:
+                        # Assuming 'coordinates_array' is the key used to save the array
+                        unique_indices = data['arr_0']
+                    coordinates_list = list(map(tuple, loaded_array))
+                    coordinates_array = []
+                    # Assuming coordinates_list is already generated
+                    for n, ndx in enumerate(coordinates_list):
+                        coordinates_array.append(np.array([n]+list(ndx)))
+
+                    # Load dictionary back
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_dict.json'), 'r') as handle:
+                        centroid_coordinates_dict = json.load(handle)
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_centroid.json'), 'r') as handle:
+                        centroid_coordinate_store = json.load(handle)
+
                 with zip_ref.open(self.args.input_file+".txt") as file:
                     next(file)  # Skip the first line (camera dimensions)
                     if self.args.frame_limit:
@@ -222,7 +286,8 @@ class FrameRep():
                         self.event_bar = tqdm(total=self.total_frames, desc="Number of events processed.")
                         self.frame_bar = None
                     for line in file:
-                        timestamp, x, y, _ = map(float, line.strip().split())
+                        timestamp, x, y, pol = map(float, line.strip().split())
+                        channel_index = int(pol)
                         x, y = int(x), int(y)
 
                         # Initialization of the offset and time tracking
@@ -236,7 +301,7 @@ class FrameRep():
                             continue
 
                         # Incremental decay and accumulation
-                        if timestamp - current_time <= frame_interval:
+                        if abs(timestamp - current_time) <= frame_interval:
                             if self.args.tool == 'decay_rep':
                                 # Calculate time since last update for the pixel
                                 time_since_last_update = timestamp - last_update[y, x]
@@ -249,8 +314,20 @@ class FrameRep():
                                 frame_data[y, x] = frame_data[y, x] * decay_factor + self.args.accum_factor
 
                                 last_update[y, x] = timestamp
-                            else:
-                                frame_data[y, x] += self.args.accum_factor
+                            elif self.args.tool == 'simple_rep':
+                                if (x,y) in coordinates_list:
+                                    # Iterate over the coordinates_array to find the matching x and y
+                                    for _, x_targ, y_targ in coordinates_array:
+                                        if x_targ == x and y_targ == y:
+                                            coordinate = np.ravel_multi_index((y,x), self.dimensions)
+                                            if not self.args.reference:
+                                                coordinate = str(coordinate)
+                                            index_coordinate = centroid_coordinates_dict[coordinate]
+                                            index = np.where(unique_indices== index_coordinate)[0][0]
+                                            # Found the matching x and y, now update frame_data at the found index
+                                            frame_data[index] += self.args.accum_factor
+                                            break 
+                                    
                             if self.event_bar is not None:
                                 self.event_bar.update(1)
                         else:
@@ -264,23 +341,34 @@ class FrameRep():
                                 # Reset activity duration tracker for the next frame
                                 activity_duration = np.zeros(self.dimensions)
 
-                            self.save_frame(frame_data, frame_number, output_dir=self.frame_folder)
-                            frame_number += 1
-                            frame_data = np.zeros(self.dimensions, dtype=np.uint8)
+                            if not self.args.tool == 'event_profile':
+                                self.save_frame(frame_data, frame_number, output_dir=self.frame_folder)
+
+                            if not timestamp <= self.args.offset:
+                                frame_number += 1
+                            frame_data = np.zeros(self.args.pixels, dtype=np.uint8)
                             last_update = np.full(self.dimensions, current_time + frame_interval)
                             current_time = timestamp
 
+                            #plt.show()
+                            pixel_activity = []
+                            spike_accum = 0
                             if frame_number >= self.args.frames_max and self.args.frame_limit:
                                 self.frame_bar.close()
                                 break
+                                    # Update the progress bar, if any
+                            if self.frame_bar is not None:
+                                self.frame_bar.update(1)
 
-    def save_frame(self,frame, frame_index, output_dir="frames"):
+    def save_frame(self, frame, frame_index, output_dir="frames"):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        filename = os.path.join(output_dir, f"images_{frame_index:05d}.png")  # Using .3f for milliseconds precision
+        frame = np.reshape(frame, (7,7))
+
+        filename = os.path.join(output_dir, f"images_{frame_index:05d}.png")  # Using :05d for zero-padded frame index
+        
+        # Save the RGB image
         cv2.imwrite(filename, frame)
-        if self.frame_bar is not None:
-            self.frame_bar.update(1)
 
 class CreateVideo():
     def __init__(self, args):
@@ -303,8 +391,8 @@ class CreateVideo():
         height, width, layers = first_frame.shape
 
         # Using 'XVID' codec for AVI format
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        output_file = os.path.join(self.args.dataset_folder, self.args.input_file + ".avi")
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        output_file = os.path.join(self.args.dataset_folder, self.args.input_file + ".mp4")
         video = cv2.VideoWriter(output_file, fourcc, self.args.timebin, (width, height))
 
         for frame_file in tqdm(frame_files,desc="Creating video from frames"):

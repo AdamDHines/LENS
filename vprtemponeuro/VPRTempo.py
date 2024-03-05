@@ -34,6 +34,7 @@ import torch.nn as nn
 import sinabs.layers as sl
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from vprtemponeuro.src.loggers import model_logger
 from sinabs.from_torch import from_model
@@ -53,7 +54,10 @@ class VPRTempo(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+
+        # Set the query image folder
+        self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -64,8 +68,8 @@ class VPRTempo(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input*2)
-        self.output = int(args.database_places / args.num_modules)
+        self.feature = int(self.input)
+        self.output = int(args.reference_places)
 
         """
         Define trainable layers here
@@ -114,9 +118,10 @@ class VPRTempo(nn.Module):
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
+            nn.ReLU()
         )
         # Specify the path to your .csv file
-        csv_file_path = model.data_dir + model.database+'.csv'
+        csv_file_path = model.data_dir + model.reference+'.csv'
 
         # Initialize an empty list to store the rows
         data_rows = []
@@ -142,6 +147,12 @@ class VPRTempo(nn.Module):
         counter = 0
         matches = []
         misses = []
+        k = 4
+        thresholds = []
+        image_idx = []
+        frames_since_last_match = 0
+        max_spike = []
+
         # Run inference for the specified number of timesteps
         with torch.no_grad():
             for spikes, labels, gps in test_loader:
@@ -150,65 +161,81 @@ class VPRTempo(nn.Module):
                 spikes = spikes.to(torch.float32)
                 # Forward pass
                 spikes = self.forward(spikes)
+                # thresh = torch.mean(spikes) + (k * torch.std(spikes))
+                # # # # If max spike output is greater than threshold, perform matching
+                # if torch.max(spikes) > thresh:
+                #     gps_str = gps[0].strip('[]')
+                #     # Split the string by comma
+                #     lat_str, long_str = gps_str.split(',')
+                #     # Convert to float
+                #     lat = round(float(lat_str),4)
+                #     long = round(float(long_str),4)
+                #     output_idx = torch.argmax(spikes)
 
-                # If max spike output is greater than threshold, perform matching
-                if torch.max(spikes) > 0.049:
-                    gps_str = gps[0].strip('[]')
-                    # Split the string by comma
-                    lat_str, long_str = gps_str.split(',')
-                    # Convert to float
-                    lat = round(float(lat_str),3)
-                    long = round(float(long_str),3)
-                    output_idx = torch.argmax(spikes)
+                #     ref_str = data_rows[output_idx][2].strip('[]')
+                #     ref_lat_str, ref_long_str = ref_str.split(',')
+                #     ref_lat = round(float(ref_lat_str),4)
+                #     ref_long = round(float(ref_long_str),4)
 
-                    ref_str = data_rows[output_idx][2].strip('[]')
-                    ref_lat_str, ref_long_str = ref_str.split(',')
-                    ref_lat = round(float(ref_lat_str),3)
-                    ref_long = round(float(ref_long_str),3)
+                #     new_match = counter - frames_since_last_match
+                #     frames_since_last_match = counter
+                #     image_idx.append([output_idx.detach().cpu().item(),new_match])
 
-                    if lat == ref_lat and long == ref_long:
-                        correct += 1
-                        matches.append(counter)
-                    else:
-                        incorrect += 1
-                        misses.append(counter)
-                    
+                #     if abs(lat - ref_lat) <= 0.00025 and abs(long - ref_long) <= 0.00025:
+                #         correct += 1
+                #         matches.append(counter)
+                #     else:
+                #         incorrect += 1
+                #         misses.append(counter)
+                
+                # # Calculate the mean of spikes and append to the max_spike
+                # max_spike.append(torch.max(spikes).item())
+
                 # Add output spikes to list
                 out.append(spikes.detach().cpu().tolist())
+                # thresholds.append(thresh.item())
                 counter += 1
                 pbar.update(1)
-
+        # Calculate the mean of max_spike and print
+        # mean_spike = round(np.mean(max_spike),3)
+        # model.logger.info(f"Mean spike intensity: {mean_spike}")
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
-        out = np.reshape(np.array(out),(model.query_places,model.database_places))
-        np.save('/home/adam/Documents/similarity_matrix.npy', out)
-        np.save('/home/adam/Documents/matches.npy', matches)
-        np.save('/home/adam/Documents/misses.npy', misses)
+        out = np.reshape(np.array(out),(model.query_places,model.reference_places))
+        # plt.imshow(out)
+        # plt.show()
+        #np.save('/home/adam/Documents/sunset2_similarity_matrix_k10.npy', out)
+        # np.save('/home/adam/Documents/sunset2_matches_k10.npy', matches)
+        # np.save('/home/adam/Documents/sunset2_misses_k10.npy', misses)
+        # np.save('/home/adam/Documents/daytime_thresholds_fixed.npy', np.array(thresholds))
+        # np.save('/home/adam/Documents/daytime_image_idx_fixed.npy', np.array(image_idx))
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         # Create GT matrix
-        GT = np.zeros((model.query_places,model.database_places), dtype=int)
+        GT = np.zeros((model.reference_places,model.query_places), dtype=int)
         for n in range(len(GT)):
             GT[n,n] = 1
+        # GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gt.npy')
         # Calculate Recall@N
-        #for n in N:
-        #    R.append(round(recallAtK(out,GThard=GT,K=n),2))
+        for n in N:
+            R.append(round(recallAtK(out.T,GThard=GT,K=n),2))
         # Print the results
-        #table = PrettyTable()
-        #table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        #table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        #model.logger.info(table)
+        table = PrettyTable()
+        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        model.logger.info(table)
 
         # Plot similarity matrix
-        if self.sim_mat:
-            plt.matshow(out)
-            plt.colorbar(shrink=0.75,label="Output spike intensity")
-            plt.title('Similarity matrix')
-            plt.xlabel("Query")
-            plt.ylabel("Database")
-            plt.show()
+        # if self.sim_mat:
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(out.T, annot=False, cmap='coolwarm')
+        #plt.colorbar(shrink=0.75,label="Output spike intensity")
+        plt.title('Similarity matrix')
+        plt.xlabel("Query")
+        plt.ylabel("Database")
+        plt.show()
 
         return R
 
@@ -247,14 +274,13 @@ def run_inference_norm(model, model_name):
     image_transform = transforms.Compose([
                                         ProcessImage(model.dims,model.patches)
                                             ])
-    test_dataset = CustomImageDataset(annotations_file=model.dataset_file, 
-                                      base_dir=model.data_dir,
-                                      img_dirs=model.query_dir,
+    test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
+                                      img_dir=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.query_places,
                                       is_raster=False)
-    print(str(model.data_dir+model.query_dir[0]))
+    print(str(model.data_dir+model.query_dir))
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 

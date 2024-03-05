@@ -53,7 +53,8 @@ class VPRTempoRaster(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+        self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -64,8 +65,8 @@ class VPRTempoRaster(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input*2)
-        self.output = int(args.query_places / args.num_modules)
+        self.feature = int(self.input)
+        self.output = int(args.reference_places)
 
         """
         Define trainable layers here
@@ -131,7 +132,7 @@ class VPRTempoRaster(nn.Module):
         # Initiliaze the output spikes variable
         out = []
         # Run inference for the specified number of timesteps
-        for spikes, labels in test_loader:
+        for spikes, labels, _ in test_loader:
             spikes, labels = spikes.to(self.device), labels.to(self.device)
             spikes = sl.FlattenTime()(spikes)
             # Forward pass
@@ -144,27 +145,28 @@ class VPRTempoRaster(nn.Module):
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
-        out = np.reshape(np.array(out),(model.query_places,model.database_places))
+        out = np.reshape(np.array(out),(model.query_places,model.reference_places))
 
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         # Create GT matrix
-        GT = np.zeros((model.query_places,model.database_places), dtype=int)
+        #GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gt.npy')
+        GT = np.zeros((model.query_places,model.reference_places), dtype=int)
         for n in range(len(GT)):
             GT[n,n] = 1
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(out,GThard=GT,K=n),2))
+            R.append(round(recallAtK(out.T,GThard=GT,K=n),2))
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
         table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
         model.logger.info(table)
-
+        self.sim_mat = True
         # Plot similarity matrix
         if self.sim_mat:
-            plt.matshow(out)
+            plt.matshow(out.T)
             plt.colorbar(shrink=0.75,label="Output spike intensity")
             plt.title('Similarity matrix')
             plt.xlabel("Query")
@@ -208,9 +210,8 @@ def run_inference_raster(model, model_name):
     image_transform = transforms.Compose([
                                         ProcessImage(model.dims,model.patches)
                                             ])
-    test_dataset = CustomImageDataset(annotations_file=model.dataset_file, 
-                                      base_dir=model.data_dir,
-                                      img_dirs=model.query_dir,
+    test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
+                                      img_dir=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.query_places,

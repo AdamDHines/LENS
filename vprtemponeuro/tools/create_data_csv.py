@@ -3,47 +3,63 @@ import csv
 import numpy as np
 from read_gps import get_gps
 
-def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=30):
-    # List all files in the folder
-    files = os.listdir(folder_path)
+def haversine(lon1, lat1, lon2, lat2):
+    # Radius of the Earth in kilometers
+    R = 6371.0
+    # Convert degrees to radians
+    lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+    # Difference in coordinates
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    # Haversine formula
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+    distance = R * c
+    return distance * 1000  # Convert to meters
 
-    # Get GPS coordinates
+def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, distance_threshold=50):
+    files = os.listdir(folder_path)
+    png_files = sorted([f for f in files if f.endswith('.png')])
+
     if gps_path is not None:
         gps = get_gps(gps_path)
 
-    # Filter out non-PNG files and sort
-    png_files = sorted([f for f in files if f.endswith('.png')])
-
-    # Create and write data to CSV
-    with open(csv_file_path, 'w', newline='') as file:
+    with open(csv_file_path, 'w', newline='') as file, open(csv_file_path.replace('.csv', '_reference.csv'), 'w', newline='') as subset_file:
         writer = csv.writer(file)
-        if gps_path is not None:
-            # Write column headers
-            writer.writerow(['Image_name','index', 'gps_coordinate'])
+        subset_writer = csv.writer(subset_file)
+        writer.writerow(['Image_name', 'index', 'gps_coordinate'])
+        subset_writer.writerow(['Image_name', 'index', 'gps_coordinate'])
 
-            # Write image names and GPS coordinates
-            time_interval = 1/fps
+        if gps_path is not None:
+            time_interval = 1 / fps
             time_counter = 0
             gps_index = 0
+            subset_index = 0
+            last_written_gps = None
+
             for index, image_name in enumerate(png_files):
                 time_counter += time_interval
-                writer.writerow([image_name, index, [gps[gps_index][0],gps[gps_index][1]]])
+                gps_coord = [gps[gps_index][0], gps[gps_index][1]]
+                writer.writerow([image_name, index, gps_coord])
+
+                if last_written_gps is None or haversine(last_written_gps[1], last_written_gps[0], gps_coord[1], gps_coord[0]) > distance_threshold:
+                    subset_writer.writerow([image_name, subset_index, gps_coord])
+                    subset_index += 1
+                    last_written_gps = gps_coord
+
                 try:
                     if time_counter >= gps[gps_index+1][2]:
                         gps_index += 1
-                except:
+                except IndexError:
                     pass
 
         else:
-            # Write column headers
-            writer.writerow(['Image name', 'index'])
-
-            # Write image names and indices
             for index, image_name in enumerate(png_files):
                 writer.writerow([image_name, index])
 
+
 # Example usage
-folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2_gps.csv' # Path for the CSV file
-gps_path = '/media/adam/vprdatasets/data/Brisbane-Event-VPR/20200422_172431-sunset2_concat.nmea'
+folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49' # Replace with your folder path
+csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2_49.csv' # Path for the CSV file
+gps_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gps/sunset2.nmea'
 create_csv_from_images(folder_path, csv_file_path, gps_path=gps_path)
