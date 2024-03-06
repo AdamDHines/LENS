@@ -171,13 +171,13 @@ def parse_network():
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--reference', type=str, default='sunset1_49',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='sunset1_49',
+    parser.add_argument('--query', type=str, default='sunset2_49',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=100,
+    parser.add_argument('--reference_places', type=int, default=724,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=100,
+    parser.add_argument('--query_places', type=int, default=641,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--pixels', type=int, default=49,
                         help="Number of places to use for training and/or inferencing")
@@ -203,13 +203,13 @@ def parse_network():
                         help="STDP learning rate")
     
     # Connection probabilities
-    parser.add_argument('--f_exc', type=float, default=1,
+    parser.add_argument('--f_exc', type=float, default=1.0,
                         help="Feature layer excitatory connection")
-    parser.add_argument('--f_inh', type=float, default=1,
+    parser.add_argument('--f_inh', type=float, default=1.0,
                         help="Feature layer inhibitory connection")
-    parser.add_argument('--o_exc', type=float, default=1,
+    parser.add_argument('--o_exc', type=float, default=1.0,
                         help="Output layer excitatory connection")
-    parser.add_argument('--o_inh', type=float, default=1,
+    parser.add_argument('--o_inh', type=float, default=1.0,
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
@@ -239,6 +239,8 @@ def parse_network():
                             help="When using raster analysis, use CPU or GPU")
     parser.add_argument('--norm', action='store_true',
                             help="Run the regular VPRTempo")
+    parser.add_argument('--reference_annotation', action='store_true', 
+                            help='Flag to limit frames (True) or just create all frames (False)')
     
     # Run weights and biases
     parser.add_argument('--wandb', action='store_true',

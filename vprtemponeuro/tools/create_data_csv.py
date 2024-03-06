@@ -17,7 +17,7 @@ def haversine(lon1, lat1, lon2, lat2):
     distance = R * c
     return distance * 1000  # Convert to meters
 
-def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, distance_threshold=50):
+def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, distance_threshold=25):
     files = os.listdir(folder_path)
     png_files = sorted([f for f in files if f.endswith('.png')])
 
@@ -59,7 +59,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, dis
 
 
 # Example usage
-folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2_49.csv' # Path for the CSV file
+folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49_curated' # Replace with your folder path
+csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset2_49_curated.csv' # Path for the CSV file
 gps_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gps/sunset2.nmea'
 create_csv_from_images(folder_path, csv_file_path, gps_path=gps_path)

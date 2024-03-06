@@ -114,7 +114,7 @@ class VPRTempoRaster(nn.Module):
         self.inference = nn.Sequential(
             self.feature_layer.w,
             nn.ReLU(),
-            self.output_layer.w,
+            self.output_layer.w
         )
 
         input_shape = (1, 1, self.dims[0] * self.dims[1])
@@ -146,18 +146,22 @@ class VPRTempoRaster(nn.Module):
         pbar.close()
         # Rehsape output spikes into a similarity matrix
         out = np.reshape(np.array(out),(model.query_places,model.reference_places))
-
+        dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        seq_length = 5
+        precomputed_convWeight = torch.eye(seq_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / seq_length
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         # Create GT matrix
-        #GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gt.npy')
-        GT = np.zeros((model.query_places,model.reference_places), dtype=int)
-        for n in range(len(GT)):
-            GT[n,n] = 1
+        GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_sunset2_GT.npy')
+        GT = GT[3:-1,3:-1]
+        # GT = np.zeros((model.query_places-4,model.reference_places-4), dtype=int)
+        # for n in range(len(GT)):
+        #     GT[n,n] = 1
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(out.T,GThard=GT,K=n),2))
+            R.append(round(recallAtK(dist_matrix_seq.T,GThard=GT,K=n),2))
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
@@ -166,7 +170,7 @@ class VPRTempoRaster(nn.Module):
         self.sim_mat = True
         # Plot similarity matrix
         if self.sim_mat:
-            plt.matshow(out.T)
+            plt.matshow(dist_matrix_seq.T)
             plt.colorbar(shrink=0.75,label="Output spike intensity")
             plt.title('Similarity matrix')
             plt.xlabel("Query")
@@ -216,7 +220,6 @@ def run_inference_raster(model, model_name):
                                       skip=model.filter,
                                       max_samples=model.query_places,
                                       is_raster=True)
-    print(str(model.data_dir+model.query_dir[0]))
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 

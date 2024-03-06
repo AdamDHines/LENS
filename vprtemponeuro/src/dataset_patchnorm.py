@@ -135,19 +135,30 @@ class ProcessImage:
         if img.shape[0] == 3:
             img = 0.299 * img[0] + 0.587 * img[1] + 0.114 * img[2]
         #  # Add a channel dimension to the resulting grayscale image
-        # img= img.unsqueeze(0)
-        # img = img.to(dtype=torch.float32)
-        # # gamma correction
-        # mid = 0.5
-        # mean = torch.mean(img)
-        # gamma = math.log(mid * 255) / math.log(mean)
-        # img = torch.pow(img, gamma).clip(0, 255)
+        img= img.unsqueeze(0)
+        img = img.to(dtype=torch.float32)
+        # gamma correction
+        mid = 0.5
+        mean = torch.mean(img)
+        try:
+            # gamma correction
+            mid = 0.5
+            mean = torch.mean(img)
+            
+            # Check if mean is zero or negative to avoid math domain error
+            if mean <= 0:
+                pass
+            
+            gamma = math.log(mid * 255) / math.log(mean)
+            img = torch.pow(img, gamma).clip(0, 255)
+        except ValueError as e:
+            pass
         
         # # resize and patch normalize        
         # if len(img.shape) == 3:
         #     img = img.unsqueeze(0)
         # img = F.interpolate(img, size=self.dims, mode='bilinear', align_corners=False)
-        # img = img.squeeze(0)
+        img = img.squeeze(0)
         # patch_normaliser = PatchNormalisePad(self.patches)
         # im_norm = patch_normaliser(img) 
         # img = (255.0 * (1 + im_norm) / 2.0).to(dtype=torch.uint8)
@@ -161,7 +172,7 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100):
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=256):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
