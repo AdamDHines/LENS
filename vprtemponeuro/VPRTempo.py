@@ -54,7 +54,10 @@ class VPRTempo(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+        if self.reference_annotation:
+            self.dataset_file = os.path.join(self.data_dir, self.query+ '_reference.csv')
+        else:
+            self.dataset_file = os.path.join(self.data_dir, self.query + '.csv')
 
         # Set the query image folder
         self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
@@ -116,9 +119,7 @@ class VPRTempo(nn.Module):
         #nn.init.eye_(self.inert_conv_layer.weight)
         self.inference = nn.Sequential(
             self.feature_layer.w,
-            nn.ReLU(),
             self.output_layer.w,
-            nn.ReLU()
         )
         # Specify the path to your .csv file
         csv_file_path = model.data_dir + model.reference+'.csv'
@@ -147,7 +148,7 @@ class VPRTempo(nn.Module):
         counter = 0
         matches = []
         misses = []
-        k = 4
+        k = 6
         thresholds = []
         image_idx = []
         frames_since_last_match = 0
@@ -161,32 +162,32 @@ class VPRTempo(nn.Module):
                 spikes = spikes.to(torch.float32)
                 # Forward pass
                 spikes = self.forward(spikes)
-                # thresh = torch.mean(spikes) + (k * torch.std(spikes))
-                # # # # If max spike output is greater than threshold, perform matching
-                # if torch.max(spikes) > thresh:
-                #     gps_str = gps[0].strip('[]')
-                #     # Split the string by comma
-                #     lat_str, long_str = gps_str.split(',')
-                #     # Convert to float
-                #     lat = round(float(lat_str),4)
-                #     long = round(float(long_str),4)
-                #     output_idx = torch.argmax(spikes)
+                thresh = torch.mean(spikes) + (k * torch.std(spikes))
+                # If max spike output is greater than threshold, perform matching
+                if torch.max(spikes) > thresh:
+                    gps_str = gps[0].strip('[]')
+                    # Split the string by comma
+                    lat_str, long_str = gps_str.split(',')
+                    # Convert to float
+                    lat = round(float(lat_str),4)
+                    long = round(float(long_str),4)
+                    output_idx = torch.argmax(spikes)
 
-                #     ref_str = data_rows[output_idx][2].strip('[]')
-                #     ref_lat_str, ref_long_str = ref_str.split(',')
-                #     ref_lat = round(float(ref_lat_str),4)
-                #     ref_long = round(float(ref_long_str),4)
+                    ref_str = data_rows[output_idx][2].strip('[]')
+                    ref_lat_str, ref_long_str = ref_str.split(',')
+                    ref_lat = round(float(ref_lat_str),4)
+                    ref_long = round(float(ref_long_str),4)
 
-                #     new_match = counter - frames_since_last_match
-                #     frames_since_last_match = counter
-                #     image_idx.append([output_idx.detach().cpu().item(),new_match])
+                    new_match = counter - frames_since_last_match
+                    frames_since_last_match = counter
+                    image_idx.append([output_idx.detach().cpu().item(),new_match])
 
-                #     if abs(lat - ref_lat) <= 0.00025 and abs(long - ref_long) <= 0.00025:
-                #         correct += 1
-                #         matches.append(counter)
-                #     else:
-                #         incorrect += 1
-                #         misses.append(counter)
+                    if abs(lat - ref_lat) <= 0.00100 and abs(long - ref_long) <= 0.00100:
+                        correct += 1
+                        matches.append(counter)
+                    else:
+                        incorrect += 1
+                        misses.append(counter)
                 
                 # # Calculate the mean of spikes and append to the max_spike
                 # max_spike.append(torch.max(spikes).item())
@@ -203,24 +204,37 @@ class VPRTempo(nn.Module):
         pbar.close()
         # Rehsape output spikes into a similarity matrix
         out = np.reshape(np.array(out),(model.query_places,model.reference_places))
-        # plt.imshow(out)
-        # plt.show()
+        dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        seq_length = 5
+        precomputed_convWeight = torch.eye(seq_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / seq_length
+        # #print(np.max(out))
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(dist_matrix_seq.T, annot=False, cmap='coolwarm')
+        # #plt.colorbar(shrink=0.75,label="Output spike intensity")
+        plt.title('Similarity matrix')
+        plt.xlabel("Query")
+        plt.ylabel("Database")
+        plt.show()
         #np.save('/home/adam/Documents/sunset2_similarity_matrix_k10.npy', out)
-        # np.save('/home/adam/Documents/sunset2_matches_k10.npy', matches)
-        # np.save('/home/adam/Documents/sunset2_misses_k10.npy', misses)
+        np.save('/home/adam/Documents/sunset2_matches_k10.npy', matches)
+        np.save('/home/adam/Documents/sunset2_misses_k10.npy', misses)
         # np.save('/home/adam/Documents/daytime_thresholds_fixed.npy', np.array(thresholds))
         # np.save('/home/adam/Documents/daytime_image_idx_fixed.npy', np.array(image_idx))
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         # Create GT matrix
-        GT = np.zeros((model.reference_places,model.query_places), dtype=int)
-        for n in range(len(GT)):
-            GT[n,n] = 1
-        # GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gt.npy')
+        # GT = np.zeros((model.reference_places-seq_length+1,model.query_places-seq_length+1), dtype=int)
+        # for n in range(len(GT)):
+        #     GT[n,n] = 1
+        GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_sunset2_GT.npy')
+        GT = GT[3:-1,3:-1]
+        # plt.imshow(GT)
+        # plt.show()
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(out.T,GThard=GT,K=n),2))
+            R.append(round(recallAtK(dist_matrix_seq.T,GThard=GT,K=n),2))
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
@@ -229,13 +243,13 @@ class VPRTempo(nn.Module):
 
         # Plot similarity matrix
         # if self.sim_mat:
-        plt.figure(figsize=(10, 8))
-        sns.heatmap(out.T, annot=False, cmap='coolwarm')
-        #plt.colorbar(shrink=0.75,label="Output spike intensity")
-        plt.title('Similarity matrix')
-        plt.xlabel("Query")
-        plt.ylabel("Database")
-        plt.show()
+        # plt.figure(figsize=(10, 8))
+        # sns.heatmap(out.T, annot=False, cmap='coolwarm')
+        # #plt.colorbar(shrink=0.75,label="Output spike intensity")
+        # plt.title('Similarity matrix')
+        # plt.xlabel("Query")
+        # plt.ylabel("Database")
+        # plt.show()
 
         return R
 

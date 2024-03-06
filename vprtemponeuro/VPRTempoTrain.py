@@ -48,7 +48,10 @@ class VPRTempoTrain(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join(self.data_dir, self.reference + '.csv')
+        if self.reference_annotation:
+            self.dataset_file = os.path.join(self.data_dir, self.reference + '_reference.csv')
+        else:
+            self.dataset_file = os.path.join(self.data_dir, self.reference + '.csv')
 
         # Set the reference image folder
         self.reference_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.reference)
