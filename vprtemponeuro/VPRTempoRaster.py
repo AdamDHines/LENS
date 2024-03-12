@@ -1,6 +1,6 @@
 #MIT License
 
-#Copyright (c) 2023 Adam Hines, Peter G Stratton, Michael Milford, Tobias Fischer
+#Copyright (c) 2024 Adam Hines, Michael Milford, Tobias Fischer
 
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
@@ -25,23 +25,23 @@ Imports
 '''
 
 import os
+import json
 import torch
 
-import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
 import sinabs.layers as sl
-import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import vprtemponeuro.src.blitnet as bn
+import torchvision.transforms as transforms
 
-from vprtemponeuro.src.loggers import model_logger
-from sinabs.from_torch import from_model
-from vprtemponeuro.src.dataset_patchnorm import CustomImageDataset, ProcessImage
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
-from vprtemponeuro.src.metrics import recallAtK
-
+from torch.utils.data import DataLoader
+from sinabs.from_torch import from_model
+from vprtemponeuro.src.loggers import model_logger
+from vprtemponeuro.src.metrics import recallAtK, createPR
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
 class VPRTempoRaster(nn.Module):
     def __init__(self, args):
@@ -110,13 +110,16 @@ class VPRTempoRaster(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
-        #nn.init.eye_(self.inert_conv_layer.weight)
+        
+        # Define the inferencing model
+        # ReLU layer required for the sinabs model, this becomes the spiking layer
         self.inference = nn.Sequential(
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w
         )
-
+        
+        # Set up the sinabs model
         input_shape = (1, 1, self.dims[0] * self.dims[1])
         self.sinabs_model = from_model(
                                 self.inference, 
@@ -146,38 +149,66 @@ class VPRTempoRaster(nn.Module):
         pbar.close()
         # Rehsape output spikes into a similarity matrix
         out = np.reshape(np.array(out),(model.query_places,model.reference_places))
-        dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-        seq_length = 5
-        precomputed_convWeight = torch.eye(seq_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-        dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / seq_length
+
+        # Perform sequence matching convolution on similarity matrix
+        if self.sequence_length != 0:
+            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        else:
+            dist_matrix_seq = out
+        
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
+
         # Create GT matrix
-        GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_sunset2_GT.npy')
-        GT = GT[3:-1,3:-1]
-        # GT = np.zeros((model.query_places-4,model.reference_places-4), dtype=int)
-        # for n in range(len(GT)):
-        #     GT[n,n] = 1
+        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        if self.sequence_length != 0:
+            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+        
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(dist_matrix_seq.T,GThard=GT,K=n),2))
+            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
         table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
         model.logger.info(table)
-        self.sim_mat = True
+    
         # Plot similarity matrix
         if self.sim_mat:
-            plt.matshow(dist_matrix_seq.T)
+            plt.matshow(dist_matrix_seq)
             plt.colorbar(shrink=0.75,label="Output spike intensity")
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
             plt.show()
+        
+        # Plot PR curve
+        if self.PR_curve:
+            # Create PR curve
+            P, R = createPR(dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
+            #  Combine P and R into a list of lists
+            PR_data = {
+                    "Precision": P,
+                    "Recall": R
+                }
+            output_file = "PR_curve_data.json"
+            # Construct the full path
+            full_path = f"{model.data_dir}/{output_file}"
+            # Write the data to a JSON file
+            with open(full_path, 'w') as file:
+                json.dump(PR_data, file) 
+            # Plot PR curve
+            plt.plot(R,P)    
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.title('Precision-Recall Curve')
+            plt.show()
 
-        return R[0]
+        return R
 
 
     def forward(self, spikes):
@@ -212,7 +243,7 @@ def run_inference_raster(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage(model.dims,model.patches)
+                                        ProcessImage()
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
@@ -237,4 +268,5 @@ def run_inference_raster(model, model_name):
 
     # Use evaluate method for inference accuracy
     R = model.evaluate(model, test_loader, layers=layer_names)
+
     return R

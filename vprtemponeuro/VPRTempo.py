@@ -1,6 +1,6 @@
 #MIT License
 
-#Copyright (c) 2023 Adam Hines, Peter G Stratton, Michael Milford, Tobias Fischer
+#Copyright (c) 2024 Adam Hines, Michael Milford, Tobias Fischer
 
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
@@ -26,23 +26,22 @@ Imports
 
 import os
 import csv
+import json
 import torch
 
-import vprtemponeuro.src.blitnet as bn
 import numpy as np
-import torch.nn as nn
-import sinabs.layers as sl
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
 import seaborn as sns
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import vprtemponeuro.src.blitnet as bn
+import torchvision.transforms as transforms
 
-from vprtemponeuro.src.loggers import model_logger
-from sinabs.from_torch import from_model
-from vprtemponeuro.src.dataset_patchnorm import CustomImageDataset, ProcessImage
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
-from vprtemponeuro.src.metrics import recallAtK
+from torch.utils.data import DataLoader
+from vprtemponeuro.src.loggers import model_logger
+from vprtemponeuro.src.metrics import recallAtK, createPR
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
 class VPRTempo(nn.Module):
     def __init__(self, args):
@@ -71,7 +70,7 @@ class VPRTempo(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input)
+        self.feature = int(self.input*args.feature_multiplier)
         self.output = int(args.reference_places)
 
         """
@@ -116,43 +115,19 @@ class VPRTempo(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
+
         #nn.init.eye_(self.inert_conv_layer.weight)
         self.inference = nn.Sequential(
             self.feature_layer.w,
             self.output_layer.w,
         )
-        # Specify the path to your .csv file
-        csv_file_path = model.data_dir + model.reference+'.csv'
 
-        # Initialize an empty list to store the rows
-        data_rows = []
-
-        # Open and read the .csv file
-        with open(csv_file_path, mode='r') as file:
-            # Create a csv reader object
-            csv_reader = csv.reader(file)
-            # Skip the header
-            next(csv_reader)
-            # Read each row after the header
-            for row in csv_reader:
-                data_rows.append(row)
-
+        # Initiliaze the output spikes variable
+        out = []
         # Initialize the tqdm progress bar
         pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
-        # Initiliaze the output spikes variable
-        out = []
-        correct = 0
-        incorrect = 0
-        counter = 0
-        matches = []
-        misses = []
-        k = 6
-        thresholds = []
-        image_idx = []
-        frames_since_last_match = 0
-        max_spike = []
 
         # Run inference for the specified number of timesteps
         with torch.no_grad():
@@ -162,79 +137,35 @@ class VPRTempo(nn.Module):
                 spikes = spikes.to(torch.float32)
                 # Forward pass
                 spikes = self.forward(spikes)
-                thresh = torch.mean(spikes) + (k * torch.std(spikes))
-                # If max spike output is greater than threshold, perform matching
-                if torch.max(spikes) > thresh:
-                    gps_str = gps[0].strip('[]')
-                    # Split the string by comma
-                    lat_str, long_str = gps_str.split(',')
-                    # Convert to float
-                    lat = round(float(lat_str),4)
-                    long = round(float(long_str),4)
-                    output_idx = torch.argmax(spikes)
-
-                    ref_str = data_rows[output_idx][2].strip('[]')
-                    ref_lat_str, ref_long_str = ref_str.split(',')
-                    ref_lat = round(float(ref_lat_str),4)
-                    ref_long = round(float(ref_long_str),4)
-
-                    new_match = counter - frames_since_last_match
-                    frames_since_last_match = counter
-                    image_idx.append([output_idx.detach().cpu().item(),new_match])
-
-                    if abs(lat - ref_lat) <= 0.00100 and abs(long - ref_long) <= 0.00100:
-                        correct += 1
-                        matches.append(counter)
-                    else:
-                        incorrect += 1
-                        misses.append(counter)
-                
-                # # Calculate the mean of spikes and append to the max_spike
-                # max_spike.append(torch.max(spikes).item())
-
                 # Add output spikes to list
                 out.append(spikes.detach().cpu().tolist())
-                # thresholds.append(thresh.item())
-                counter += 1
                 pbar.update(1)
-        # Calculate the mean of max_spike and print
-        # mean_spike = round(np.mean(max_spike),3)
-        # model.logger.info(f"Mean spike intensity: {mean_spike}")
+
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
         out = np.reshape(np.array(out),(model.query_places,model.reference_places))
-        dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-        seq_length = 5
-        precomputed_convWeight = torch.eye(seq_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-        dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / seq_length
-        # #print(np.max(out))
-        plt.figure(figsize=(10, 8))
-        sns.heatmap(dist_matrix_seq.T, annot=False, cmap='coolwarm')
-        # #plt.colorbar(shrink=0.75,label="Output spike intensity")
-        plt.title('Similarity matrix')
-        plt.xlabel("Query")
-        plt.ylabel("Database")
-        plt.show()
-        #np.save('/home/adam/Documents/sunset2_similarity_matrix_k10.npy', out)
-        np.save('/home/adam/Documents/sunset2_matches_k10.npy', matches)
-        np.save('/home/adam/Documents/sunset2_misses_k10.npy', misses)
-        # np.save('/home/adam/Documents/daytime_thresholds_fixed.npy', np.array(thresholds))
-        # np.save('/home/adam/Documents/daytime_image_idx_fixed.npy', np.array(image_idx))
+
+        # Run sequence matching
+        if self.sequence_length != 0:
+            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        else:
+            dist_matrix_seq = out
+        
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
-        # Create GT matrix
-        # GT = np.zeros((model.reference_places-seq_length+1,model.query_places-seq_length+1), dtype=int)
-        # for n in range(len(GT)):
-        #     GT[n,n] = 1
-        GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_sunset2_GT.npy')
-        GT = GT[3:-1,3:-1]
-        # plt.imshow(GT)
-        # plt.show()
+        
+        # Load GT matrix
+        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        if self.args.sequence_length != 0:
+            GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(dist_matrix_seq.T,GThard=GT,K=n),2))
+            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
@@ -242,14 +173,35 @@ class VPRTempo(nn.Module):
         model.logger.info(table)
 
         # Plot similarity matrix
-        # if self.sim_mat:
-        # plt.figure(figsize=(10, 8))
-        # sns.heatmap(out.T, annot=False, cmap='coolwarm')
-        # #plt.colorbar(shrink=0.75,label="Output spike intensity")
-        # plt.title('Similarity matrix')
-        # plt.xlabel("Query")
-        # plt.ylabel("Database")
-        # plt.show()
+        if self.sim_mat:
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='coolwarm')
+            plt.title('Similarity matrix')
+            plt.xlabel("Query")
+            plt.ylabel("Database")
+            plt.show()
+
+        # Plot precision recall curve
+        if self.PR_curve:
+            # Create PR curve
+            P, R = createPR(dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
+            #  Combine P and R into a list of lists
+            PR_data = {
+                    "Precision": P,
+                    "Recall": R
+                }
+            output_file = "PR_curve_data.json"
+            # Construct the full path
+            full_path = f"{model.data_dir}/{output_file}"
+            # Write the data to a JSON file
+            with open(full_path, 'w') as file:
+                json.dump(PR_data, file) 
+            # Plot PR curve
+            plt.plot(R,P)    
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.title('Precision-Recall Curve')
+            plt.show()
 
         return R
 
@@ -286,7 +238,7 @@ def run_inference_norm(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage(model.dims,model.patches)
+                                        ProcessImage()
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
@@ -312,4 +264,5 @@ def run_inference_norm(model, model_name):
 
     # Use evaluate method for inference accuracy
     R1 = model.evaluate(model, test_loader, layers=layer_names)
+    
     return R1

@@ -20,6 +20,15 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
+# Please see our IEEE ICRA 2024 paper for our implementation of BliTNet https://arxiv.org/abs/2309.10225
+# If you use this code, please cite our paper:
+#
+# @inproceedings{hines2024vprtempo,
+#      title={VPRTempo: A Fast Temporally Encoded Spiking Neural Network for Visual Place Recognition}, 
+#      author={Adam D. Hines and Peter G. Stratton and Michael Milford and Tobias Fischer},
+#      year={2024},
+#      booktitle={2024 IEEE International Conference on Robotics and Automation (ICRA)}
+#       }
 '''
 Imports
 '''
@@ -167,7 +176,7 @@ def add_input(spikes, layer):
 
 def clamp_spikes(spikes, layer):
     # Clamp outputs between 0 and 0.9 after subtracting thresholds from input
-    spikes = torch.clamp(torch.sub(spikes, layer.thr), min=0.0, max=0.9)
+    spikes = torch.clamp(torch.sub(spikes, layer.thr), min=0.0, max=1.0)
         
     return spikes
 
@@ -186,7 +195,7 @@ def calc_stdp(prespike, spikes, noclp, layer, idx, prev_layer=None):
         # Difference between forced and calculated spikes
         layer.x = torch.full_like(layer.x, 0)
         xdiff = layer.x.index_fill_(-1, idx_sel, 0.5) - spikes
-        xdiff.clamp(min=0.0, max=0.9)
+        xdiff.clamp(min=0.0, max=1.0)
 
         # Pre and Post spikes tiled across and down for all synapses
         if prev_layer.fire_rate == None:

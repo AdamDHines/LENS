@@ -15,14 +15,14 @@ def model_logger(model):
         now = datetime.now()
         model.output_folder = './vprtemponeuro/output/' + now.strftime("%d%m%y-%H-%M-%S")
     
-    #os.mkdir(model.output_folder)
+    os.mkdir(model.output_folder)
     # Create the logger
     model.logger = logging.getLogger("VPRTempo")
     if (model.logger.hasHandlers()):
         model.logger.handlers.clear()
     # Set the logger level
     model.logger.setLevel(logging.DEBUG)
-    logging.basicConfig(filename="/home/adam/Documents/logfile.log",
+    logging.basicConfig(filename=os.path.join(model.output_folder, 'vprtemponeuro.log'),
                         filemode="a+",
                         format="%(asctime)-15s %(levelname)-8s %(message)s")
     # Add the logger to the console (if specified)
@@ -42,7 +42,7 @@ def model_logger(model):
     model.logger.info('VPRTempoNeuro: Neuromorphic Visual Place Recognition v0.1.0')
     model.logger.info('Queensland University of Technology, Centre for Robotics')
     model.logger.info('')
-    model.logger.info('© 2023 Adam D Hines, Michael Milford, Tobias Fischer')
+    model.logger.info('© 2024 Adam D Hines, Michael Milford, Tobias Fischer')
     model.logger.info('MIT license - https://github.com/AdamDHines/VPRTempoNeuro')
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
     model.logger.info('')

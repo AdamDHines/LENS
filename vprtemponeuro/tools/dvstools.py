@@ -245,9 +245,9 @@ class FrameRep():
                                     centroid_coordinates_dict[int(patch_coordinate)] = int(centroid_index)
                     # The result is a tuple of arrays, where the first array contains the x (row) coordinates
                     # and the second array contains the y (column) coordinates. To list them as pairs, you can zip them:
-                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_dict.json'), 'w') as handle:
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_dict'+str(self.args.pixels)+'.json'), 'w') as handle:
                         json.dump(centroid_coordinates_dict, handle)
-                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_centroid.json'), 'w') as handle:
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_centroid'+str(self.args.pixels)+'.json'), 'w') as handle:
                         json.dump(centroid_coordinate_store, handle)
                     coordinates = np.unravel_index(coordinate_store, (self.dimensions[0], self.dimensions[1]))
                     coordinates_list = list(zip(coordinates[1], coordinates[0]))
@@ -256,13 +256,13 @@ class FrameRep():
                     # Assuming coordinates_list is already generated
                     for n, ndx in enumerate(coordinates_list):
                         coordinates_array.append(np.array([n]+list(ndx)))
-                    np.savez_compressed(os.path.join(self.args.dataset_folder, self.args.input_file + '_coordinates.npz'), coordinates_list_array)
-                    np.savez_compressed(os.path.join(self.args.dataset_folder, 'unique_indices.npz'), unique_indices)
+                    np.savez_compressed(os.path.join(self.args.dataset_folder, self.args.input_file +str(self.args.pixels)+ '_coordinates.npz'), coordinates_list_array)
+                    np.savez_compressed(os.path.join(self.args.dataset_folder, str(self.args.pixels)+'unique_indices.npz'), unique_indices)
                 else:
-                    with np.load(os.path.join(self.args.dataset_folder, 'sunset1_coordinates.npz')) as data:
+                    with np.load(os.path.join(self.args.dataset_folder, 'sunset1'+str(self.args.pixels)+'_coordinates.npz')) as data:
                         # Assuming 'coordinates_array' is the key used to save the array
                         loaded_array = data['arr_0']
-                    with np.load(os.path.join(self.args.dataset_folder, 'unique_indices.npz')) as data:
+                    with np.load(os.path.join(self.args.dataset_folder, str(self.args.pixels)+'unique_indices.npz')) as data:
                         # Assuming 'coordinates_array' is the key used to save the array
                         unique_indices = data['arr_0']
                     coordinates_list = list(map(tuple, loaded_array))
@@ -272,9 +272,9 @@ class FrameRep():
                         coordinates_array.append(np.array([n]+list(ndx)))
 
                     # Load dictionary back
-                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_dict.json'), 'r') as handle:
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_dict'+str(self.args.pixels)+'.json'), 'r') as handle:
                         centroid_coordinates_dict = json.load(handle)
-                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_centroid.json'), 'r') as handle:
+                    with open(os.path.join(self.args.dataset_folder, 'cooridnates_centroid'+str(self.args.pixels)+'.json'), 'r') as handle:
                         centroid_coordinate_store = json.load(handle)
 
                 with zip_ref.open(self.args.input_file+".txt") as file:
@@ -363,7 +363,7 @@ class FrameRep():
     def save_frame(self, frame, frame_index, output_dir="frames"):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        frame = np.reshape(frame, (7,7))
+        frame = np.reshape(frame, (int(np.sqrt(self.args.pixels)),int(np.sqrt(self.args.pixels))))
 
         filename = os.path.join(output_dir, f"images_{frame_index:05d}.png")  # Using :05d for zero-padded frame index
         
