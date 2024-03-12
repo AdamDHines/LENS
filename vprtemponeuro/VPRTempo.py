@@ -25,12 +25,13 @@ Imports
 '''
 
 import os
+import csv
 import json
 import torch
 
 import numpy as np
+import seaborn as sns
 import torch.nn as nn
-import sinabs.layers as sl
 import matplotlib.pyplot as plt
 import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
@@ -38,14 +39,13 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
-from sinabs.from_torch import from_model
 from vprtemponeuro.src.loggers import model_logger
 from vprtemponeuro.src.metrics import recallAtK, createPR
 from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
-class VPRTempoRaster(nn.Module):
+class VPRTempo(nn.Module):
     def __init__(self, args):
-        super(VPRTempoRaster, self).__init__()
+        super(VPRTempo, self).__init__()
 
         # Set the arguments
         self.args = args
@@ -53,7 +53,12 @@ class VPRTempoRaster(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+        if self.reference_annotation:
+            self.dataset_file = os.path.join(self.data_dir, self.query+ '_reference.csv')
+        else:
+            self.dataset_file = os.path.join(self.data_dir, self.query + '.csv')
+
+        # Set the query image folder
         self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
 
         # Set the model logger and return the device
@@ -65,7 +70,7 @@ class VPRTempoRaster(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input)
+        self.feature = int(self.input*args.feature_multiplier)
         self.output = int(args.reference_places)
 
         """
@@ -110,47 +115,38 @@ class VPRTempoRaster(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
-        
-        # Define the inferencing model
-        # ReLU layer required for the sinabs model, this becomes the spiking layer
+
+        #nn.init.eye_(self.inert_conv_layer.weight)
         self.inference = nn.Sequential(
             self.feature_layer.w,
-            nn.ReLU(),
-            self.output_layer.w
+            self.output_layer.w,
         )
-        
-        # Set up the sinabs model
-        input_shape = (1, 1, self.dims[0] * self.dims[1])
-        self.sinabs_model = from_model(
-                                self.inference, 
-                                input_shape=input_shape,
-                                batch_size=1,
-                                add_spiking_output=True,
-                                )
 
+        # Initiliaze the output spikes variable
+        out = []
         # Initialize the tqdm progress bar
         pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
-        # Initiliaze the output spikes variable
-        out = []
+
         # Run inference for the specified number of timesteps
-        for spikes, labels, _ in test_loader:
-            spikes, labels = spikes.to(self.device), labels.to(self.device)
-            spikes = sl.FlattenTime()(spikes)
-            # Forward pass
-            spikes = self.forward(spikes)
-            output = spikes.sum(dim=0).squeeze()
-            # Add output spikes to list
-            out.append(output.detach().cpu().tolist())
-            pbar.update(1)
+        with torch.no_grad():
+            for spikes, labels, gps in test_loader:
+                spikes, labels = spikes.to(self.device), labels.to(self.device)
+                spikes = spikes.squeeze(0)
+                spikes = spikes.to(torch.float32)
+                # Forward pass
+                spikes = self.forward(spikes)
+                # Add output spikes to list
+                out.append(spikes.detach().cpu().tolist())
+                pbar.update(1)
 
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
         out = np.reshape(np.array(out),(model.query_places,model.reference_places))
 
-        # Perform sequence matching convolution on similarity matrix
+        # Run sequence matching
         if self.sequence_length != 0:
             dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
             precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
@@ -161,32 +157,31 @@ class VPRTempoRaster(nn.Module):
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
-
-        # Create GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        if self.sequence_length != 0:
-            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
         
+        # Load GT matrix
+        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        if self.args.sequence_length != 0:
+            GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+
         # Calculate Recall@N
         for n in N:
             R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
         table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
         model.logger.info(table)
-    
+
         # Plot similarity matrix
         if self.sim_mat:
-            plt.matshow(dist_matrix_seq)
-            plt.colorbar(shrink=0.75,label="Output spike intensity")
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='coolwarm')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
             plt.show()
-        
-        # Plot PR curve
+
+        # Plot precision recall curve
         if self.PR_curve:
             # Create PR curve
             P, R = createPR(dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
@@ -222,7 +217,7 @@ class VPRTempoRaster(nn.Module):
         - Tensor: Output after processing.
         """
         
-        spikes = self.sinabs_model(spikes)
+        spikes = self.inference(spikes)
         
         return spikes
         
@@ -233,7 +228,7 @@ class VPRTempoRaster(nn.Module):
         self.load_state_dict(torch.load(model_path, map_location=self.device),
                              strict=False)
 
-def run_inference_raster(model, model_name):
+def run_inference_norm(model, model_name):
     """
     Run inference on a pre-trained model.
 
@@ -250,7 +245,8 @@ def run_inference_raster(model, model_name):
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.query_places,
-                                      is_raster=True)
+                                      is_raster=False)
+    print(str(model.data_dir+model.query_dir))
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 
@@ -267,6 +263,6 @@ def run_inference_raster(model, model_name):
     layer_names = list(model.layer_dict.keys())
 
     # Use evaluate method for inference accuracy
-    R = model.evaluate(model, test_loader, layers=layer_names)
-
-    return R
+    R1 = model.evaluate(model, test_loader, layers=layer_names)
+    
+    return R1
