@@ -1,5 +1,8 @@
-__pycache__/
-.ipynb_checkpoints/
-src/__pycache__/
-dataset/
-output/
+vprtemponeuro/__pycache__/
+vprtemponeuro/src/__pycache__/
+vprtemponeuro/dataset/brisbane_event/davis/daytime.zip
+vprtemponeuro/dataset/brisbane_event/davis/sunset1.zip
+vprtemponeuro/dataset/brisbane_event/davis/sunset2.zip
+vprtemponeuro/dataset/brisbane_event/gopro
+vprtemponeuro/dataset/brisbane_event/GT_reference_set
+wandb/

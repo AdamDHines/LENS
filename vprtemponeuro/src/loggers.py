@@ -22,7 +22,7 @@ def model_logger(model):
         model.logger.handlers.clear()
     # Set the logger level
     model.logger.setLevel(logging.DEBUG)
-    logging.basicConfig(filename=model.output_folder + "/logfile.log",
+    logging.basicConfig(filename=os.path.join(model.output_folder, 'vprtemponeuro.log'),
                         filemode="a+",
                         format="%(asctime)-15s %(levelname)-8s %(message)s")
     # Add the logger to the console (if specified)
@@ -42,12 +42,19 @@ def model_logger(model):
     model.logger.info('VPRTempoNeuro: Neuromorphic Visual Place Recognition v0.1.0')
     model.logger.info('Queensland University of Technology, Centre for Robotics')
     model.logger.info('')
-    model.logger.info('© 2023 Adam D Hines, Michael Milford, Tobias Fischer')
+    model.logger.info('© 2024 Adam D Hines, Michael Milford, Tobias Fischer')
     model.logger.info('MIT license - https://github.com/AdamDHines/VPRTempoNeuro')
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
     model.logger.info('')
     if model.raster:
         if torch.cuda.is_available() and model.raster_device == 'gpu':
+            model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')
+            device = torch.device("cuda")
+        else:
+            model.logger.info(f'Current device is CPU')
+            device = torch.device("cpu")
+    elif model.train_new_model or model.norm:
+        if torch.cuda.is_available():
             model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')
             device = torch.device("cuda")
         else:

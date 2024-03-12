@@ -1,6 +1,6 @@
 #MIT License
 
-#Copyright (c) 2023 Adam Hines, Peter G Stratton, Michael Milford, Tobias Fischer
+#Copyright (c) 2024 Adam Hines, Michael Milford, Tobias Fischer
 
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
@@ -25,23 +25,23 @@ Imports
 '''
 
 import os
+import json
 import torch
 
-import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
 import sinabs.layers as sl
-import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import vprtemponeuro.src.blitnet as bn
+import torchvision.transforms as transforms
 
-from vprtemponeuro.src.loggers import model_logger
-from sinabs.from_torch import from_model
-from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 from prettytable import PrettyTable
-from vprtemponeuro.src.metrics import recallAtK
-
+from torch.utils.data import DataLoader
+from sinabs.from_torch import from_model
+from vprtemponeuro.src.loggers import model_logger
+from vprtemponeuro.src.metrics import recallAtK, createPR
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
 class VPRTempoRaster(nn.Module):
     def __init__(self, args):
@@ -53,7 +53,8 @@ class VPRTempoRaster(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+        self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -64,8 +65,8 @@ class VPRTempoRaster(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input*2)
-        self.output = int(args.num_places / args.num_modules)
+        self.feature = int(self.input)
+        self.output = int(args.reference_places)
 
         """
         Define trainable layers here
@@ -109,13 +110,16 @@ class VPRTempoRaster(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
-        #nn.init.eye_(self.inert_conv_layer.weight)
+        
+        # Define the inferencing model
+        # ReLU layer required for the sinabs model, this becomes the spiking layer
         self.inference = nn.Sequential(
             self.feature_layer.w,
             nn.ReLU(),
-            self.output_layer.w,
+            self.output_layer.w
         )
-
+        
+        # Set up the sinabs model
         input_shape = (1, 1, self.dims[0] * self.dims[1])
         self.sinabs_model = from_model(
                                 self.inference, 
@@ -125,13 +129,13 @@ class VPRTempoRaster(nn.Module):
                                 )
 
         # Initialize the tqdm progress bar
-        pbar = tqdm(total=self.num_places,
+        pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
         # Initiliaze the output spikes variable
         out = []
         # Run inference for the specified number of timesteps
-        for spikes, labels in test_loader:
+        for spikes, labels, _ in test_loader:
             spikes, labels = spikes.to(self.device), labels.to(self.device)
             spikes = sl.FlattenTime()(spikes)
             # Forward pass
@@ -144,31 +148,67 @@ class VPRTempoRaster(nn.Module):
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
-        out = np.reshape(np.array(out),(model.num_places,model.num_places))
+        out = np.reshape(np.array(out),(model.query_places,model.reference_places))
 
+        # Perform sequence matching convolution on similarity matrix
+        if self.sequence_length != 0:
+            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        else:
+            dist_matrix_seq = out
+        
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
+
         # Create GT matrix
-        GT = np.zeros((model.num_places,model.num_places), dtype=int)
-        for n in range(len(GT)):
-            GT[n,n] = 1
+        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        if self.sequence_length != 0:
+            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+        
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(out,GThard=GT,K=n),2))
+            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
         table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
         model.logger.info(table)
-
+    
         # Plot similarity matrix
-        plt.matshow(out)
-        plt.colorbar(shrink=0.75,label="Output spike intensity")
-        plt.title('Similarity matrix')
-        plt.xlabel("Query")
-        plt.ylabel("Database")
-        plt.show()
+        if self.sim_mat:
+            plt.matshow(dist_matrix_seq)
+            plt.colorbar(shrink=0.75,label="Output spike intensity")
+            plt.title('Similarity matrix')
+            plt.xlabel("Query")
+            plt.ylabel("Database")
+            plt.show()
+        
+        # Plot PR curve
+        if self.PR_curve:
+            # Create PR curve
+            P, R = createPR(dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
+            #  Combine P and R into a list of lists
+            PR_data = {
+                    "Precision": P,
+                    "Recall": R
+                }
+            output_file = "PR_curve_data.json"
+            # Construct the full path
+            full_path = f"{model.data_dir}/{output_file}"
+            # Write the data to a JSON file
+            with open(full_path, 'w') as file:
+                json.dump(PR_data, file) 
+            # Plot PR curve
+            plt.plot(R,P)    
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.title('Precision-Recall Curve')
+            plt.show()
+
+        return R
 
 
     def forward(self, spikes):
@@ -203,16 +243,14 @@ def run_inference_raster(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-        ProcessImage()
-    ])
-    test_dataset = CustomImageDataset(annotations_file=model.dataset_file, 
-                                      base_dir=model.data_dir,
-                                      img_dirs=model.query_dir,
+                                        ProcessImage()
+                                            ])
+    test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
+                                      img_dir=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places,
+                                      max_samples=model.query_places,
                                       is_raster=True)
-
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 
@@ -229,4 +267,6 @@ def run_inference_raster(model, model_name):
     layer_names = list(model.layer_dict.keys())
 
     # Use evaluate method for inference accuracy
-    model.evaluate(model, test_loader, layers=layer_names)
+    R = model.evaluate(model, test_loader, layers=layer_names)
+
+    return R

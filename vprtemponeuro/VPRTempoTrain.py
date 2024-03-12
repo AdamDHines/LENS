@@ -25,18 +25,18 @@ Imports
 '''
 
 import os
-import torch
 import gc
+import torch
 
-import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
+import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
+from tqdm import tqdm
+from torch.utils.data import DataLoader
 from vprtemponeuro.src.loggers import model_logger
 from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 class VPRTempoTrain(nn.Module):
     def __init__(self, args):
@@ -48,7 +48,13 @@ class VPRTempoTrain(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
+        if self.reference_annotation:
+            self.dataset_file = os.path.join(self.data_dir, self.reference + '_reference.csv')
+        else:
+            self.dataset_file = os.path.join(self.data_dir, self.reference + '.csv')
+
+        # Set the reference image folder
+        self.reference_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.reference)
 
         # Configure the model logger and get the device
         self.device = model_logger(self)  
@@ -59,12 +65,8 @@ class VPRTempoTrain(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input*2)
-        self.output = int(args.num_places / args.num_modules)
-
-        # Set the total timestep count
-        self.location_repeat = len(args.database_dirs) # Number of times to repeat the locations
-        self.T = int((self.num_places / self.num_modules) * self.location_repeat * self.epoch)
+        self.feature = int(self.input*args.feature_multiplier)
+        self.output = int(args.reference_places)
 
         """
         Define trainable layers here
@@ -72,19 +74,21 @@ class VPRTempoTrain(nn.Module):
         self.add_layer(
             'feature_layer',
             dims=[self.input, self.feature],
-            thr_range=[0, 0.5],
-            fire_rate=[0.2, 0.9],
-            ip_rate=0.15,
-            stdp_rate=0.005,
-            p=[0.1, 0.5],
+            thr_range=[self.thr_l_feat, self.thr_h_feat],
+            fire_rate=[self.fire_l_feat, self.fire_h_feat],
+            ip_rate=self.ip_rate_feat,
+            stdp_rate=self.stdp_rate_feat,
+            p=[self.f_exc, self.f_inh],
             device=self.device
         )
         self.add_layer(
             'output_layer',
             dims=[self.feature, self.output],
-            ip_rate=0.15,
-            stdp_rate=0.005,
-            p=[0.25, 0.75],
+            thr_range=[self.thr_l_out, self.thr_h_out],
+            fire_rate=[self.fire_l_out, self.fire_h_out],
+            ip_rate=self.ip_rate_out,
+            stdp_rate=self.stdp_rate_out,
+            p=[self.o_exc, self.o_inh],
             spk_force=True,
             device=self.device
         )
@@ -118,11 +122,10 @@ class VPRTempoTrain(nn.Module):
         """
         Anneal the learning rate for the current layer.
         """
-        if np.mod(mod, 100) == 0: # Modify learning rate every 100 timesteps
+        if np.mod(mod, 10) == 0: # Modify learning rate every 100 timesteps
             pt = pow(float(self.T - mod) / self.T, 2)
             layer.eta_ip = torch.mul(itp, pt) # Anneal intrinsic threshold plasticity learning rate
             layer.eta_stdp = torch.mul(stdp, pt) # Anneal STDP learning rate
-            
         return layer
 
     def train_model(self, train_loader, layer, prev_layers=None):
@@ -133,11 +136,17 @@ class VPRTempoTrain(nn.Module):
         :param layer: Layer to train
         :param prev_layers: Previous layers to pass data through
         """
-
+        if not prev_layers:
+            self.epoch = self.args.epoch_feat
+        else:
+            self.epoch = self.args.epoch_out
+        # Set the total timestep count
+        self.T = int((self.reference_places) * self.epoch)
         # Initialize the tqdm progress bar
         pbar = tqdm(total=int(self.T),
                     desc="Training ",
                     position=0)
+                    
         
         # Initialize the learning rates for each layer (used for annealment)
         init_itp = layer.eta_ip.detach()
@@ -146,9 +155,10 @@ class VPRTempoTrain(nn.Module):
         # Run training for the specified number of epochs
         for _ in range(self.epoch):
             # Run training for the specified number of timesteps
-            for spikes, labels in train_loader:
+            for spikes, labels, gps in train_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.to(torch.float32)
+                spikes = torch.squeeze(spikes,0)
                 idx = labels / self.filter # Set output index for spike forcing
                 # Pass through previous layers if they exist
                 if prev_layers:
@@ -235,11 +245,10 @@ def train_new_model(model, model_name):
                                         ProcessImage()
                                             ])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
-                                      base_dir=model.data_dir,
-                                      img_dirs=model.query_dir,
+                                      img_dir=model.reference_dir,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places,
+                                      max_samples=model.reference_places,
                                       test=False)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 
