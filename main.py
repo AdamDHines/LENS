@@ -1,6 +1,6 @@
 #MIT License
 
-#Copyright (c) 2023 Adam Hines, Peter G Stratton, Michael Milford, Tobias Fischer
+#Copyright (c) 2024 Adam Hines, Michael Milford, Tobias Fischer
 
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,6 @@ import argparse
 
 import numpy as np
 
-from vprtemponeuro.src.event_stats import EventStats
 from vprtemponeuro.VPRTempo import VPRTempo, run_inference_norm
 from vprtemponeuro.VPRTempoNeuro import VPRTempoNeuro, run_inference
 from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, train_new_model
@@ -49,50 +48,36 @@ def generate_model_name(model):
     return model_name
 
 def initialize_and_run_model(args):
-    args.norm = True
-    #args.train_new_model = True 
-    #args.raster = True
+    """
+    Initialize the model and run the desired functionality.
+    """
+
     # If user wants to train a new network
     if args.train_new_model:
         # Initialize the model
         model = VPRTempoTrain(args)
-
-        if args.event_stats:
-            eventModel = EventStats(
-                                    model,
-                                    event_type=args.event_type,
-                                    max_pixels=args.pixels,
-                                    total_patches=args.patches
-                                    ) 
-            eventModel.main() # Run the event statistics
-        
         # Generate the model name
         model_name = generate_model_name(model)
-
         # Train the model
         train_new_model(model, model_name)
+
+    # Run a weights and biases sweep    
     elif args.wandb:
-        # log into weights & biases
+        # Log into weights & biases
         wandb.login()
         
-        # define the method and parameters for grid search
+        # Define the method and parameters for grid search
         sweep_config = {'method':'random'}
-        metric = {'name':'R@1', 'goal':'maximize'}
-        
+        metric = {'name':'AUC', 'goal':'maximize'}
         sweep_config['metric'] = metric
         
-        parameters_dict = {    
-                        'fire_l': {'values': list(np.linspace(0.1, 0.49, 16))},
-                        'fire_h': {'values': list(np.linspace(0.5, 1.0, 16))},
-                        'thr_h': {'values': list(np.linspace(0.1, 0.5, 8))},
-
-        }
-        
+        # Define the parameters for the search
+        parameters_dict = {}
         sweep_config['parameters'] = parameters_dict
         pprint.pprint(sweep_config)
     
-        # start sweep controller
-        sweep_id = wandb.sweep(sweep_config, project="vprtemponeuro-dvs_100pixel")
+        # Start sweep controller
+        sweep_id = wandb.sweep(sweep_config, project="")
 
         # Initialize w&b search
         def wandsearch(config=None):
@@ -100,41 +85,32 @@ def initialize_and_run_model(args):
                 # Initialize config
                 config = wandb.config
 
-                # Set arguments for the sweeps
-                args.fire_l = config.fire_l
-                args.fire_h = config.fire_h
-                args.thr_h = config.thr_h
+                # Set arguments for the sweep
 
-                if args.event_stats:
-                    model = VPRTempoTrain(args)
-                    eventModel = EventStats(
-                            model,
-                            event_type="max",
-                            max_pixels=args.pixels,
-                            total_patches=args.patches
-                            ) 
-                    eventModel.main() # Run the event statistics
-                
                 # Initialize the training model
                 args.train_new_model = True
-                R_all = []
                 model = VPRTempoTrain(args)
                 model_name = generate_model_name(model)
+
                 train_new_model(model, model_name)
                 
                 # Initialize the inference model
                 model = VPRTempo(args)
-                # Generate the model name
-                model_name = generate_model_name(model)
-                # Run the quantized inference model
-                R_all = run_inference_norm(model, model_name)
 
-                # x = [1,5,10,15,20,25]
-                # AUC= np.trapz(R_all, x)
-                wandb.log({"R@1" : R_all[0]})
+                # Run the inference model
+                R_all = run_inference_norm(model, model_name)
                 
+                # Evaluate the model
+                x = [1,5,10,15,20,25]
+                AUC= np.trapz(R_all, x)
+                wandb.log({"AUC" : AUC})
+                print("AUC: ", AUC)
+
+        # Start the agent with the sweeps
         wandb.agent(sweep_id,wandsearch)
-    else: # Run the inference network
+
+    # Run the inference network
+    else:
         # Set the quantization configuration
         if args.raster:
             # Initialize the quantized model
@@ -169,56 +145,69 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--camera', type=str, default='davis',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='sunset1_49',
+    parser.add_argument('--reference', type=str, default='sunset2',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='sunset2_49',
+    parser.add_argument('--query', type=str, default='sunset1',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=724,
+    parser.add_argument('--reference_places', type=int, default=641,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=641,
+    parser.add_argument('--query_places', type=int, default=724,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--pixels', type=int, default=49,
-                        help="Number of places to use for training and/or inferencing")
+    parser.add_argument('--sequence_length', type=int, default=10,
+                        help="Length of the sequence matcher")
+    parser.add_argument('--feature_multiplier', type=float, default=1.0,
+                        help="Size multiplier for the feature/hidden layer")
 
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch', type=int, default=10,
+    parser.add_argument('--epoch_feat', type=int, default=8,
+                            help="Number of epochs to train the model")
+    parser.add_argument('--epoch_out', type=int, default=64,
                             help="Number of epochs to train the model")
     
-    # Hyperparameters
-    parser.add_argument('--thr_l', type=float, default=0,
+    # Hyperparameters - feature layer
+    parser.add_argument('--thr_l_feat', type=float, default=0,
                         help="Low threshold value")
-    parser.add_argument('--thr_h', type=float, default=0.2,
-                        help="High threshold value")
-    parser.add_argument('--fire_l', type=float, default=0.4,
+    parser.add_argument('--thr_h_feat', type=float, default=0.1,
+                            help="High threshold value")
+    parser.add_argument('--fire_l_feat', type=float, default=0.4,
+                            help="Low threshold value")
+    parser.add_argument('--fire_h_feat', type=float, default=0.6,
+                            help="High threshold value")
+    parser.add_argument('--ip_rate_feat', type=float, default=0.5,
+                            help="ITP learning rate")
+    parser.add_argument('--stdp_rate_feat', type=float, default=0.01,
+                            help="STDP learning rate")
+   # Hyperparameters - output layer 
+    parser.add_argument('--thr_l_out', type=float, default=0,
                         help="Low threshold value")
-    parser.add_argument('--fire_h', type=float, default=0.6,
-                        help="High threshold value")
-    parser.add_argument('--ip_rate', type=float, default=0.25,
-                        help="ITP learning rate")
-    parser.add_argument('--stdp_rate', type=float, default=0.25,
-                        help="STDP learning rate")
-    
+    parser.add_argument('--thr_h_out', type=float, default=0.2,
+                            help="High threshold value")
+    parser.add_argument('--fire_l_out', type=float, default=0.4,
+                            help="Low threshold value")
+    parser.add_argument('--fire_h_out', type=float, default=0.6,
+                            help="High threshold value")
+    parser.add_argument('--ip_rate_out', type=float, default=0.02,
+                            help="ITP learning rate")
+    parser.add_argument('--stdp_rate_out', type=float, default=0.01,
+                            help="STDP learning rate")
+
     # Connection probabilities
-    parser.add_argument('--f_exc', type=float, default=1.0,
+    parser.add_argument('--f_exc', type=float, default=0.9,
                         help="Feature layer excitatory connection")
-    parser.add_argument('--f_inh', type=float, default=1.0,
+    parser.add_argument('--f_inh', type=float, default=0.8,
                         help="Feature layer inhibitory connection")
-    parser.add_argument('--o_exc', type=float, default=1.0,
+    parser.add_argument('--o_exc', type=float, default=0.7,
                         help="Output layer excitatory connection")
-    parser.add_argument('--o_inh', type=float, default=1.0,
+    parser.add_argument('--o_inh', type=float, default=0.9,
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
     parser.add_argument('--dims', nargs='+', type=int, default=[7,7],
                             help="Dimensions to resize the image to")
-    parser.add_argument('--patches', type=int, default=15,
-                            help="Number of patches")
-    parser.add_argument('--repeats', type=int, default=9,
-                        help="Number of repeats in the temporal code")
 
     # Define the network functionality
     parser.add_argument('--train_new_model', action='store_true',
@@ -227,10 +216,8 @@ def parse_network():
                             help="Run the raster version of VPRTempo, for non-neuromorphic chip inferencing")
     parser.add_argument('--sim_mat', action='store_true',
                             help="Plot a similarity matrix")
-    parser.add_argument('--event_stats', action='store_true',
-                            help="Runs the event stats")
-    parser.add_argument('--event_type', type=str, default='random',
-                            help="When using raster analysis, use CPU or GPU")
+    parser.add_argument('--PR_curve', action='store_true',
+                            help="Plot a precision recall curve")
     
     # On-chip specific parameters
     parser.add_argument('--power_monitor', action='store_true',

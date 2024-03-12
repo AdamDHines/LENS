@@ -7,8 +7,10 @@ import seaborn as sns
 import cv2
 import re
 from prettytable import PrettyTable
-from metrics import recallAtK
+from metrics import recallAtK, createPR
 import torch
+import json
+import math
 
 def natural_sort_key(s):
     """
@@ -105,6 +107,16 @@ def load_and_preprocess_images_v2(folder_path, variable_pixels, skip_factor=0, m
                 img = color.rgb2gray(img)
             # Select only the top variable pixels
             #img = processImage(img, 56, 56, 15)
+            # gamma correction
+            mid = 0.5
+            mean = np.mean(img)
+
+            # Check if mean is zero or negative to avoid math domain error
+            try:
+                gamma = math.log(mid * 255) / math.log(mean)
+                img = math.pow(img, gamma).clip(0, 255)
+            except:
+                pass
             images.append(img.flatten()) 
     return np.array(images)
 
@@ -112,8 +124,8 @@ def sum_of_absolute_differences(image1, image2):
     return np.sum(np.abs(image1 - image2))
 
 # Load and preprocess images from both folders
-folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_49_curated'
-folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49_curated'
+folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_49'
+folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49'
 
 # First, load and preprocess all images from folder1 without skipping
 all_images1 = load_and_preprocess_images(folder1, skip_factor=1)
@@ -125,64 +137,63 @@ top_pixels = find_top_variable_pixels(all_images1)
 images1 = load_and_preprocess_images_v2(folder1, top_pixels)
 images2 = load_and_preprocess_images_v2(folder2, top_pixels)
 
-# distances = np.linalg.norm(images1[:, np.newaxis, :] - images2[np.newaxis, :, :], ord=1, axis=2)
-# plt.imshow(np.reshape(distances,(7,7)))
-# plt.show()
-# sad_matrix = np.zeros((len(images1), len(images2)))
-
-# for i in range(len(images1)):
-#    for j in range(len(images2)):
-#        sad_matrix[i, j] = sum_of_absolute_differences(images1[i], images2[j])
-
-# #sad_matrix = 1/sad_matrix
-
-# plt.figure(figsize=(10, 8))
-# sns.heatmap(sad_matrix, annot=False, cmap='coolwarm')
-# plt.title('Sum of Absolute Differences between Images from Two Folders')
-# plt.xlabel('Images from Folder 2')
-# plt.ylabel('Images from Folder 1')
-# plt.show()
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+a = torch.from_numpy(images1.reshape(images1.shape[0], -1).astype(np.float32)).unsqueeze(0).to(device)
+b = torch.from_numpy(images2.reshape(images2.shape[0], -1).astype(np.float32)).unsqueeze(0).to(device)
+torch_dist = torch.cdist(a, b, 1)[0]
 
 # Recall@N
 N = [1,5,10,15,20,25] # N values to calculate
-#R = [] # Recall@N values
+seq_length = 10
 # Create GT matrix
-GT = np.zeros((95,245), dtype=int)
-#for n in range(len(GT)):
-#    GT[n,n] = 1
-# Calculate Recall@N
-#for n in N:
-#    R.append(round(recallAtK(sad_matrix,GThard=GT,K=n),2))
-# Print the results
-#table = PrettyTable()
-#table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-#table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-#print(table)
+GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_sunset2_GT.npy')
+if seq_length != 0:
+    GT = GT[seq_length-2:-1,seq_length-2:-1]
+
 # Compute cosine similarity with the modified images
 similarity_matrix = cosine_similarity(images1, images2)
 
-new_matrix = np.zeros_like(similarity_matrix)
-
-# Iterate through each column and set 1 at the position of the maximum value
-for col_idx in range(similarity_matrix.shape[1]):
-    max_idx = np.argmax(similarity_matrix[:, col_idx])
-    new_matrix[max_idx, col_idx] = 1
-np.save('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gt.npy', new_matrix)
-# Plotting the similarity matrix
+if seq_length != 0:
+    precomputed_convWeight = torch.eye(seq_length, device=device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+    dist_matrix_seq = torch.nn.functional.conv2d(torch_dist.unsqueeze(0).unsqueeze(0), precomputed_convWeight).squeeze().cpu().numpy() / seq_length
+else:
+    dist_matrix_seq = torch_dist.cpu().numpy()
 plt.figure(figsize=(10, 8))
-sns.heatmap(similarity_matrix, annot=False, cmap='coolwarm')
-plt.title('Cosine Similarity (Top Variable Pixels) between Images from Two Folders')
-plt.xlabel('Images from Folder 2')
-plt.ylabel('Images from Folder 1')
+sns.heatmap(1/dist_matrix_seq, annot=False, cmap='coolwarm')
+plt.title('Similarity matrix')
+plt.xlabel("Query")
+plt.ylabel("Database")
 plt.show()
 
 R = [] # Recall@N values
 # Calculate Recall@N
 for n in N:
-    R.append(round(recallAtK(similarity_matrix,GThard=GT,K=n),2))
+    R.append(round(recallAtK(1/dist_matrix_seq,GThard=GT,K=n),2))
+
+x = [1,5,10,15,20,25]
+AUC= np.trapz(R, x)
 # Print the results
 table = PrettyTable()
 table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
 table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
 print(table)
+print(AUC)
+# Create PR curve
+P, R = createPR(1/dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
+# Combine P and R into a list of lists
+PR_data = {
+        "Precision": P,
+        "Recall": R
+    }
+output_file = "PR_curve_data.json"
+# Construct the full path
+full_path = f"{'/home/adam/Documents'}/{output_file}"
+# Write the data to a JSON file
+with open(full_path, 'w') as file:
+    json.dump(PR_data, file) 
+# Plot PR curve
+plt.plot(R,P)    
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.show()

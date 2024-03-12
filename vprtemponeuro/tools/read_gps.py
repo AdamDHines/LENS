@@ -29,4 +29,4 @@ def get_gps(nmea_file_path):
 
     return np.array(np.vstack((latitudes, longitudes, timestamps))).T
 
-get_gps('/media/adam/vprdatasets/data/Brisbane-Event-VPR/20200421_170039-sunset1_concat.nmea')
+get_gps('')

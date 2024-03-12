@@ -36,7 +36,7 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from vprtemponeuro.src.loggers import model_logger
-from vprtemponeuro.src.dataset_patchnorm import CustomImageDataset, ProcessImage
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
 class VPRTempoTrain(nn.Module):
     def __init__(self, args):
@@ -65,11 +65,8 @@ class VPRTempoTrain(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input)
+        self.feature = int(self.input*args.feature_multiplier)
         self.output = int(args.reference_places)
-
-        # Set the total timestep count
-        self.T = int((self.reference_places) * self.epoch)
 
         """
         Define trainable layers here
@@ -77,20 +74,20 @@ class VPRTempoTrain(nn.Module):
         self.add_layer(
             'feature_layer',
             dims=[self.input, self.feature],
-            thr_range=[self.thr_l, self.thr_h],
-            fire_rate=[self.fire_l, self.fire_h],
-            ip_rate=self.ip_rate,
-            stdp_rate=self.stdp_rate,
+            thr_range=[self.thr_l_feat, self.thr_h_feat],
+            fire_rate=[self.fire_l_feat, self.fire_h_feat],
+            ip_rate=self.ip_rate_feat,
+            stdp_rate=self.stdp_rate_feat,
             p=[self.f_exc, self.f_inh],
             device=self.device
         )
         self.add_layer(
             'output_layer',
             dims=[self.feature, self.output],
-            thr_range=[self.thr_l, self.thr_h],
-            fire_rate=[self.fire_l, self.fire_h],
-            ip_rate=self.ip_rate,
-            stdp_rate=self.stdp_rate,
+            thr_range=[self.thr_l_out, self.thr_h_out],
+            fire_rate=[self.fire_l_out, self.fire_h_out],
+            ip_rate=self.ip_rate_out,
+            stdp_rate=self.stdp_rate_out,
             p=[self.o_exc, self.o_inh],
             spk_force=True,
             device=self.device
@@ -139,7 +136,12 @@ class VPRTempoTrain(nn.Module):
         :param layer: Layer to train
         :param prev_layers: Previous layers to pass data through
         """
-
+        if not prev_layers:
+            self.epoch = self.args.epoch_feat
+        else:
+            self.epoch = self.args.epoch_out
+        # Set the total timestep count
+        self.T = int((self.reference_places) * self.epoch)
         # Initialize the tqdm progress bar
         pbar = tqdm(total=int(self.T),
                     desc="Training ",
@@ -240,7 +242,7 @@ def train_new_model(model, model_name):
     """
     # Initialize the image transforms and datasets
     image_transform = transforms.Compose([
-                                        ProcessImage(model.dims,model.patches)
+                                        ProcessImage()
                                             ])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,

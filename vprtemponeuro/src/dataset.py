@@ -1,110 +1,82 @@
+'''
+Imports
+'''
 import os
 import math
-import cv2
 import torch
 
 import pandas as pd
-import numpy as np
-import torch.nn.functional as F
-import torch.quantization as tq
-import matplotlib.pyplot as plt
 
-from torchvision.io import read_image
 from torch.utils.data import Dataset
+from torchvision.io import read_image
 
-class GenerateTemporalCode:
-    def __init__(self, img, repeat):
-        super(GenerateTemporalCode, self).__init__()
-        self.img = img
-        self.img = torch.squeeze(self.img,0)
-        self.img_shape = self.img.shape
-        self.repeat = repeat
-
-    def get_pixel_indices(self):
-        """
-        Get the indices of pixels in an image where the intensity is greater than 0.
-        """
-        self.gz_idx = torch.argwhere(self.img > 0)
-
-
-    def generate_temporal_code(self, repeat):
-        """
-        Generate a temporal code where repeated values form equal squares in the plotted matrix,
-        filling the entire matrix even if it's not a perfect square.
-
-        Args:
-        repeat (int): The number of elements in each square block (assumed to be a perfect square).
-
-        Returns:
-        numpy.ndarray: An array of temporal codes arranged in tiled square blocks.
-        """
-        # Check if repeat is a perfect square
-        if int(math.sqrt(repeat))**2 != repeat:
-            raise ValueError("Repeat value must be a perfect square.")
-
-        # Calculate the size of each block
-        block_size = int(math.sqrt(repeat))
-
-        # Calculate the number of blocks needed for width and height
-        blocks_per_row = int(math.ceil(self.img_shape[1] / block_size))
-        blocks_per_col = int(math.ceil(self.img_shape[0] / block_size))
-
-        # Generate unique values for each block
-        total_blocks = blocks_per_row * blocks_per_col
-        unique_values = np.linspace(1, 0, total_blocks, endpoint=False)
-
-        # Create a matrix of blocks
-        self.tempcode = np.zeros(self.img_shape)
-        for i in range(blocks_per_col):
-            for j in range(blocks_per_row):
-                # Determine the value for this block
-                block_value = unique_values[i * blocks_per_row + j]
-                # Fill the block, adjusting for edges
-                row_end = min((i+1)*block_size, self.img_shape[0])
-                col_end = min((j+1)*block_size, self.img_shape[1])
-                self.tempcode[i*block_size:row_end, j*block_size:col_end] = block_value
-        # Plotting the temporal code
-        #plt.imshow(self.tempcode, cmap='viridis')
-        #plt.colorbar()
-        #plt.title("Tiled Temporal Code Matrix")
-        #plt.show()
-
-    def match_pixels_to_index(self):
-        """
-        Match pixels from the codes to the given pixel_index array.
-        For each code, create a 1D numpy array with the same length as the number of points in pixel_index.
-        Populate this array with values from the code corresponding to the positions in pixel_index.
-        If a pixel is found to be above 0, fill it in the corresponding index of the new array.
-        """
-        pixel_index = np.load('./vprtemponeuro/dataset/pixel_selection.npy')
-        img = np.zeros(len(pixel_index))
-        pixel_index_div = divmod(pixel_index, self.img_shape[0])
-        pixel_index_div_xy = np.column_stack((pixel_index_div[0], pixel_index_div[1]))
-        for i, (y, x) in enumerate(pixel_index_div_xy):
-            if self.img[x, y] > 0:
-               img[i] = self.tempcode[x, y]
-
-        return img
-
-    def main(self):
-        self.get_pixel_indices()
-        self.generate_temporal_code(self.repeat)
-        img = self.match_pixels_to_index()
-
-        return img
+class SetImageAsSpikes:
+    def __init__(self, intensity=255, test=True):
+        self.intensity = intensity
         
+        # Setup QAT FakeQuantize for the activations (your spikes)
+        self.fake_quantize = torch.quantization.FakeQuantize(
+            observer=torch.quantization.MovingAverageMinMaxObserver, 
+            quant_min=0, 
+            quant_max=255, 
+            dtype=torch.quint8, 
+            qscheme=torch.per_tensor_affine, 
+            reduce_range=False
+        )
+        
+    def train(self):
+        self.fake_quantize.train()
+
+    def eval(self):
+        self.fake_quantize.eval()    
+    
+    def __call__(self, img_tensor):
+        N, W, H = img_tensor.shape
+        reshaped_batch = img_tensor.view(N, 1, -1)
+        
+        # Divide all pixel values by 255
+        normalized_batch = reshaped_batch / self.intensity
+        normalized_batch  = torch.squeeze(normalized_batch, 0)
+
+        # Apply FakeQuantize
+        spikes = self.fake_quantize(normalized_batch)
+        
+        if not self.fake_quantize.training:
+            scale, zero_point = self.fake_quantize.calculate_qparams()
+            spikes = torch.quantize_per_tensor(spikes, float(scale), int(zero_point), dtype=torch.quint8)
+
+        return spikes
+
 class ProcessImage:
-    def __init__(self, repeat):
-        super(ProcessImage, self).__init__()
-        self.repeat = repeat
+    def __init__(self, mid=0.5):
+        self.mid = mid
+        
     def __call__(self, img):
-        GTC = GenerateTemporalCode(img,self.repeat)
-        img = GTC.main()
+        # Add a channel dimension to the resulting grayscale image
+        img= img.unsqueeze(0)
+        img = img.to(dtype=torch.float32)
+        # gamma correction
+        mean = torch.mean(img)
+
+        # Check if mean is zero or negative to avoid math domain error
+        try:
+            gamma = math.log(self.mid * 255) / math.log(mean)
+            img = torch.pow(img, gamma).clip(0, 255)
+        except:
+            pass
+        img = img.squeeze(0)
+
+        # Resize the image to the specified dimensions
+        spike_maker = SetImageAsSpikes()
+        img = spike_maker(img)
+        img = torch.squeeze(img,0)
+
         return img
+
 
 class CustomImageDataset(Dataset):
-    def __init__(self, annotations_file, base_dir, img_dirs, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=50):
+    def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=256):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
@@ -114,62 +86,51 @@ class CustomImageDataset(Dataset):
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
         self.img_labels = []
-        for img_dir in img_dirs:
 
-            img_labels = pd.read_csv(annotations_file)
-            img_labels['file_path'] = img_labels.apply(lambda row: os.path.join(base_dir,img_dir, row.iloc[0]), axis=1)
-            
-            # Select specific rows based on the skip parameter
-            img_labels = img_labels.iloc[::skip]
-            
-            # Limit the number of samples to max_samples if specified
-            if max_samples is not None:
-                img_labels = img_labels.iloc[:max_samples]
-            
-            # Determine if the images being fed are training or testing
-            if test:
-                self.img_labels = img_labels
-            else:
-                self.img_labels.append(img_labels)
+        img_labels = pd.read_csv(annotations_file)
+        img_labels['file_path'] = img_labels.apply(lambda row: os.path.join(img_dir, row.iloc[0]), axis=1)
+        
+        # Select specific rows based on the skip parameter
+        img_labels = img_labels.iloc[::skip]
+        
+        # Limit the number of samples to max_samples if specified
+        if max_samples is not None:
+            img_labels = img_labels.iloc[:max_samples]
+        
+        # Determine if the images being fed are training or testing
+        if test:
+            self.img_labels = img_labels
+        else:
+            self.img_labels.append(img_labels)
         
         if isinstance(self.img_labels,list):
             # Concatenate all the DataFrames
             self.img_labels = pd.concat(self.img_labels, ignore_index=True)
         
     def __len__(self):
-        return len(self.img_labels)
+        return len(self.img_labels) 
     
     def __getitem__(self, idx):
         img_path = self.img_labels.iloc[idx]['file_path']
+        gps_coordinate = self.img_labels.iloc[idx,2]
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"No file found for index {idx} at {img_path}.")
+        image = read_image(img_path)
 
-        image = read_image(img_path)  # image is now a tensor
         label = self.img_labels.iloc[idx, 1]
+        
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
 
-        pixel_index = np.load('./vprtemponeuro/dataset/pixel_selection.npy')
-        pixel_index_div = divmod(pixel_index, image.shape[2])
-        pixel_index_div_xy = np.column_stack((pixel_index_div[0], pixel_index_div[1]))
-        pixel_index = torch.from_numpy(pixel_index_div_xy)
-
-        # Ensure pixel_index is in the correct shape and format
-        if pixel_index.dim() == 2 and pixel_index.size(1) == 2:
-            # Extract pixels based on pixel_index from the image
-            # Adjust for the fact that image has an additional leading dimension for channels
-            image_1d = image[0, pixel_index[:, 0], pixel_index[:, 1]]
-        image = image_1d/255
-        #print(image)
-        #if self.transform:
-            #image = self.transform(image)
-        #if self.target_transform:
-        #    label = self.target_transform(label)
-        #image=torch.tensor(image)
-
-
+        # Raster the input for image
         if self.is_raster:
             image = (torch.rand(self.time_window, *image.shape) < image).float()
+        # Prepare the spikes for deployment to speck2devkit
         if self.is_spiking:
             sqrt_div = math.sqrt(image[-1].size()[0])
             image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
             image = image.unsqueeze(1)
-        return image, label
+
+        return image, label, gps_coordinate
