@@ -1,6 +1,6 @@
 #MIT License
 
-#Copyright (c) 2023 Adam Hines, Peter G Stratton, Michael Milford, Tobias Fischer
+#Copyright (c) 2024 Adam Hines, Michael Milford, Tobias Fischer
 
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
@@ -25,28 +25,26 @@ Imports
 '''
 
 import os
+import json
 import torch
 import samna
-import time
-import gc
 
-import vprtemponeuro.src.blitnet as bn
 import numpy as np
 import torch.nn as nn
-import sinabs.layers as sl
-import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import vprtemponeuro.src.blitnet as bn
+import torchvision.transforms as transforms
 
-from vprtemponeuro.src.loggers import model_logger
-from sinabs.from_torch import from_model
-from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
-from torch.utils.data import DataLoader
 from tqdm import tqdm
-from prettytable import PrettyTable
-from vprtemponeuro.src.metrics import recallAtK
-from sinabs.backend.dynapcnn import DynapcnnNetwork
-from sinabs.backend.dynapcnn.chip_factory import ChipFactory
 from collections import Counter
+from prettytable import PrettyTable
+from torch.utils.data import DataLoader
+from sinabs.from_torch import from_model
+from vprtemponeuro.src.loggers import model_logger
+from sinabs.backend.dynapcnn import DynapcnnNetwork
+from vprtemponeuro.src.metrics import recallAtK, createPR
+from sinabs.backend.dynapcnn.chip_factory import ChipFactory
+from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
 class VPRTempoNeuro(nn.Module):
     def __init__(self, args):
@@ -58,7 +56,8 @@ class VPRTempoNeuro(nn.Module):
             setattr(self, arg, getattr(args, arg))
 
         # Set the dataset file
-        self.dataset_file = os.path.join('./vprtemponeuro/dataset', self.dataset + '.csv')
+        self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+        self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -69,8 +68,8 @@ class VPRTempoNeuro(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input*2)
-        self.output = int(args.num_places / args.num_modules)
+        self.feature = int(self.input*self.feature_multiplier)
+        self.output = int(args.reference_places)
 
         """
         Define trainable layers here
@@ -107,7 +106,7 @@ class VPRTempoNeuro(nn.Module):
         self.layer_dict[name] = self.layer_counter
         self.layer_counter += 1                           
 
-    def evaluate(self, test_loader):
+    def evaluate(self, test_loader, model):
         """
         Run the inferencing model and calculate the accuracy.
 
@@ -177,7 +176,7 @@ class VPRTempoNeuro(nn.Module):
             sample_rate = 100.0  # Hz
 
         # Initialize the tqdm progress bar
-        pbar = tqdm(total=self.num_places,
+        pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
         
@@ -196,24 +195,29 @@ class VPRTempoNeuro(nn.Module):
                 power.start_auto_power_measurement(sample_rate)
 
             # Run through the input data
-            for spikes, labels in test_loader:
+            for spikes, _ , _ in test_loader:
                 # Squeeze the batch dimension
                 spikes = spikes.squeeze(0)
 
                 # create samna Spike events stream
-                events_in = factory.raster_to_events(spikes, 
-                                                    layer=first_layer_idx,
-                                                    dt=1e-6)
-                # Forward pass
-                events_out = self.forward(events_in)
+                try:
+                    events_in = factory.raster_to_events(spikes, 
+                                                        layer=first_layer_idx,
+                                                        dt=1e-6)
+                    # Forward pass
+                    events_out = self.forward(events_in)
 
-                # Get prediction
-                neuron_idx = [each.feature for each in events_out]
-                if len(neuron_idx) != 0:
-                    frequent_counter = Counter(neuron_idx)
-                    #prediction = frequent_counter.most_common(1)[0][0]
-                    freq_array = create_frequency_array(frequent_counter, self.num_places)
-                    all_arrays.append(freq_array)
+                    # Get prediction
+                    neuron_idx = [each.feature for each in events_out]
+                    if len(neuron_idx) != 0:
+                        frequent_counter = Counter(neuron_idx)
+                        #prediction = frequent_counter.most_common(1)[0][0]
+                except:
+                    frequent_counter = Counter([])
+                    pass   
+
+                freq_array = create_frequency_array(frequent_counter, self.reference_places)
+                all_arrays.append(freq_array)
 
                 # Update the progress bar
                 pbar.update(1)
@@ -243,15 +247,8 @@ class VPRTempoNeuro(nn.Module):
             power_each_track = dict()
             event_count_each_track = dict()
 
-            # check whether timestamp is correct
-            timestamp_all_zero = True
-
             # loop through all collected power events and get data
             for evt in power_events:
-
-                if evt.timestamp != 0:
-                    timestamp_all_zero = False
-                
                 p_track_id = evt.channel
                 tmp_power = power_each_track.get(p_track_id, 0) + evt.value
                 tmp_count = event_count_each_track.get(p_track_id, 0) + 1
@@ -273,23 +270,31 @@ class VPRTempoNeuro(nn.Module):
                 print(f'track{p_track_id}: {avg_power}uW, {current}uA') 
 
         # Convert output to numpy
-        all_arrays = np.array(all_arrays).T
+        out = np.array(all_arrays)
+
+        # Perform sequence matching convolution on similarity matrix
+        if self.sequence_length != 0:
+            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        else:
+            dist_matrix_seq = out
 
         # Recall@N
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         # Create GT matrix
-        GT = np.zeros((self.num_places,self.num_places), dtype=int)
-        for n in range(len(GT)):
-            GT[n,n] = 1
+        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        if self.sequence_length != 0:
+            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
         # Calculate Recall@N
         for n in N:
-            R.append(round(recallAtK(all_arrays,GThard=GT,K=n),2))
+            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
         # Print the results
         table = PrettyTable()
         table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
         table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        print(table)
+        model.logger.info(table)
 
         # Plot power monitoring results and similarity matrix
         if self.power_monitor:
@@ -322,12 +327,33 @@ class VPRTempoNeuro(nn.Module):
             # Adjust the layout to prevent cutting off the title
             plt.tight_layout()
             plt.show()  
-        else: # Plot only the similarity matrix
-            plt.matshow(all_arrays)
-            plt.colorbar(shrink=0.75,label="Number of output spikes")
+        if self.sim_mat: # Plot only the similarity matrix
+            plt.matshow(dist_matrix_seq)
+            plt.colorbar(shrink=0.75,label="Output spike intensity")
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
+            plt.show()
+        # Plot PR curve
+        if self.PR_curve:
+            # Create PR curve
+            P, R = createPR(dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
+            #  Combine P and R into a list of lists
+            PR_data = {
+                    "Precision": P,
+                    "Recall": R
+                }
+            output_file = "PR_curve_data.json"
+            # Construct the full path
+            full_path = f"{model.data_dir}/{output_file}"
+            # Write the data to a JSON file
+            with open(full_path, 'w') as file:
+                json.dump(PR_data, file) 
+            # Plot PR curve
+            plt.plot(R,P)    
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.title('Precision-Recall Curve')
             plt.show()
 
     def forward(self, spikes):
@@ -362,12 +388,11 @@ def run_inference(model, model_name):
     image_transform = transforms.Compose([
         ProcessImage()
     ])
-    test_dataset = CustomImageDataset(annotations_file=model.dataset_file, 
-                                      base_dir=model.data_dir,
-                                      img_dirs=model.query_dir,
+    test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
+                                      img_dir=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
-                                      max_samples=model.num_places,
+                                      max_samples=model.query_places,
                                       is_raster=True,
                                       is_spiking=True)
 
@@ -384,4 +409,4 @@ def run_inference(model, model_name):
     model.load_model(os.path.join('./vprtemponeuro/models', model_name))
 
     # Use evaluate method for inference accuracy
-    model.evaluate(test_loader)
+    model.evaluate(test_loader, model)
