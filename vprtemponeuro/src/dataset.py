@@ -123,9 +123,11 @@ class CustomImageDataset(Dataset):
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
-
+        image_og = []
         # Raster the input for image
         if self.is_raster:
+            image_og = image.clone()
+            torch.manual_seed(50)
             image = (torch.rand(self.time_window, *image.shape) < image).float()
         # Prepare the spikes for deployment to speck2devkit
         if self.is_spiking:
@@ -133,4 +135,4 @@ class CustomImageDataset(Dataset):
             image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
             image = image.unsqueeze(1)
 
-        return image, label, gps_coordinate
+        return image, label, gps_coordinate, image_og

@@ -79,6 +79,7 @@ class VPRTempoTrain(nn.Module):
             ip_rate=self.ip_rate_feat,
             stdp_rate=self.stdp_rate_feat,
             p=[self.f_exc, self.f_inh],
+            const_inp=[self.const_input_l,self.const_input_h],
             device=self.device
         )
         self.add_layer(
@@ -89,6 +90,7 @@ class VPRTempoTrain(nn.Module):
             ip_rate=self.ip_rate_out,
             stdp_rate=self.stdp_rate_out,
             p=[self.o_exc, self.o_inh],
+            const_inp=[self.const_input_l,self.const_input_h],
             spk_force=True,
             device=self.device
         )
@@ -149,13 +151,13 @@ class VPRTempoTrain(nn.Module):
                     
         
         # Initialize the learning rates for each layer (used for annealment)
-        init_itp = layer.eta_ip.detach()
+        init_itp = layer.eta_stdp.detach() * 2
         init_stdp = layer.eta_stdp.detach()
         mod = 0  # Used to determine the learning rate annealment, resets at each epoch
         # Run training for the specified number of epochs
         for _ in range(self.epoch):
             # Run training for the specified number of timesteps
-            for spikes, labels, gps in train_loader:
+            for spikes, labels, gps, _ in train_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.to(torch.float32)
                 spikes = torch.squeeze(spikes,0)
