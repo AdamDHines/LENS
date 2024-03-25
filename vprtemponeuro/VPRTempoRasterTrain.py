@@ -30,17 +30,19 @@ import torch
 
 import numpy as np
 import torch.nn as nn
+import sinabs.layers as sl
 import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+from sinabs.from_torch import from_model
 from vprtemponeuro.src.loggers import model_logger
 from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
 
-class VPRTempoTrain(nn.Module):
+class VPRTempoRasterTrain(nn.Module):
     def __init__(self, args):
-        super(VPRTempoTrain, self).__init__()
+        super(VPRTempoRasterTrain, self).__init__()
 
         # Set the arguments
         self.args = args
@@ -79,7 +81,6 @@ class VPRTempoTrain(nn.Module):
             ip_rate=self.ip_rate_feat,
             stdp_rate=self.stdp_rate_feat,
             p=[self.f_exc, self.f_inh],
-            const_inp=[self.const_input_l,self.const_input_h],
             device=self.device
         )
         self.add_layer(
@@ -90,10 +91,12 @@ class VPRTempoTrain(nn.Module):
             ip_rate=self.ip_rate_out,
             stdp_rate=self.stdp_rate_out,
             p=[self.o_exc, self.o_inh],
-            const_inp=[self.const_input_l,self.const_input_h],
             spk_force=True,
             device=self.device
         )
+
+        self.relu_outputs = None
+        self.hook = None
         
     def add_layer(self, name, **kwargs):
         """
@@ -130,7 +133,7 @@ class VPRTempoTrain(nn.Module):
             layer.eta_stdp = torch.mul(stdp, pt) # Anneal STDP learning rate
         return layer
 
-    def train_model(self, train_loader, layer, prev_layers=None):
+    def train_model(self, model, train_loader, layer, feature=False):
         """
         Train a layer of the network model.
 
@@ -138,9 +141,46 @@ class VPRTempoTrain(nn.Module):
         :param layer: Layer to train
         :param prev_layers: Previous layers to pass data through
         """
-        if not prev_layers:
+
+        # Define the inferencing model
+        # ReLU layer required for the sinabs model, this becomes the spiking layer
+
+        # if feature:
+        #     self.train_sequential = nn.Sequential(
+        #         self.feature_layer.w,
+        #         nn.ReLU()
+        #     )
+            
+        #     # Set up the sinabs model
+        #     input_shape = (1, 1, self.dims[0] * self.dims[1])
+        #     self.sinabs_model = from_model(
+        #                             self.train_sequential, 
+        #                             input_shape=input_shape,
+        #                             batch_size=1,
+        #                             add_spiking_output=False,
+        #                             ) 
+        # else:
+        self.train_sequential = nn.Sequential(
+            self.feature_layer.w,
+            nn.ReLU(),
+            self.output_layer.w
+        )
+        
+        # Set up the sinabs model
+        input_shape = (1, 1, self.dims[0] * self.dims[1])
+        self.sinabs_model = from_model(
+                                self.train_sequential, 
+                                input_shape=input_shape,
+                                batch_size=1,
+                                add_spiking_output=True,
+                                )       
+            # model.relu_output = None
+        
+        if feature:
             self.epoch = self.args.epoch_feat
+            prev_layer = None
         else:
+            prev_layer = getattr(self, 'feature_layer')
             self.epoch = self.args.epoch_out
         # Set the total timestep count
         self.T = int((self.reference_places) * self.epoch)
@@ -149,35 +189,40 @@ class VPRTempoTrain(nn.Module):
                     desc="Training ",
                     position=0)
                     
-        
         # Initialize the learning rates for each layer (used for annealment)
-        init_itp = layer.eta_stdp.detach() * 2
+        init_itp = layer.eta_ip.detach()
         init_stdp = layer.eta_stdp.detach()
         mod = 0  # Used to determine the learning rate annealment, resets at each epoch
         # Run training for the specified number of epochs
+        #with torch.no_grad():
         for _ in range(self.epoch):
             # Run training for the specified number of timesteps
-            for spikes, labels, gps, _ in train_loader:
-                spikes, labels = spikes.to(self.device), labels.to(self.device)
-                spikes = spikes.to(torch.float32)
-                spikes = torch.squeeze(spikes,0)
+            for spikes, labels, _, spikes_og in train_loader:
+                spikes, labels, spikes_og = spikes.to(self.device), labels.to(self.device), spikes_og.to(self.device)
+                pre_spike = spikes.detach() # Previous layer spikes for STDP
+                pre_spike = pre_spike.sum(dim=0).squeeze()/255
+                spikes = sl.FlattenTime()(spikes)
+                self.sinabs_model.reset_states()
                 idx = labels / self.filter # Set output index for spike forcing
                 # Pass through previous layers if they exist
-                if prev_layers:
-                    with torch.no_grad():
-                        for prev_layer_name in prev_layers:
-                            prev_layer = getattr(self, prev_layer_name) # Get the previous layer object
-                            spikes = self.forward(spikes, prev_layer) # Pass spikes through the previous layer
-                            spikes = bn.clamp_spikes(spikes, prev_layer) # Clamp spikes [0, 0.9]
-                else:
-                    prev_layer = None
+                # if prev_layers:
+                #     with torch.no_grad():
+                #         for prev_layer_name in prev_layers:
+                #             prev_layer = getattr(self, prev_layer_name) # Get the previous layer object
+                #             spikes = self.forward(spikes, prev_layer) # Pass spikes through the previous layer
+                #             spikes = bn.clamp_spikes(spikes, prev_layer) # Clamp spikes [0, 0.9]
+                # else:
+                #     prev_layer = None
                 # Get the output spikes from the current layer
-                pre_spike = spikes.detach() # Previous layer spikes for STDP
-                spikes = self.forward(spikes, layer) # Current layer spikes
-                spikes_noclp = spikes.detach() # Used for inhibitory homeostasis
+                #pre_spike = spikes.detach() # Previous layer spikes for STDP
+                #pre_spike = pre_spike.sum(dim=0).squeeze()/255
+                spikes = self.forward(self.sinabs_model, spikes,feature) # Current layer spikes
+                spikes_noclp = spikes.detach().to(self.device) # Used for inhibitory homeostasis
+                spikes = spikes.squeeze(0).to(self.device)
                 spikes = bn.clamp_spikes(spikes, layer) # Clamp spikes [0, 0.9]
                 # Calculate STDP
-                layer = bn.calc_stdp(pre_spike,spikes,spikes_noclp,layer, idx, prev_layer=prev_layer)
+                layer = bn.calc_stdp(spikes_og,spikes,spikes_noclp,layer, idx, prev_layer=prev_layer)
+                #print(torch.mean(layer.w.weight))
                 # Adjust learning rates
                 layer = self._anneal_learning_rate(layer, mod, init_itp, init_stdp)
                 # Update the annealing mod & progress bar 
@@ -186,13 +231,15 @@ class VPRTempoTrain(nn.Module):
 
         # Close the tqdm progress bar
         pbar.close()
-
         # Free up memory
         if self.device == "cuda:0":
             torch.cuda.empty_cache()
             gc.collect()
 
-    def forward(self, spikes, layer):
+    def get_relu_output(self, module, input, output):
+        self.relu_outputs = output.detach().cpu()
+
+    def forward(self, model, spikes, feature=False):
         """
         Compute the forward pass of the model.
     
@@ -202,10 +249,20 @@ class VPRTempoTrain(nn.Module):
         Returns:
         - Tensor: Output after processing.
         """
-        
-        spikes = layer.w(spikes)
-        
-        return spikes 
+        # Function to be called by the hook
+
+        if feature:
+            if self.hook is None:  # Ensure the hook is registered only once
+                relu_layer = model.spiking_model[1]
+                self.hook = relu_layer.register_forward_hook(self.get_relu_output)
+            spikes = self.sinabs_model(spikes)
+            spikes = self.relu_outputs.detach()
+            self.relu_outputs = None
+        else:
+            spikes = self.sinabs_model(spikes)
+        output = spikes.detach().sum(dim=0).squeeze()/255
+
+        return output 
     
     def save_model(self, model_out):    
         """
@@ -234,7 +291,7 @@ def check_pretrained_model(model_name):
         return retrain == 'n'
     return False
 
-def train_new_model(model, model_name):
+def train_new_model_raster(model, model_name):
     """
     Train a new model.
 
@@ -251,26 +308,29 @@ def train_new_model(model, model_name):
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.reference_places,
-                                      test=False)
+                                      test=False,
+                                      is_raster=True)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 
                               batch_size=1, 
-                              shuffle=True,
-                              num_workers=8,
-                              persistent_workers=True)
+                              shuffle=False,
+                              num_workers=1,
+                              persistent_workers=False)
     # Set the model to training mode and move to device
     model.train()
     # Keep track of trained layers to pass data through them
     trained_layers = [] 
     # Training each layer
+    feature = True
     for layer_name, _ in sorted(model.layer_dict.items(), key=lambda item: item[1]):
         print(f"Training layer: {layer_name}")
         # Retrieve the layer object
         layer = getattr(model, layer_name)
         # Train the layer
-        model.train_model(train_loader, layer, prev_layers=trained_layers)
+        model.train_model(model, train_loader, layer, feature=feature)
         # After training the current layer, add it to the list of trained layers
         trained_layers.append(layer_name)
+        feature = False
     # Convert the model to a quantized model
     model.eval()
     # Save the model

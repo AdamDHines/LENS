@@ -115,12 +115,8 @@ class VPRTempo(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
-
-        #nn.init.eye_(self.inert_conv_layer.weight)
-        self.inference = nn.Sequential(
-            self.feature_layer.w,
-            self.output_layer.w,
-        )
+        layer_feat = getattr(model, layers[0])
+        layer_out = getattr(model, layers[1])
 
         # Initiliaze the output spikes variable
         out = []
@@ -131,12 +127,12 @@ class VPRTempo(nn.Module):
 
         # Run inference for the specified number of timesteps
         with torch.no_grad():
-            for spikes, labels, gps in test_loader:
+            for spikes, labels, gps, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.squeeze(0)
                 spikes = spikes.to(torch.float32)
                 # Forward pass
-                spikes = self.forward(spikes)
+                spikes = self.forward(spikes,layer_feat,layer_out)
                 # Add output spikes to list
                 out.append(spikes.detach().cpu().tolist())
                 pbar.update(1)
@@ -206,7 +202,7 @@ class VPRTempo(nn.Module):
         return R
 
 
-    def forward(self, spikes):
+    def forward(self, spikes, layer_feat, layer_out):
         """
         Compute the forward pass of the model.
     
@@ -217,8 +213,11 @@ class VPRTempo(nn.Module):
         - Tensor: Output after processing.
         """
         
-        spikes = self.inference(spikes)
-        
+        spikes = layer_feat.w(spikes)
+        #spikes = bn.clamp_spikes(spikes,layer_feat)
+        spikes = layer_out.w(spikes)
+        #spikes = bn.clamp_spikes(spikes,layer_out)
+
         return spikes
         
     def load_model(self, model_path):

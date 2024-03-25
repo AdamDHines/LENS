@@ -34,6 +34,7 @@ from vprtemponeuro.VPRTempo import VPRTempo, run_inference_norm
 from vprtemponeuro.VPRTempoNeuro import VPRTempoNeuro, run_inference
 from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, train_new_model
 from vprtemponeuro.VPRTempoRaster import VPRTempoRaster, run_inference_raster
+from vprtemponeuro.VPRTempoRasterTrain import VPRTempoRasterTrain, train_new_model_raster
 
 def generate_model_name(model):
     """
@@ -51,16 +52,23 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-
+    #args.train_new_model = True
+    #args.raster = True
     # If user wants to train a new network
-    if args.train_new_model:
+    if args.train_new_model and not args.raster:
         # Initialize the model
         model = VPRTempoTrain(args)
         # Generate the model name
         model_name = generate_model_name(model)
         # Train the model
         train_new_model(model, model_name)
-
+    elif args.train_new_model and args.raster:
+        # Initialize the model
+        model = VPRTempoRasterTrain(args)
+        # Generate the model name
+        model_name = generate_model_name(model)
+        # Train the model
+        train_new_model_raster(model, model_name)
     # Run a weights and biases sweep    
     elif args.wandb:
         # Log into weights & biases
@@ -72,12 +80,20 @@ def initialize_and_run_model(args):
         sweep_config['metric'] = metric
         
         # Define the parameters for the search
-        parameters_dict = {}
+        parameters_dict = {
+            'fire_l_feat': {'values': [0.001, 0.01, 0.1]},
+            'fire_h_feat': {'values': [0.125, 0.15, 0.175]},
+            'thr_h_feat': {'values': [0.25, 0.5, 0.75]},
+
+            'fire_l_out': {'values': [0.001, 0.01, 0.1]},
+            'fire_h_out': {'values': [0.125, 0.15, 0.175]},
+            'thr_h_out': {'values': [0.25, 0.5, 0.75]}
+        }
         sweep_config['parameters'] = parameters_dict
         pprint.pprint(sweep_config)
     
         # Start sweep controller
-        sweep_id = wandb.sweep(sweep_config, project="")
+        sweep_id = wandb.sweep(sweep_config, project="sunset2_threshold_random")
 
         # Initialize w&b search
         def wandsearch(config=None):
@@ -86,6 +102,13 @@ def initialize_and_run_model(args):
                 config = wandb.config
 
                 # Set arguments for the sweep
+                args.fire_l_feat = config.fire_l_feat
+                args.fire_h_feat = config.fire_h_feat
+                args.thr_h_feat = config.thr_h_feat
+
+                args.fire_l_out = config.fire_l_out
+                args.fire_h_out = config.fire_h_out
+                args.thr_h_out = config.thr_h_out
 
                 # Initialize the training model
                 args.train_new_model = True
@@ -153,7 +176,7 @@ def parse_network():
                             help="Directory where dataset files are stored")
     parser.add_argument('--reference_places', type=int, default=641,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=724,
+    parser.add_argument('--query_places', type=int, default=632,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
@@ -171,24 +194,28 @@ def parse_network():
     # Hyperparameters - feature layer
     parser.add_argument('--thr_l_feat', type=float, default=0,
                         help="Low threshold value")
-    parser.add_argument('--thr_h_feat', type=float, default=0.1,
+    parser.add_argument('--thr_h_feat', type=float, default=0.75,
                             help="High threshold value")
     parser.add_argument('--fire_l_feat', type=float, default=0.4,
                             help="Low threshold value")
     parser.add_argument('--fire_h_feat', type=float, default=0.6,
                             help="High threshold value")
-    parser.add_argument('--ip_rate_feat', type=float, default=0.5,
+    parser.add_argument('--const_input_l', type=float, default=0.0,
+                            help="Low constant input value"),
+    parser.add_argument('--const_input_h', type=float, default=0.0,
+                            help="High constant input value"),
+    parser.add_argument('--ip_rate_feat', type=float, default=0.02,
                             help="ITP learning rate")
     parser.add_argument('--stdp_rate_feat', type=float, default=0.01,
                             help="STDP learning rate")
    # Hyperparameters - output layer 
     parser.add_argument('--thr_l_out', type=float, default=0,
                         help="Low threshold value")
-    parser.add_argument('--thr_h_out', type=float, default=0.2,
+    parser.add_argument('--thr_h_out', type=float, default=0.5,
                             help="High threshold value")
-    parser.add_argument('--fire_l_out', type=float, default=0.4,
+    parser.add_argument('--fire_l_out', type=float, default=0.5,
                             help="Low threshold value")
-    parser.add_argument('--fire_h_out', type=float, default=0.6,
+    parser.add_argument('--fire_h_out', type=float, default=0.5,
                             help="High threshold value")
     parser.add_argument('--ip_rate_out', type=float, default=0.02,
                             help="ITP learning rate")
@@ -196,13 +223,13 @@ def parse_network():
                             help="STDP learning rate")
 
     # Connection probabilities
-    parser.add_argument('--f_exc', type=float, default=0.9,
+    parser.add_argument('--f_exc', type=float, default=0.1,
                         help="Feature layer excitatory connection")
-    parser.add_argument('--f_inh', type=float, default=0.8,
+    parser.add_argument('--f_inh', type=float, default=0.25,
                         help="Feature layer inhibitory connection")
-    parser.add_argument('--o_exc', type=float, default=0.7,
+    parser.add_argument('--o_exc', type=float, default=1.0,
                         help="Output layer excitatory connection")
-    parser.add_argument('--o_inh', type=float, default=0.9,
+    parser.add_argument('--o_inh', type=float, default=1.0,
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters

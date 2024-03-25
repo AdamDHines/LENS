@@ -125,7 +125,7 @@ class VPRTempoRaster(nn.Module):
                                 self.inference, 
                                 input_shape=input_shape,
                                 batch_size=1,
-                                add_spiking_output=True,
+                                add_spiking_output=True
                                 )
 
         # Initialize the tqdm progress bar
@@ -135,15 +135,17 @@ class VPRTempoRaster(nn.Module):
         # Initiliaze the output spikes variable
         out = []
         # Run inference for the specified number of timesteps
-        for spikes, labels, _ in test_loader:
-            spikes, labels = spikes.to(self.device), labels.to(self.device)
-            spikes = sl.FlattenTime()(spikes)
-            # Forward pass
-            spikes = self.forward(spikes)
-            output = spikes.sum(dim=0).squeeze()
-            # Add output spikes to list
-            out.append(output.detach().cpu().tolist())
-            pbar.update(1)
+        with torch.no_grad():
+            for spikes, labels, _, _ in test_loader:
+                spikes, labels = spikes.to(self.device), labels.to(self.device)
+                spikes = sl.FlattenTime()(spikes)
+                self.sinabs_model.reset_states()
+                # Forward pass
+                spikes = self.forward(spikes)
+                output = spikes.sum(dim=0).squeeze()
+                # Add output spikes to list
+                out.append(output.detach().cpu().tolist())
+                pbar.update(1)
 
         # Close the tqdm progress bar
         pbar.close()
