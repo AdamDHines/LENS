@@ -54,6 +54,7 @@ def initialize_and_run_model(args):
     """
     #args.train_new_model = True
     #args.raster = True
+    args.onchip = True
     # If user wants to train a new network
     if args.train_new_model and not args.raster:
         # Initialize the model
@@ -255,6 +256,8 @@ def parse_network():
                             help="Run the regular VPRTempo")
     parser.add_argument('--reference_annotation', action='store_true', 
                             help='Flag to limit frames (True) or just create all frames (False)')
+    parser.add_argument('--onchip', action='store_true', 
+                            help='Define the source of the input data to be from the speck event sensor')
     
     # Run weights and biases
     parser.add_argument('--wandb', action='store_true',

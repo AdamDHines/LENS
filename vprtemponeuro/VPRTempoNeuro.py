@@ -27,7 +27,10 @@ Imports
 import os
 import json
 import torch
-import samna
+import samna, samnagui
+import time
+import multiprocessing
+import threading
 
 import numpy as np
 import torch.nn as nn
@@ -36,6 +39,8 @@ import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
+from queue import Queue
+from vprtemponeuro.speckcollect import Collector
 from collections import Counter
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
@@ -113,6 +118,98 @@ class VPRTempoNeuro(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
+        def open_speck2f_dev_kit():
+            devices = [
+                device
+                for device in samna.device.get_unopened_devices()
+                if device.device_type_name.startswith("Speck2f")
+            ]
+            assert devices, "Speck2f board not found"
+
+            # default_config is a optional parameter of open_device
+            self.default_config = samna.speck2fBoards.DevKitDefaultConfig()
+
+            # if nothing is modified on default_config, this invoke is totally same to
+            # samna.device.open_device(devices[0])
+            return samna.device.open_device(devices[0], self.default_config)
+
+
+        def build_samna_event_route(graph, dk):
+            # build a graph in samna to show dvs
+            _, _, streamer = graph.sequential(
+                [dk.get_model_source_node(), "Speck2fDvsToVizConverter", "VizEventStreamer"]
+            )
+
+            config_source, _ = graph.sequential([samna.BasicSourceNode_ui_event(), streamer])
+
+            streamer.set_streamer_endpoint("tcp://0.0.0.0:40000")
+            if streamer.wait_for_receiver_count() == 0:
+                raise Exception(f'connecting to visualizer on {"tcp://0.0.0.0:40000"} fails')
+
+            return config_source
+
+
+        def open_visualizer(window_width, window_height, receiver_endpoint):
+            # start visualizer in a isolated process which is required on mac, intead of a sub process.
+            gui_process = multiprocessing.Process(
+                target=samnagui.run_visualizer,
+                args=(receiver_endpoint, window_width, window_height),
+            )
+            gui_process.start()
+
+            return gui_process
+
+        def start_visualizer():
+            def event_collector(event_queue):
+                while gui_process.is_alive():
+                    events = sink.get_events()  # Collect events
+                    if events:  # Check if there are any events to process
+                        event_queue.put(events)  # Put the entire batch of events into the queue as a single item
+                    print('Wow my bottom hurts')
+                    time.sleep(1.0)
+
+            def event_analyzer(event_queue):
+                while True:
+                    events_batch = event_queue.get()  # Get a batch of events
+                    # Process the entire batch of events here
+                    print(f"Processing a batch of {len(events_batch)} events")
+                    event_queue.task_done()
+            
+            gui_process = open_visualizer(0.75, 0.75, "tcp://0.0.0.0:40000")
+            dk = open_speck2f_dev_kit()
+
+            graph = samna.graph.EventFilterGraph()
+            config_source = build_samna_event_route(graph, dk)
+
+            sink = samna.graph.sink_from(dk.get_model().get_source_node())
+            # Configuring the visualizer
+            visualizer_config = samna.ui.VisualizerConfiguration(
+                plots=[samna.ui.ActivityPlotConfiguration(128, 128, "DVS Layer", [0, 0, .75, .75])]
+            )
+            config_source.write([visualizer_config])
+
+            # Modify configuration to enable DVS event monitoring
+            config = samna.speck2f.configuration.SpeckConfiguration()
+            config.dvs_layer.monitor_enable = True
+            dk.get_model().apply_configuration(config)
+
+            event_queue = Queue()
+            # Start the event collector thread
+            collector_thread = threading.Thread(target=event_collector, args=(event_queue,))
+            collector_thread.start()
+
+            # Start the event analyzer thread
+            analyzer_thread = threading.Thread(target=event_analyzer, args=(event_queue,))
+            analyzer_thread.start()
+            
+            # Wait until the visualizer window destroys
+            gui_process.join()
+
+            # Stop the graph and ensure the collector thread is also stopped
+            graph.stop()
+            collector_thread.join()
+
+            print('Event collection stopped.')
         # Rehsape output spikes into a similarity matrix
         def create_frequency_array(freq_dict, num_places):
             # Initialize the array with zeros
@@ -147,10 +244,10 @@ class VPRTempoNeuro(nn.Module):
                                     dvs_input=False)
         devkit_name = "speck2fdevkit"
         # use the `to` method of DynapcnnNetwork to deploy the SNN to the devkit
-        self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
+        #self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
         print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
         factory = ChipFactory(devkit_name)
-        first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
+        #first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
 
         # Initiliaze the output spikes variable
         all_arrays = []
@@ -193,6 +290,9 @@ class VPRTempoNeuro(nn.Module):
                 power_buffer_node.get_events()
                 # start monitor, we need pass a sample rate argument to the power monitor
                 power.start_auto_power_measurement(sample_rate)
+            
+            if self.args.onchip:
+                start_visualizer()
 
             # Run through the input data
             for spikes, _ , _ in test_loader:

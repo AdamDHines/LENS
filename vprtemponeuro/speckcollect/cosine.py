@@ -124,8 +124,8 @@ def sum_of_absolute_differences(image1, image2):
     return np.sum(np.abs(image1 - image2))
 
 # Load and preprocess images from both folders
-folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_49'
-folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_49'
+folder1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2'
+folder2 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/daytime'
 
 # First, load and preprocess all images from folder1 without skipping
 all_images1 = load_and_preprocess_images(folder1, skip_factor=1)
@@ -146,10 +146,10 @@ torch_dist = torch.cdist(a, b, 1)[0]
 N = [1,5,10,15,20,25] # N values to calculate
 seq_length = 10
 # Create GT matrix
-GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1_sunset2_GT.npy')
+GT = np.load('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset2_daytime_GT.npy')
 if seq_length != 0:
     GT = GT[seq_length-2:-1,seq_length-2:-1]
-
+GT=GT.T
 # Compute cosine similarity with the modified images
 similarity_matrix = cosine_similarity(images1, images2)
 
