@@ -56,11 +56,11 @@ dk = open_speck2f_dev_kit()
 # route events
 graph = samna.graph.EventFilterGraph()
 config_source = build_samna_event_route(dk, graph, streamer_endpoint)
-
+sink = samna.graph.sink_from(dk.get_model().get_source_node())
 graph.start()
-
+# events = sink.get_events()
 visualizer_config = samna.ui.VisualizerConfiguration(
-    plots=[samna.ui.ActivityPlotConfiguration(128, 128, "DVS Layer", [0, 0, 0.6, 1])]
+    plots=[samna.ui.ActivityPlotConfiguration(128, 128, "DVS Layer", [0, 0, 1, 1])]
 )
 
 config_source.write([visualizer_config])
@@ -75,3 +75,5 @@ dk.get_model().apply_configuration(config)
 gui_process.join()
 
 graph.stop()
+
+events = sink.get_events()

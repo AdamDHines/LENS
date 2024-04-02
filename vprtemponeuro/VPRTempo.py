@@ -133,6 +133,7 @@ class VPRTempo(nn.Module):
                 spikes = spikes.to(torch.float32)
                 # Forward pass
                 spikes = self.forward(spikes,layer_feat,layer_out)
+
                 # Add output spikes to list
                 out.append(spikes.detach().cpu().tolist())
                 pbar.update(1)
