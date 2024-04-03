@@ -54,7 +54,7 @@ def initialize_and_run_model(args):
     """
     #args.train_new_model = True
     #args.raster = True
-    args.onchip = True
+    #args.onchip = True
     # If user wants to train a new network
     if args.train_new_model and not args.raster:
         # Initialize the model
