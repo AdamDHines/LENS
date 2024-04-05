@@ -27,8 +27,12 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, dis
     with open(csv_file_path, 'w', newline='') as file, open(csv_file_path.replace('.csv', '_reference.csv'), 'w', newline='') as subset_file:
         writer = csv.writer(file)
         subset_writer = csv.writer(subset_file)
-        writer.writerow(['Image_name', 'index', 'gps_coordinate'])
-        subset_writer.writerow(['Image_name', 'index', 'gps_coordinate'])
+        if gps_path is not None:
+            writer.writerow(['Image_name', 'index', 'gps_coordinate'])
+            subset_writer.writerow(['Image_name', 'index', 'gps_coordinate'])
+        else:
+            writer.writerow(['Image_name', 'index'])
+            subset_writer.writerow(['Image_name', 'index'])
 
         if gps_path is not None:
             time_interval = 1 / fps
@@ -59,7 +63,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, dis
 
 
 # Example usage
-folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/davis/sunset1' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/sunset1.csv' # Path for the CSV file
-gps_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/brisbane_event/gps/sunset1.nmea'
+folder_path = '/home/adam/Downloads/test002' # Replace with your folder path
+csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/test002.csv' # Path for the CSV file
+gps_path = None
 create_csv_from_images(folder_path, csv_file_path, gps_path=gps_path)

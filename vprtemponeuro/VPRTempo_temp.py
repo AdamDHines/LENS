@@ -72,26 +72,7 @@ class VPRTempo(nn.Module):
         self.input = int(args.dims[0]*args.dims[1])
         self.feature = int(self.input*args.feature_multiplier)
         self.output = int(args.reference_places)
-        self.train_sequential = nn.Sequential(
-            # 2 x 128 x 128
-            # Core 0
-            nn.Conv2d(1, 8, kernel_size=(2, 2), stride=(2, 2), padding=(0, 0), bias=False),  # 8, 64, 64
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=(2, 2)),  # 8,32,32
-            # """Core 1"""
-            nn.Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),  # 16, 32, 32
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=(2, 2)),  # 16, 16, 16
-            # """Core 2"""
-            nn.Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),  # 8, 16, 16
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=(2, 2)),  # 16, 16, 16
-            nn.Flatten(),
-            nn.Dropout(0.5),
-            nn.Linear(8 * 8 * 8, 100, bias=False),
-            nn.ReLU(),
-        )
-        self.train_sequential.to(self.device)
+
         """
         Define trainable layers here
         """
@@ -103,7 +84,7 @@ class VPRTempo(nn.Module):
         )
         self.add_layer(
             'output_layer',
-            dims=[24, 118],
+            dims=[self.feature, self.output],
             device=self.device,
             inference=True
         )
@@ -134,7 +115,8 @@ class VPRTempo(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
-
+        layer_feat = getattr(model, layers[0])
+        layer_out = getattr(model, layers[1])
 
         # Initiliaze the output spikes variable
         out = []
@@ -142,31 +124,24 @@ class VPRTempo(nn.Module):
         pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
-        count = 0
-        num_corr = 0
-        k=9
+
         # Run inference for the specified number of timesteps
         with torch.no_grad():
             for spikes, labels, gps, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
-                # spikes = spikes.squeeze(0)
-                spikes = spikes.to(torch.float32)
-              
-                # Forward pass
-                spikes = self.forward(spikes)
                 spikes = spikes.squeeze(0)
-                thresh = torch.mean(spikes) + (k * torch.std(spikes))
-                # Add output spikes to list
-                if torch.max(spikes) > thresh:
-                    out.append(spikes.detach().cpu().tolist())
-                pbar.update(1)
+                spikes = spikes.to(torch.float32)
+                # Forward pass
+                spikes = self.forward(spikes,layer_feat,layer_out)
 
-                count += 1
+                # Add output spikes to list
+                out.append(spikes.detach().cpu().tolist())
+                pbar.update(1)
 
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
-        out = np.reshape(np.array(out),(856,model.reference_places))
+        out = np.reshape(np.array(out),(model.query_places,model.reference_places))
 
         # Run sequence matching
         if self.sequence_length != 0:
@@ -228,7 +203,7 @@ class VPRTempo(nn.Module):
         return R
 
 
-    def forward(self, spikes):
+    def forward(self, spikes, layer_feat, layer_out):
         """
         Compute the forward pass of the model.
     
@@ -239,7 +214,10 @@ class VPRTempo(nn.Module):
         - Tensor: Output after processing.
         """
         
-        spikes = self.train_sequential(spikes)
+        spikes = layer_feat.w(spikes)
+        #spikes = bn.clamp_spikes(spikes,layer_feat)
+        spikes = layer_out.w(spikes)
+        #spikes = bn.clamp_spikes(spikes,layer_out)
 
         return spikes
         

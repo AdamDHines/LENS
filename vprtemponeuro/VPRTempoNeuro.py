@@ -376,14 +376,6 @@ class VPRTempoNeuro(nn.Module):
             self.dynapcnn.to(device=devkit_name, chip_layers_ordering=[0,5])
             print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
 
-            self.dynapcnn2 = DynapcnnNetwork(snn=self.sinabs_model, 
-                            input_shape=input_shape, 
-                            discretize=True, 
-                            dvs_input=False)
-            
-            self.dynapcnn2.to(device=devkit_name, chip_layers_ordering=[1,6])
-            print(f"The SNN is deployed on the core: {self.dynapcnn2.chip_layers_ordering}")
-
         # use the `to` method of DynapcnnNetwork to deploy the SNN to the devkit
         #self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
         # print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
