@@ -40,12 +40,16 @@ def generate_model_name(model):
     """
     Generate the model name based on its parameters.
     """
-    model_name = (''.join(model.reference)+"_"+
-            "VPRTempo_" +
-            "IN"+str(model.input)+"_" +
-            "FN"+str(model.feature)+"_" + 
-            "DB"+str(model.reference_places) +
-            ".pth")
+    if model.raster:
+        model_name = (
+            "test30.pth")
+    else:
+        model_name = (''.join(model.reference)+"_"+
+                "VPRTempo_" +
+                "IN"+str(model.input)+"_" +
+                "FN"+str(model.feature)+"_" + 
+                "DB"+str(model.reference_places) +
+                ".pth")
     return model_name
 
 def initialize_and_run_model(args):
@@ -53,7 +57,10 @@ def initialize_and_run_model(args):
     Initialize the model and run the desired functionality.
     """
     #args.train_new_model = True
-    #args.raster = True
+    args.raster = True
+    
+    
+    args.raster_device = 'gpu'
     #args.onchip = True
     # If user wants to train a new network
     if args.train_new_model and not args.raster:
@@ -137,12 +144,18 @@ def initialize_and_run_model(args):
     else:
         # Set the quantization configuration
         if args.raster:
-            # Initialize the quantized model
-            model = VPRTempoRaster(args)
+            # # Initialize the quantized model
+            # model = VPRTempoRaster(args)
+            # # Generate the model name
+            # model_name = generate_model_name(model)
+            # # Run the quantized inference model
+            # run_inference_raster(model, model_name)
+                        # Initialize the model
+            model = VPRTempo(args)
             # Generate the model name
             model_name = generate_model_name(model)
-            # Run the quantized inference model
-            run_inference_raster(model, model_name)
+            # Run the inference model
+            run_inference_norm(model, model_name)
         elif args.norm:
             # Initialize the model
             model = VPRTempo(args)
@@ -169,15 +182,15 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--camera', type=str, default='davis',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='sunset2',
+    parser.add_argument('--reference', type=str, default='test001',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='sunset1',
+    parser.add_argument('--query', type=str, default='test002',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=641,
+    parser.add_argument('--reference_places', type=int, default=100,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=632,
+    parser.add_argument('--query_places', type=int, default=3811,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
@@ -187,7 +200,7 @@ def parse_network():
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch_feat', type=int, default=8,
+    parser.add_argument('--epoch_feat', type=int, default=100,
                             help="Number of epochs to train the model")
     parser.add_argument('--epoch_out', type=int, default=64,
                             help="Number of epochs to train the model")

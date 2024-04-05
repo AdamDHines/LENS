@@ -4,6 +4,7 @@ Imports
 import os
 import math
 import torch
+from skimage import io, color
 
 import pandas as pd
 
@@ -55,15 +56,15 @@ class ProcessImage:
         # Add a channel dimension to the resulting grayscale image
         img= img.unsqueeze(0)
         img = img.to(dtype=torch.float32)
-        # gamma correction
-        mean = torch.mean(img)
+        # # gamma correction
+        # mean = torch.mean(img)
 
-        # Check if mean is zero or negative to avoid math domain error
-        try:
-            gamma = math.log(self.mid * 255) / math.log(mean)
-            img = torch.pow(img, gamma).clip(0, 255)
-        except:
-            pass
+        # # Check if mean is zero or negative to avoid math domain error
+        # try:
+        #     gamma = math.log(self.mid * 255) / math.log(mean)
+        #     img = torch.pow(img, gamma).clip(0, 255)
+        # except:
+        #     pass
         img = img.squeeze(0)
 
         # Resize the image to the specified dimensions
@@ -115,14 +116,28 @@ class CustomImageDataset(Dataset):
         gps_coordinate = self.img_labels.iloc[idx,2]
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"No file found for index {idx} at {img_path}.")
-        image = read_image(img_path)
+        image = io.imread(img_path)
+        image = image[:, :, :3]
+        if len(image.shape) > 2:  # Convert to grayscale if necessary
+            image = color.rgb2gray(image)
+
+            # # start_x = (image.shape[1] - 32) // 2
+            # start_x = 0
+            # start_y = (image.shape[0] - 128) // 2
+            # end_x = start_x + 32
+            # end_y = start_y + 128
+
+            # # Crop the image
+            # image = image[start_y:end_y, start_x:end_x]
+            image = torch.tensor(image)
+            image = image.unsqueeze(0)
 
         label = self.img_labels.iloc[idx, 1]
         
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
+        # if self.transform:
+        #     image = self.transform(image)
+        # if self.target_transform:
+        #     label = self.target_transform(label)
         image_og = []
         # Raster the input for image
         if self.is_raster:

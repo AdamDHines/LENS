@@ -425,3 +425,9 @@
 [2024-04-03 16:27:38.233] [Speck2fBoards] [info] Speck 2f model initialized.
 [2024-04-03 16:28:24.075] [Speck2fBoards] [info] Speck 2f dev kit initialized.
 [2024-04-03 16:28:26.847] [Speck2fBoards] [info] Speck 2f model initialized.
+[2024-04-05 09:40:18.581] [Speck2fBoards] [info] Speck 2f dev kit initialized.
+[2024-04-05 09:41:40.210] [Speck2fBoards] [info] Speck 2f dev kit initialized.
+[2024-04-05 09:41:42.982] [Speck2fBoards] [info] Speck 2f model initialized.
+[2024-04-05 09:42:19.087] [Speck2fBoards] [info] Speck 2f dev kit initialized.
+[2024-04-05 09:42:21.854] [Speck2fBoards] [info] Speck 2f model initialized.
+[2024-04-05 09:42:21.863] [ZMQ] [info] ZMQPublisher set endpoint: tcp://0.0.0.0:40000
