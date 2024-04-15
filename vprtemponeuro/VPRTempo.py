@@ -72,26 +72,7 @@ class VPRTempo(nn.Module):
         self.input = int(args.dims[0]*args.dims[1])
         self.feature = int(self.input*args.feature_multiplier)
         self.output = int(args.reference_places)
-        self.train_sequential = nn.Sequential(
-            # 2 x 128 x 128
-            # Core 0
-            nn.Conv2d(1, 8, kernel_size=(2, 2), stride=(2, 2), padding=(0, 0), bias=False),  # 8, 64, 64
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=(2, 2)),  # 8,32,32
-            # """Core 1"""
-            nn.Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),  # 16, 32, 32
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=(2, 2)),  # 16, 16, 16
-            # """Core 2"""
-            nn.Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),  # 8, 16, 16
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=(2, 2)),  # 16, 16, 16
-            nn.Flatten(),
-            nn.Dropout(0.5),
-            nn.Linear(8 * 8 * 8, 100, bias=False),
-            nn.ReLU(),
-        )
-        self.train_sequential.to(self.device)
+
         """
         Define trainable layers here
         """
@@ -103,9 +84,17 @@ class VPRTempo(nn.Module):
         )
         self.add_layer(
             'output_layer',
-            dims=[24, 118],
+            dims=[self.feature, self.output],
             device=self.device,
             inference=True
+        )
+
+        # Define the forward pass
+        self.snn = nn.Sequential(
+            self.feature_layer.w,
+            nn.Hardtanh(0, 1.0),
+            self.output_layer.w,
+            nn.Hardtanh(0, 1.0)
         )
         
     def add_layer(self, name, **kwargs):
@@ -127,14 +116,12 @@ class VPRTempo(nn.Module):
         self.layer_dict[name] = self.layer_counter
         self.layer_counter += 1                           
 
-    def evaluate(self, model, test_loader, layers=None):
+    def evaluate(self, model, test_loader):
         """
         Run the inferencing model and calculate the accuracy.
-
+        :param model: Model to run inference on
         :param test_loader: Testing data loader
-        :param layers: Layers to pass data through
         """
-
 
         # Initiliaze the output spikes variable
         out = []
@@ -142,31 +129,24 @@ class VPRTempo(nn.Module):
         pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
-        count = 0
-        num_corr = 0
-        k=9
+
         # Run inference for the specified number of timesteps
         with torch.no_grad():
-            for spikes, labels, gps, _ in test_loader:
+            for spikes, labels, _, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
-                # spikes = spikes.squeeze(0)
+                spikes = spikes.squeeze(0)
                 spikes = spikes.to(torch.float32)
-              
                 # Forward pass
                 spikes = self.forward(spikes)
-                spikes = spikes.squeeze(0)
-                thresh = torch.mean(spikes) + (k * torch.std(spikes))
-                # Add output spikes to list
-                if torch.max(spikes) > thresh:
-                    out.append(spikes.detach().cpu().tolist())
-                pbar.update(1)
 
-                count += 1
+                # Add output spikes to list
+                out.append(spikes.detach().cpu().tolist())
+                pbar.update(1)
 
         # Close the tqdm progress bar
         pbar.close()
         # Rehsape output spikes into a similarity matrix
-        out = np.reshape(np.array(out),(856,model.reference_places))
+        out = np.reshape(np.array(out),(model.query_places,model.reference_places))
 
         # Run sequence matching
         if self.sequence_length != 0:
@@ -180,6 +160,11 @@ class VPRTempo(nn.Module):
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         
+        # Create a perfect square GT matrix
+        GT = np.eye(model.query_places, model.reference_places)
+        if self.args.sequence_length != 0:
+            GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+
         # Load GT matrix
         GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
         if self.args.sequence_length != 0:
@@ -239,7 +224,7 @@ class VPRTempo(nn.Module):
         - Tensor: Output after processing.
         """
         
-        spikes = self.train_sequential(spikes)
+        spikes = self.snn(spikes)
 
         return spikes
         
@@ -256,7 +241,6 @@ def run_inference_norm(model, model_name):
 
     :param model: Model to run inference on
     :param model_name: Name of the model to load
-    :param qconfig: Quantization configuration
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
@@ -268,7 +252,7 @@ def run_inference_norm(model, model_name):
                                       skip=model.filter,
                                       max_samples=model.query_places,
                                       is_raster=False)
-    print(str(model.data_dir+model.query_dir))
+    
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 

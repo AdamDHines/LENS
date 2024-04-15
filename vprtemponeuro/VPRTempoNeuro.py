@@ -429,7 +429,7 @@ class VPRTempoNeuro(nn.Module):
                             position=0)
 
                 # Run through the input data
-                for spikes, _ , _ in test_loader:
+                for spikes, _ , _, _ in test_loader:
                     # Squeeze the batch dimension
                     spikes = spikes.squeeze(0)
 
@@ -514,21 +514,21 @@ class VPRTempoNeuro(nn.Module):
         else:
             dist_matrix_seq = out
 
-        # Recall@N
-        N = [1,5,10,15,20,25] # N values to calculate
-        R = [] # Recall@N values
-        # Create GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        if self.sequence_length != 0:
-            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
-        # Calculate Recall@N
-        for n in N:
-            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-        # Print the results
-        table = PrettyTable()
-        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        model.logger.info(table)
+        # # Recall@N
+        # N = [1,5,10,15,20,25] # N values to calculate
+        # R = [] # Recall@N values
+        # # Create GT matrix
+        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        # if self.sequence_length != 0:
+        #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+        # # Calculate Recall@N
+        # for n in N:
+        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # # Print the results
+        # table = PrettyTable()
+        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        # model.logger.info(table)
 
         # Plot power monitoring results and similarity matrix
         if self.power_monitor:

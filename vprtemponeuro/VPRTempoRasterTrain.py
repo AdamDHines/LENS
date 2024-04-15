@@ -174,9 +174,8 @@ class VPRTempoRasterTrain(nn.Module):
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=(2, 2)),  # 16, 16, 16
             nn.Flatten(),
-            nn.Dropout(0.5),
-            nn.Linear(8 * 8 * 8, 100, bias=False),
-            nn.ReLU(),
+            nn.Dropout(0.75),
+            nn.Linear(8 * 8 * 8, 113, bias=False)
         )
 
 
