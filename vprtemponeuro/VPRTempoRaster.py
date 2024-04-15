@@ -139,7 +139,7 @@ class VPRTempoRaster(nn.Module):
             for spikes, labels, _, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = sl.FlattenTime()(spikes)
-                self.sinabs_model.reset_states()
+                #self.sinabs_model.reset_states()
                 # Forward pass
                 spikes = self.forward(spikes)
                 output = spikes.sum(dim=0).squeeze()
@@ -160,24 +160,24 @@ class VPRTempoRaster(nn.Module):
         else:
             dist_matrix_seq = out
         
-        # Recall@N
-        N = [1,5,10,15,20,25] # N values to calculate
-        R = [] # Recall@N values
+        # # Recall@N
+        # N = [1,5,10,15,20,25] # N values to calculate
+        # R = [] # Recall@N values
 
-        # Create GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        if self.sequence_length != 0:
-            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+        # # Create GT matrix
+        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        # if self.sequence_length != 0:
+        #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
         
-        # Calculate Recall@N
-        for n in N:
-            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # # Calculate Recall@N
+        # for n in N:
+        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
 
-        # Print the results
-        table = PrettyTable()
-        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        model.logger.info(table)
+        # # Print the results
+        # table = PrettyTable()
+        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        # model.logger.info(table)
     
         # Plot similarity matrix
         if self.sim_mat:

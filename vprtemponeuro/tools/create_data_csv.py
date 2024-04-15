@@ -63,7 +63,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, dis
 
 
 # Example usage
-folder_path = '/home/adam/Downloads/test002' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/test002.csv' # Path for the CSV file
+folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/test001-conv-30' # Replace with your folder path
+csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/test001-conv-30.csv' # Path for the CSV file
 gps_path = None
 create_csv_from_images(folder_path, csv_file_path, gps_path=gps_path)

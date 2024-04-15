@@ -40,45 +40,32 @@ def generate_model_name(model):
     """
     Generate the model name based on its parameters.
     """
-    if model.raster:
-        model_name = (
-            "test30.pth")
-    else:
-        model_name = (''.join(model.reference)+"_"+
-                "VPRTempo_" +
-                "IN"+str(model.input)+"_" +
-                "FN"+str(model.feature)+"_" + 
-                "DB"+str(model.reference_places) +
-                ".pth")
+    # if model.raster:
+    #     model_name = (
+    #         "test30.pth")
+
+    model_name = (''.join(model.reference)+"_"+
+            "VPRTempo_" +
+            "IN"+str(model.input)+"_" +
+            "FN"+str(model.feature)+"_" + 
+            "DB"+str(model.reference_places) +
+            ".pth")
     return model_name
 
 def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    #args.train_new_model = True
-    args.raster = True
     
-    
-    args.raster_device = 'gpu'
-    #args.onchip = True
-    # If user wants to train a new network
-    if args.train_new_model and not args.raster:
+    if args.train_new_model: # If user wants to train a new network
         # Initialize the model
         model = VPRTempoTrain(args)
         # Generate the model name
         model_name = generate_model_name(model)
         # Train the model
         train_new_model(model, model_name)
-    elif args.train_new_model and args.raster:
-        # Initialize the model
-        model = VPRTempoRasterTrain(args)
-        # Generate the model name
-        model_name = generate_model_name(model)
-        # Train the model
-        train_new_model_raster(model, model_name)
-    # Run a weights and biases sweep    
-    elif args.wandb:
+    
+    elif args.wandb: # Run a weights and biases sweep    
         # Log into weights & biases
         wandb.login()
         
@@ -89,19 +76,12 @@ def initialize_and_run_model(args):
         
         # Define the parameters for the search
         parameters_dict = {
-            'fire_l_feat': {'values': [0.001, 0.01, 0.1]},
-            'fire_h_feat': {'values': [0.125, 0.15, 0.175]},
-            'thr_h_feat': {'values': [0.25, 0.5, 0.75]},
-
-            'fire_l_out': {'values': [0.001, 0.01, 0.1]},
-            'fire_h_out': {'values': [0.125, 0.15, 0.175]},
-            'thr_h_out': {'values': [0.25, 0.5, 0.75]}
-        }
+                        }
         sweep_config['parameters'] = parameters_dict
         pprint.pprint(sweep_config)
     
         # Start sweep controller
-        sweep_id = wandb.sweep(sweep_config, project="sunset2_threshold_random")
+        sweep_id = wandb.sweep(sweep_config, project="")
 
         # Initialize w&b search
         def wandsearch(config=None):
@@ -110,13 +90,7 @@ def initialize_and_run_model(args):
                 config = wandb.config
 
                 # Set arguments for the sweep
-                args.fire_l_feat = config.fire_l_feat
-                args.fire_h_feat = config.fire_h_feat
-                args.thr_h_feat = config.thr_h_feat
 
-                args.fire_l_out = config.fire_l_out
-                args.fire_h_out = config.fire_h_out
-                args.thr_h_out = config.thr_h_out
 
                 # Initialize the training model
                 args.train_new_model = True
@@ -140,23 +114,15 @@ def initialize_and_run_model(args):
         # Start the agent with the sweeps
         wandb.agent(sweep_id,wandsearch)
 
-    # Run the inference network
-    else:
-        # Set the quantization configuration
-        if args.raster:
-            # # Initialize the quantized model
-            # model = VPRTempoRaster(args)
-            # # Generate the model name
-            # model_name = generate_model_name(model)
-            # # Run the quantized inference model
-            # run_inference_raster(model, model_name)
-                        # Initialize the model
-            model = VPRTempo(args)
+    else: # Run the inference network
+        if args.raster: # Runs the sinabs model on CPU/GPU hardware
+            # Initialize the quantized model
+            model = VPRTempoRaster(args)
             # Generate the model name
             model_name = generate_model_name(model)
-            # Run the inference model
-            run_inference_norm(model, model_name)
-        elif args.norm:
+            # Run the quantized inference model
+            run_inference_raster(model, model_name)
+        elif args.norm: # Runs base VPRTempo
             # Initialize the model
             model = VPRTempo(args)
             # Generate the model name
@@ -165,7 +131,7 @@ def initialize_and_run_model(args):
             run_inference_norm(model, model_name)
         else:
             # Initialize the model
-            model = VPRTempoNeuro(args)
+            model = VPRTempoNeuro(args) # Runs the DynapCNN on-chip model
             # Generate the model name
             model_name = generate_model_name(model)
             # Run the inference model
@@ -178,19 +144,19 @@ def parse_network():
     parser = argparse.ArgumentParser(description="Args for base configuration file")
 
     # Define the dataset arguments
-    parser.add_argument('--dataset', type=str, default='brisbane_event',
+    parser.add_argument('--dataset', type=str, default='qcr',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--camera', type=str, default='davis',
+    parser.add_argument('--camera', type=str, default='speck',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='test001',
+    parser.add_argument('--reference', type=str, default='test001-conv-30',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='test002',
+    parser.add_argument('--query', type=str, default='test002-conv-30',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=100,
+    parser.add_argument('--reference_places', type=int, default=111,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=3811,
+    parser.add_argument('--query_places', type=int, default=120,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
@@ -200,7 +166,7 @@ def parse_network():
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch_feat', type=int, default=100,
+    parser.add_argument('--epoch_feat', type=int, default=64,
                             help="Number of epochs to train the model")
     parser.add_argument('--epoch_out', type=int, default=64,
                             help="Number of epochs to train the model")
@@ -239,7 +205,7 @@ def parse_network():
     # Connection probabilities
     parser.add_argument('--f_exc', type=float, default=0.1,
                         help="Feature layer excitatory connection")
-    parser.add_argument('--f_inh', type=float, default=0.25,
+    parser.add_argument('--f_inh', type=float, default=0.5,
                         help="Feature layer inhibitory connection")
     parser.add_argument('--o_exc', type=float, default=1.0,
                         help="Output layer excitatory connection")
@@ -247,7 +213,7 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[7,7],
+    parser.add_argument('--dims', nargs='+', type=int, default=[8,8],
                             help="Dimensions to resize the image to")
 
     # Define the network functionality
