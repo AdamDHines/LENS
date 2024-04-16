@@ -29,6 +29,7 @@ import json
 import torch
 
 import numpy as np
+import seaborn as sns
 import torch.nn as nn
 import sinabs.layers as sl
 import matplotlib.pyplot as plt
@@ -65,7 +66,7 @@ class VPRTempoRaster(nn.Module):
 
         # Define layer architecture
         self.input = int(args.dims[0]*args.dims[1])
-        self.feature = int(self.input)
+        self.feature = int(self.input*self.feature_multiplier)
         self.output = int(args.reference_places)
 
         """
@@ -83,6 +84,12 @@ class VPRTempoRaster(nn.Module):
             device=self.device,
             inference=True
         )
+
+        if self.convolve_events:
+            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+        else:
+            self.conv = None
+            self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -139,7 +146,7 @@ class VPRTempoRaster(nn.Module):
             for spikes, labels, _, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = sl.FlattenTime()(spikes)
-                #self.sinabs_model.reset_states()
+                self.sinabs_model.reset_states()
                 # Forward pass
                 spikes = self.forward(spikes)
                 output = spikes.sum(dim=0).squeeze()
@@ -181,8 +188,8 @@ class VPRTempoRaster(nn.Module):
     
         # Plot similarity matrix
         if self.sim_mat:
-            plt.matshow(dist_matrix_seq)
-            plt.colorbar(shrink=0.75,label="Output spike intensity")
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='viridis')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
@@ -245,7 +252,7 @@ def run_inference_raster(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage()
+                                        ProcessImage(model.conv)
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,

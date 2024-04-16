@@ -41,7 +41,6 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 from multiprocessing import Process
 from queue import Queue
-from vprtemponeuro.speckcollect import Collector
 from collections import Counter
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
@@ -76,8 +75,6 @@ class VPRTempoNeuro(nn.Module):
         self.input = int(args.dims[0]*args.dims[1])
         self.feature = int(self.input*self.feature_multiplier)
         self.output = int(args.reference_places)
-
-        self.coords = np.random.choice(128 * 128, size=49, replace=False)
 
         """
         Define trainable layers here
@@ -309,14 +306,14 @@ class VPRTempoNeuro(nn.Module):
             # config.dvs_layer.monitor_enable = True
             dk.get_model().apply_configuration(self.config)
 
-            # event_queue = Queue()
+            event_queue = Queue()
             # Start the event collector thread
-            # collector_thread = threading.Thread(target=event_collector, args=(event_queue,))
-            # collector_thread.start()
+            collector_thread = threading.Thread(target=event_collector, args=(event_queue,))
+            collector_thread.start()
 
             # # Start the event analyzer thread
-            # analyzer_thread = threading.Thread(target=event_analyzer, args=(event_queue,))
-            # analyzer_thread.start()
+            analyzer_thread = threading.Thread(target=event_analyzer, args=(event_queue,))
+            analyzer_thread.start()
             
             # Wait until the visualizer window destroys
             gui_process.join()
@@ -339,7 +336,6 @@ class VPRTempoNeuro(nn.Module):
 
             return frequency_array
 
-        #nn.init.eye_(self.inert_conv_layer.weight)
         self.inference = nn.Sequential(
             nn.Flatten(),
             self.feature_layer.w,
