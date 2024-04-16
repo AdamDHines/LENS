@@ -92,10 +92,15 @@ class VPRTempo(nn.Module):
         # Define the forward pass
         self.snn = nn.Sequential(
             self.feature_layer.w,
-            nn.Hardtanh(0, 1.0),
-            self.output_layer.w,
-            nn.Hardtanh(0, 1.0)
+            nn.ReLU(),
+            self.output_layer.w
         )
+
+        if self.convolve_events:
+            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+        else:
+            self.conv = None
+            self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -122,6 +127,7 @@ class VPRTempo(nn.Module):
         :param model: Model to run inference on
         :param test_loader: Testing data loader
         """
+        
 
         # Initiliaze the output spikes variable
         out = []
@@ -160,29 +166,29 @@ class VPRTempo(nn.Module):
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         
-        # Create a perfect square GT matrix
-        GT = np.eye(model.query_places, model.reference_places)
-        if self.args.sequence_length != 0:
-            GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+        # # Create a perfect square GT matrix
+        # GT = np.eye(model.query_places, model.reference_places)
+        # if self.args.sequence_length != 0:
+        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
 
-        # Load GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        if self.args.sequence_length != 0:
-            GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+        # # Load GT matrix
+        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        # if self.args.sequence_length != 0:
+        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
 
-        # Calculate Recall@N
-        for n in N:
-            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-        # Print the results
-        table = PrettyTable()
-        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        model.logger.info(table)
+        # # Calculate Recall@N
+        # for n in N:
+        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # # Print the results
+        # table = PrettyTable()
+        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        # model.logger.info(table)
 
         # Plot similarity matrix
         if self.sim_mat:
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq, annot=False, cmap='coolwarm')
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='viridis')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
@@ -244,7 +250,7 @@ def run_inference_norm(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage()
+                                        ProcessImage(model.conv)
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
@@ -265,10 +271,7 @@ def run_inference_norm(model, model_name):
     # Load the model
     model.load_model(os.path.join('./vprtemponeuro/models', model_name))
 
-    # Retrieve layer names for inference
-    layer_names = list(model.layer_dict.keys())
-
     # Use evaluate method for inference accuracy
-    R1 = model.evaluate(model, test_loader, layers=layer_names)
+    R1 = model.evaluate(model, test_loader)
     
     return R1

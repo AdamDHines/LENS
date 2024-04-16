@@ -34,15 +34,11 @@ from vprtemponeuro.VPRTempo import VPRTempo, run_inference_norm
 from vprtemponeuro.VPRTempoNeuro import VPRTempoNeuro, run_inference
 from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, train_new_model
 from vprtemponeuro.VPRTempoRaster import VPRTempoRaster, run_inference_raster
-from vprtemponeuro.VPRTempoRasterTrain import VPRTempoRasterTrain, train_new_model_raster
 
 def generate_model_name(model):
     """
     Generate the model name based on its parameters.
     """
-    # if model.raster:
-    #     model_name = (
-    #         "test30.pth")
 
     model_name = (''.join(model.reference)+"_"+
             "VPRTempo_" +
@@ -56,7 +52,10 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    
+    #args.norm = True
+    # args.train_new_model = True
+    # args.raster = True
+    # args.convolve_events = True
     if args.train_new_model: # If user wants to train a new network
         # Initialize the model
         model = VPRTempoTrain(args)
@@ -148,15 +147,15 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--camera', type=str, default='speck',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='test001-conv-30',
+    parser.add_argument('--reference', type=str, default='test001',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='test002-conv-30',
+    parser.add_argument('--query', type=str, default='test002',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=111,
+    parser.add_argument('--reference_places', type=int, default=90,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=120,
+    parser.add_argument('--query_places', type=int, default=103,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
@@ -166,7 +165,7 @@ def parse_network():
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch_feat', type=int, default=64,
+    parser.add_argument('--epoch_feat', type=int, default=8,
                             help="Number of epochs to train the model")
     parser.add_argument('--epoch_out', type=int, default=64,
                             help="Number of epochs to train the model")
@@ -188,6 +187,7 @@ def parse_network():
                             help="ITP learning rate")
     parser.add_argument('--stdp_rate_feat', type=float, default=0.01,
                             help="STDP learning rate")
+    
    # Hyperparameters - output layer 
     parser.add_argument('--thr_l_out', type=float, default=0,
                         help="Low threshold value")
@@ -215,6 +215,8 @@ def parse_network():
     # Define image transformation parameters
     parser.add_argument('--dims', nargs='+', type=int, default=[8,8],
                             help="Dimensions to resize the image to")
+    parser.add_argument('--convolve_events', action='store_true',
+                            help="Decide to convolve the events or not")
 
     # Define the network functionality
     parser.add_argument('--train_new_model', action='store_true',

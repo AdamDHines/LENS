@@ -94,6 +94,11 @@ class VPRTempoTrain(nn.Module):
             spk_force=True,
             device=self.device
         )
+        if self.convolve_events:
+            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+        else:
+            self.conv = None
+            self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -142,13 +147,13 @@ class VPRTempoTrain(nn.Module):
             self.epoch = self.args.epoch_feat
         else:
             self.epoch = self.args.epoch_out
+        
         # Set the total timestep count
         self.T = int((self.reference_places) * self.epoch)
         # Initialize the tqdm progress bar
         pbar = tqdm(total=int(self.T),
                     desc="Training ",
                     position=0)
-                    
         
         # Initialize the learning rates for each layer (used for annealment)
         init_itp = layer.eta_stdp.detach() * 2
@@ -243,15 +248,14 @@ def train_new_model(model, model_name):
     :param qconfig: Quantization configuration
     """
     # Initialize the image transforms and datasets
-    image_transform = transforms.Compose([
-                                        ProcessImage()
-                                            ])
+    image_transform = transforms.Compose([ProcessImage(model.conv)])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.reference_places,
-                                      test=False)
+                                      test=False,
+                                      convolve=model.conv)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 
                               batch_size=1, 
