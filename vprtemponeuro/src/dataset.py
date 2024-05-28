@@ -28,15 +28,13 @@ class SetImageAsSpikes:
 class ProcessImage:
     def __init__(self, convolve, mid=0.5):
         self.mid = mid
-        convolve.requires_grad_ = False
-        torch.nn.init.constant_(convolve.weight, 0)
-        convolve.weight.data[0, 0, 4, 4] = 1
         if convolve is not None:
             self.cnn = nn.Sequential(
-                nn.AvgPool2d(kernel_size=(4, 4)),
-                nn.AvgPool2d(kernel_size=(4, 4)),
+                nn.AvgPool2d(kernel_size=(2, 2)),
                 
             )
+        else:
+            self.cnn = None
         
     def __call__(self, img):
         # Add a channel dimension to the resulting grayscale image
@@ -44,18 +42,18 @@ class ProcessImage:
             with torch.no_grad():
                 img = self.cnn(img.to(torch.float32))
 
-        # img= img.unsqueeze(0)
-        # img = img.to(dtype=torch.float32)
-        # # gamma correction
-        # mean = torch.mean(img)
+        img= img.unsqueeze(0)
+        img = img.to(dtype=torch.float32)
+        # gamma correction
+        mean = torch.mean(img)
 
-        # # Check if mean is zero or negative to avoid math domain error
-        # try:
-        #     gamma = math.log(self.mid * 255) / math.log(mean)
-        #     img = torch.pow(img, gamma).clip(0, 255)
-        # except:
-        #     pass
-        # img = img.squeeze(0)
+        # Check if mean is zero or negative to avoid math domain error
+        try:
+            gamma = math.log(self.mid * 255) / math.log(mean)
+            img = torch.pow(img, gamma).clip(0, 255)
+        except:
+            pass
+        img = img.squeeze(0)
 
         # Resize the image to the specified dimensions
         spike_maker = SetImageAsSpikes()

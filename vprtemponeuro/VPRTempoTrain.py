@@ -98,7 +98,7 @@ class VPRTempoTrain(nn.Module):
             self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
         else:
             self.conv = None
-            self.register_buffer('conv', None)
+            # self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """

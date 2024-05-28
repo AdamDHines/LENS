@@ -52,10 +52,8 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    #args.norm = True
-    # args.train_new_model = True
-    # args.raster = True
-    # args.convolve_events = True
+    args.onchip = True
+
     if args.train_new_model: # If user wants to train a new network
         # Initialize the model
         model = VPRTempoTrain(args)
@@ -153,13 +151,13 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=90,
+    parser.add_argument('--reference_places', type=int, default=79,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=103,
+    parser.add_argument('--query_places', type=int, default=79,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
-    parser.add_argument('--feature_multiplier', type=float, default=1.0,
+    parser.add_argument('--feature_multiplier', type=float, default=4.0,
                         help="Size multiplier for the feature/hidden layer")
 
     # Define training parameters
