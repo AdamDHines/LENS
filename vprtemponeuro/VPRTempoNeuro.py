@@ -35,6 +35,7 @@ import threading
 import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
+import vprtemponeuro.src.speck2f as s
 import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
@@ -91,7 +92,9 @@ class VPRTempoNeuro(nn.Module):
             device=self.device,
             inference=True
         )
-        
+
+        self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+
     def add_layer(self, name, **kwargs):
         """
         Dynamically add a layer with given name and keyword arguments.
@@ -116,309 +119,118 @@ class VPRTempoNeuro(nn.Module):
         Run the inferencing model and calculate the accuracy.
 
         :param test_loader: Testing data loader
-        :param layers: Layers to pass data through
+        :param model: Pre-trained network model
         """
-        def open_speck2f_dev_kit():
-            devices = [
-                device
-                for device in samna.device.get_unopened_devices()
-                if device.device_type_name.startswith("Speck2f")
-            ]
-            assert devices, "Speck2f board not found"
+        # Pre-define a 2d convolutional layer with average pooling weights
+        # Takes pre-pooled [128,128] -> [64,64] -> [8,8]
+        kernel_size = 8
+        self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
+        n = kernel_size*kernel_size
+        avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
+        self.conv.weight.data = avg_weight
+        self.conv.weight.requires_grad = False
 
-            # default_config is a optional parameter of open_device
-            self.default_config = samna.speck2fBoards.DevKitDefaultConfig()
-
-            # if nothing is modified on default_config, this invoke is totally same to
-            # samna.device.open_device(devices[0])
-            return samna.device.open_device(devices[0], self.default_config)
-
-
-        def build_samna_event_route(graph, dk):
-            # build a graph in samna to show dvs
-            _, _, streamer = graph.sequential(
-                [dk.get_model_source_node(), "Speck2fDvsToVizConverter", "VizEventStreamer"]
-            )
-
-            config_source, _ = graph.sequential([samna.BasicSourceNode_ui_event(), streamer])
-
-            streamer.set_streamer_endpoint("tcp://0.0.0.0:40000")
-            if streamer.wait_for_receiver_count() == 0:
-                raise Exception(f'connecting to visualizer on {"tcp://0.0.0.0:40000"} fails')
-
-            return config_source
-
-
-        def open_visualizer(window_width, window_height, receiver_endpoint):
-            # start visualizer in a isolated process which is required on mac, intead of a sub process.
-            gui_process = multiprocessing.Process(
-                target=samnagui.run_visualizer,
-                args=(receiver_endpoint, window_width, window_height),
-            )
-            gui_process.start()
-
-            return gui_process
-
-        def start_visualizer():
-            def event_collector(event_queue):
-                while gui_process.is_alive():
-                    events = sink.get_events()  # Collect events
-                    if events:  # Check if there are any events to process
-                        event_queue.put(events)  # Put the entire batch of events into the queue as a single item
-                    time.sleep(1.0)
-
-        # a custom python callback that receives an array of spike events as input and outputs an array of readout events. you are encouraged to customize it.
-            def custom_readout(collection):
-                def generate_result(feature):
-                    e = samna.ui.Readout()
-                    e.feature = feature
-                    return [e]
-
-                sum = {}
-
-                for spike in collection:
-                    if spike.feature in sum:
-                        sum[spike.feature] += 1
-                    else:
-                        sum[spike.feature] = 1
-
-                if len(collection) >= 60:
-                    maxCount = 0
-                    maxCountFeature = 0
-                    maxCountNum = 0
-                    for key in sum:
-                        if key >= 2:
-                            continue
-                        if sum[key] > maxCount:
-                            maxCount = sum[key]
-                            maxCountFeature = key
-                            maxCountNum = 1
-                        elif sum[key] == maxCount:
-                            maxCountNum += 1
-
-                    if maxCount > 0 and 1 == maxCountNum:
-                        return generate_result(maxCountFeature)
-                    else:
-                        return generate_result(0)
-                else:
-                    return generate_result(0)
-
-            def event_analyzer(event_queue):
-                while True:
-                    events_batch = event_queue.get()  # Get a batch of events
-                    # Evaluate how long it takes on average to get unique indexes
-                    start = time.perf_counter()
-                    counter = events_batch.count
-                    idx = []
-                    for ev in events_batch:
-                        coord = ev.x * ev.y
-                        if coord in self.coords:
-                            idx.append(counter(ev))
-                    print(f"Time to get unique indexes: {time.perf_counter() - start}")
-                    event_queue.task_done()
-            streamer_endpoint = "tcp://0.0.0.0:40000"
-            gui_process = Process(
-                target=samnagui.run_visualizer, args=(streamer_endpoint, 0.75, 0.75)
-            )
-            gui_process.start()
-            dk = open_speck2f_dev_kit()
-
-            graph = samna.graph.EventFilterGraph()
-
-            _, dvs_spike_select, _, streamer = graph.sequential(
-                [
-                    dk.get_model_source_node(),
-                    "Speck2fOutputMemberSelect",
-                    "Speck2fDvsToVizConverter",
-                    "VizEventStreamer",
-                ]
-            )
-            dvs_spike_select.set_white_list([13],"layer")
-
-            streamer.set_streamer_endpoint(streamer_endpoint)
-            if streamer.wait_for_receiver_count() == 0:
-                raise Exception(f"connecting to visualizer on {streamer_endpoint} fails")
-
-            (
-                _,
-                readout_spike_select,
-                spike_collection_filter,
-                spike_count_filter,
-                _,
-            ) = graph.sequential(
-                [
-                    dk.get_model_source_node(),
-                    "Speck2fOutputMemberSelect",
-                    "Speck2fSpikeCollectionNode",
-                    "Speck2fSpikeCountNode",
-                    streamer,
-                ]
-            )
-
-            readout_spike_select.set_white_list(
-                [13], "layer"
-            )  # output pixels are in the format of spike events, so we need to filter out all pixel spikes.
-
-            spike_collection_filter.set_interval_milli_sec(
-                500
-            )  # divide according to this time period in milliseconds.
-            spike_count_filter.set_feature_count(self.args.reference_places)
-
-            _, readout_filter, _ = graph.sequential(
-                [spike_collection_filter, "Speck2fCustomFilterNode", streamer]
-            )  # from spike collection to streamer
-            readout_filter.set_filter_function(custom_readout)
-
-            #config_source = build_samna_event_route(graph, dk)
-
-            # sink = samna.graph.sink_from(dk.get_model().get_source_node())
-            # Configuring the visualizer
-            visualizer_config = samna.ui.VisualizerConfiguration(
-                plots=[samna.ui.ActivityPlotConfiguration(7, 7, "DVS Layer", [0, 0, .75, .75])]
-            )
-            config_source, _ = graph.sequential([samna.BasicSourceNode_ui_event(), streamer])
-            graph.start()
-
-            visualizer_config = samna.ui.VisualizerConfiguration(
-            # add plots to gui
-            plots=[
-                # add plot to show pixels
-                samna.ui.ActivityPlotConfiguration(7, 7, "DVS Layer", [0, 0, 0.5, 0.75]),
-                # add plot to show readout. params: plot title and images array of the same size of feature count. these images correspond to each feature.
-
-                # add plot to show spike count. params: plot title and feature count and name of each feature
-                samna.ui.SpikeCountPlotConfiguration(
-                    title="Spike Count",
-                    channel_count=1,
-                    line_names=["Spike Count"],
-                    layout=[0.5, 0.375, 1, 0.75],
-                    show_x_span=25,
-                    label_interval=2.5,
-                    max_y_rate=1.2,
-                    show_point_circle=True,
-                    default_y_max=10,
-                )
-            ]
-            )
-            config_source.write([visualizer_config])
-            # Modify configuration to enable DVS event monitoring
-            # config = samna.speck2f.configuration.SpeckConfiguration()
-            # config.dvs_layer.monitor_enable = True
-            dk.get_model().apply_configuration(self.config)
-
-            event_queue = Queue()
-            # Start the event collector thread
-            collector_thread = threading.Thread(target=event_collector, args=(event_queue,))
-            collector_thread.start()
-
-            # # Start the event analyzer thread
-            analyzer_thread = threading.Thread(target=event_analyzer, args=(event_queue,))
-            analyzer_thread.start()
-            
-            # Wait until the visualizer window destroys
-            gui_process.join()
-
-            # Stop the graph and ensure the collector thread is also stopped
-            readout_filter.stop()
-            graph.stop()
-            #collector_thread.join()
-
-            print('Event collection stopped.')
-        # Rehsape output spikes into a similarity matrix
-        def create_frequency_array(freq_dict, num_places):
-            # Initialize the array with zeros
-            frequency_array = np.zeros(num_places)
-
-            # Populate the array with frequency values
-            for key, value in freq_dict.items():
-                if key < num_places:
-                    frequency_array[key] = value
-
-            return frequency_array
-
+        # Define the inferencing forward pass
         self.inference = nn.Sequential(
+            self.conv,
+            nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
         )
+
+        # Define name of the devkit
         devkit_name = "speck2fdevkit"
-        # Define the sinabs model
-        input_shape = (1, self.dims[0], self.dims[1])
+
+        # Define the sinabs model, this converts torch model to sinabs model
+        input_shape = (1, 64, 64) # With Conv2d becomes [1, 8, 8]
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
                                 batch_size=1,
                                 add_spiking_output=True
                                 )
-        # Define the dynapcnn model for on chip inference
-        if self.args.onchip:
-            self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                        input_shape=input_shape, 
-                                        discretize=True, 
-                                        dvs_input=True)
-            
-            self.config = self.dynapcnn.make_config("auto",device=devkit_name)
-            self.lyrs = self.dynapcnn.chip_layers_ordering[-1]
-            self.config.dvs_layer.monitor_enable = True
-            self.config.cnn_layers[self.lyrs].monitor_enable = True
+        
+        # Create the DYNAPCNN model for on-chip inferencing
+        self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
+                                input_shape=input_shape, 
+                                discretize=True, 
+                                dvs_input=True)
+        
+        # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
+        if self.args.onchip: 
+            # Basic configuration
+            config = self.dynapcnn.make_config("auto",device=devkit_name)
+            lyrs = self.dynapcnn.chip_layers_ordering[-1]
+            # Enable layer monitoring
+            #config.dvs_layer.monitor_enable = True
+            config.cnn_layers[lyrs].monitor_enable = True
+            # Set input pooling for DVS events [128,128] -> [64,64]
+            config.dvs_layer.pooling.x = 2
+            config.dvs_layer.pooling.y = 2
+            # Get the Speck2fDevKit configuration for graph sequential routing
+            dk = s.get_speck2f()
+            # Apply the configuration to the DYNAPCNN model
+            dk.get_model().apply_configuration(config)
+            # Open the GUI process
+            streamer_endpoint = "tcp://0.0.0.0:40000"
+            gui_process = s.open_visualizer(streamer_endpoint)
+            # Setup the graph for routing to the GUI process
+            graph = samna.graph.EventFilterGraph()
+            streamer = s.build_samna_event_route(graph, dk)
+            # Define spike collection nodes for GUI plotting
+            (_,spike_collection_filter, spike_count_filter,_) = graph.sequential(
+                    [
+                        dk.get_model_source_node(),
+                        "Speck2fSpikeCollectionNode",
+                        "Speck2fSpikeCountNode",
+                        streamer,
+                    ]
+            )
+            spike_collection_filter.set_interval_milli_sec(1000)
 
-        else:
-            self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                            input_shape=input_shape, 
-                            discretize=True, 
-                            dvs_input=False)
-            
-            self.dynapcnn.to(device=devkit_name, chip_layers_ordering=[0,5])
-            print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
-
-        # use the `to` method of DynapcnnNetwork to deploy the SNN to the devkit
-        #self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
-        # print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
-        # factory = ChipFactory(devkit_name)
-        # first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
+            # # Set the interval for spike collection
+            _, readout_filter, _ = graph.sequential(
+                                            [spike_collection_filter, "Speck2fCustomFilterNode", streamer]
+                                            ) 
+            readout_filter.set_filter_function(s.custom_readout)
+            # Setup power and readout filter
+            power = dk.get_power_monitor()
+            power.start_auto_power_measurement(20)
+            graph.sequential([power.get_source_node(), "MeasurementToVizConverter", streamer])
+            # readout_filter.set_feature_count(self.args.reference_places)
+            # Configure the visualizer
+            config_source, visualizer_config = s.configure_visualizer(graph, streamer)
+            config_source.write([visualizer_config])
+            graph.start()
 
         # Initiliaze the output spikes variable
         all_arrays = []
-
-        # Set up the power monitoring (if user input)
-        if self.power_monitor:
-            # Initialize samna
-            samna.init_samna()
-            # Get the devkit device
-            dk = samna.device.open_device("Speck2fDevKit:0")
-            # Start the stop watch
-            stop_watch = dk.get_stop_watch()
-            # Get the power monitor, source node, and buffer
-            power = dk.get_power_monitor()
-            source = power.get_source_node()
-            power_buffer_node = samna.BasicSinkNode_unifirm_modules_events_measurement()
-            # Get the graph sink from the source node
-            sink = samna.graph.sink_from(source)
-            # Initialize the samna graph
-            samna_graph = samna.graph.EventFilterGraph()
-            samna_graph.sequential([source, power_buffer_node])
-            # Set the sample rate
-            sample_rate = 100.0  # Hz
         
-        # Run inference for the specified number of timesteps
-        with torch.no_grad():
-            # Run power monitoring during the inference (if user input)
-            if self.power_monitor:
-                # start samna graph
-                samna_graph.start()
-                # start the stop-watch of devkit, then each output data has a proper timestamp
-                stop_watch.set_enable_value(True)
-
-                # clear buffer
-                power_buffer_node.get_events()
-                # start monitor, we need pass a sample rate argument to the power monitor
-                power.start_auto_power_measurement(sample_rate)
-            
+        # Run inference for event stream or pre-recorded DVS data
+        with torch.no_grad():    
+            # Run inference on-chip
             if self.args.onchip:
-                start_visualizer()
-            else:
+                stopWatch = dk.get_stop_watch()
+                stopWatch.set_enable_value(True)
 
+                dk_io = dk.get_io_module()
+                dk_io.set_slow_clk_rate(10)
+                dk_io.set_slow_clk(True)
+
+                # Start the process, and wait for window to be destroyed
+                gui_process.join()
+                # Stop the GUI process
+                graph.stop()
+                samna.device.close_device(dk)
+            # Run inference for pre-recorded DVS data    
+            else:
+                # Deploy the model to the Speck2fDevKit
+                self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
+                print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
+                factory = ChipFactory(devkit_name)
+                first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
                 # Initialize the tqdm progress bar
                 pbar = tqdm(total=self.query_places,
                             desc="Running the test network",
@@ -446,69 +258,42 @@ class VPRTempoNeuro(nn.Module):
                         frequent_counter = Counter([])
                         pass   
 
+                    # Rehsape output spikes into a similarity matrix
+                    def create_frequency_array(freq_dict, num_places):
+                        # Initialize the array with zeros
+                        frequency_array = np.zeros(num_places)
+
+                        # Populate the array with frequency values
+                        for key, value in freq_dict.items():
+                            if key < num_places:
+                                frequency_array[key] = value
+
+                        return frequency_array
+
                     freq_array = create_frequency_array(frequent_counter, self.reference_places)
                     all_arrays.append(freq_array)
 
                     # Update the progress bar
                     pbar.update(1)
 
-            # Stop monitoring power (if monitoring)
-            if self.power_monitor:
-                power_events = power_buffer_node.get_events()
-                power.stop_auto_power_measurement()
-                stop_watch.set_enable_value(False)
-                # stop samna graph
-                samna_graph.stop()
-
-        # Close the tqdm progress bar
-        pbar.close()
-        print("Inference on-chip succesully completed")
+                # Close the tqdm progress bar
+                pbar.close()
+                print("Inference on-chip succesully completed")
 
         # Reset the chip state
-        self.dynapcnn.reset_states()
-        print("Chip state has been reset")
+        #self.dynapcnn.reset_states()
+        #print("Chip state has been reset")
 
-        # Get power data (if user input)
-        if self.power_monitor:
-            # Number of power tracks to observe
-            num_power_tracks = 5
+        # # Convert output to numpy
+        # out = np.array(all_arrays)
 
-            # init dict for storing data of each power track
-            power_each_track = dict()
-            event_count_each_track = dict()
-
-            # loop through all collected power events and get data
-            for evt in power_events:
-                p_track_id = evt.channel
-                tmp_power = power_each_track.get(p_track_id, 0) + evt.value
-                tmp_count = event_count_each_track.get(p_track_id, 0) + 1
-                
-                power_each_track.update({p_track_id: tmp_power})
-                event_count_each_track.update({p_track_id: tmp_count})
-
-            # average power and current of each track
-            for p_track_id in range(num_power_tracks):
-                
-                # average power in microwatt
-                avg_power = power_each_track[p_track_id] / event_count_each_track[p_track_id] * 1e6
-                # calculate current
-                if p_track_id == 0:
-                    current = avg_power / 2.5 
-                else:
-                    current = avg_power / 1.2
-                    
-                print(f'track{p_track_id}: {avg_power}uW, {current}uA') 
-
-        # Convert output to numpy
-        out = np.array(all_arrays)
-
-        # Perform sequence matching convolution on similarity matrix
-        if self.sequence_length != 0:
-            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
-        else:
-            dist_matrix_seq = out
+        # # Perform sequence matching convolution on similarity matrix
+        # if self.sequence_length != 0:
+        #     dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        #     precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        #     dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        # else:
+        #     dist_matrix_seq = out
 
         # # Recall@N
         # N = [1,5,10,15,20,25] # N values to calculate
@@ -525,38 +310,7 @@ class VPRTempoNeuro(nn.Module):
         # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
         # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
         # model.logger.info(table)
-
-        # Plot power monitoring results and similarity matrix
-        if self.power_monitor:
-            # Define the plot style
-            plt.style.use('ggplot')
-
-            # Create a figure with two side-by-side subplots
-            fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3, 2]})
-
-            # Plot for power consumption
-            p_track_name = ["io", "ram", "logic", "pixel digital", "pixel analog"]
-            for p_track_id in range(num_power_tracks):
-                x = [each.timestamp for each in power_events if each.channel == p_track_id]
-                y = [each.value * 1e6 for each in power_events if each.channel == p_track_id]
-                axs[0].plot(x, y, label=p_track_name[p_track_id], alpha=0.8)
-
-            axs[0].set_xlabel("time(us)")
-            axs[0].set_ylabel("power(uW)")
-            axs[0].set_title("Power consumption")
-            axs[0].legend(loc="upper right", fontsize=10)
-
-            # Plot for similarity matrix
-            cax = axs[1].matshow(all_arrays, cmap="viridis")
-            fig.colorbar(cax, ax=axs[1], shrink=0.75, label="Number of output spikes")
-            axs[1].set_title('Similarity matrix', pad=20)  # Add padding to the title
-            axs[1].set_xlabel("Query")
-            axs[1].set_ylabel("Database")
-            axs[1].grid(False)  # Disable grid lines for the similarity matrix
-
-            # Adjust the layout to prevent cutting off the title
-            plt.tight_layout()
-            plt.show()  
+         
         if self.sim_mat: # Plot only the similarity matrix
             plt.matshow(dist_matrix_seq)
             plt.colorbar(shrink=0.75,label="Output spike intensity")
@@ -616,7 +370,7 @@ def run_inference(model, model_name):
     """
     # Initialize the image transforms and datasets
     image_transform = transforms.Compose([
-        ProcessImage()
+        ProcessImage(model.conv)
     ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
