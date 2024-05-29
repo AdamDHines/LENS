@@ -88,6 +88,18 @@ class VPRTempo(nn.Module):
             device=self.device,
             inference=True
         )
+
+        # Define the forward pass
+        self.snn = nn.Sequential(
+            self.feature_layer.w,
+            self.output_layer.w
+        )
+
+        if self.convolve_events:
+            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+        else:
+            self.conv = None
+            #self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -108,19 +120,13 @@ class VPRTempo(nn.Module):
         self.layer_dict[name] = self.layer_counter
         self.layer_counter += 1                           
 
-    def evaluate(self, model, test_loader, layers=None):
+    def evaluate(self, model, test_loader):
         """
         Run the inferencing model and calculate the accuracy.
-
+        :param model: Model to run inference on
         :param test_loader: Testing data loader
-        :param layers: Layers to pass data through
         """
-
-        #nn.init.eye_(self.inert_conv_layer.weight)
-        self.inference = nn.Sequential(
-            self.feature_layer.w,
-            self.output_layer.w,
-        )
+        
 
         # Initiliaze the output spikes variable
         out = []
@@ -131,12 +137,13 @@ class VPRTempo(nn.Module):
 
         # Run inference for the specified number of timesteps
         with torch.no_grad():
-            for spikes, labels, gps in test_loader:
+            for spikes, labels, _, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.squeeze(0)
                 spikes = spikes.to(torch.float32)
                 # Forward pass
                 spikes = self.forward(spikes)
+
                 # Add output spikes to list
                 out.append(spikes.detach().cpu().tolist())
                 pbar.update(1)
@@ -158,6 +165,11 @@ class VPRTempo(nn.Module):
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         
+        # Create a perfect square GT matrix
+        # GT = np.eye(model.query_places, model.reference_places)
+        # if self.args.sequence_length != 0:
+        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+
         # Load GT matrix
         GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
         if self.args.sequence_length != 0:
@@ -175,10 +187,12 @@ class VPRTempo(nn.Module):
         # Plot similarity matrix
         if self.sim_mat:
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq, annot=False, cmap='coolwarm')
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='viridis')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
+            # plt.xticks(np.arange(0, 641, 50), np.arange(0, 641, 50))
+            # plt.yticks(np.arange(0, 724, 50), np.arange(0, 724, 50))
             plt.show()
 
         # Plot precision recall curve
@@ -217,8 +231,8 @@ class VPRTempo(nn.Module):
         - Tensor: Output after processing.
         """
         
-        spikes = self.inference(spikes)
-        
+        spikes = self.snn(spikes)
+
         return spikes
         
     def load_model(self, model_path):
@@ -234,11 +248,10 @@ def run_inference_norm(model, model_name):
 
     :param model: Model to run inference on
     :param model_name: Name of the model to load
-    :param qconfig: Quantization configuration
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage()
+                                        ProcessImage(model.conv)
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
@@ -246,7 +259,7 @@ def run_inference_norm(model, model_name):
                                       skip=model.filter,
                                       max_samples=model.query_places,
                                       is_raster=False)
-    print(str(model.data_dir+model.query_dir))
+    
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 
@@ -259,10 +272,7 @@ def run_inference_norm(model, model_name):
     # Load the model
     model.load_model(os.path.join('./vprtemponeuro/models', model_name))
 
-    # Retrieve layer names for inference
-    layer_names = list(model.layer_dict.keys())
-
     # Use evaluate method for inference accuracy
-    R1 = model.evaluate(model, test_loader, layers=layer_names)
+    R1 = model.evaluate(model, test_loader)
     
     return R1

@@ -29,4 +29,3 @@ def get_gps(nmea_file_path):
 
     return np.array(np.vstack((latitudes, longitudes, timestamps))).T
 
-get_gps('')

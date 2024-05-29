@@ -27,15 +27,21 @@ Imports
 import os
 import json
 import torch
-import samna
+import samna, samnagui
+import time
+import multiprocessing
+import threading
 
 import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
+import vprtemponeuro.src.speck2f as s
 import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
+from multiprocessing import Process
+from queue import Queue
 from collections import Counter
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
@@ -86,7 +92,9 @@ class VPRTempoNeuro(nn.Module):
             device=self.device,
             inference=True
         )
-        
+
+        self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+
     def add_layer(self, name, **kwargs):
         """
         Dynamically add a layer with given name and keyword arguments.
@@ -111,222 +119,207 @@ class VPRTempoNeuro(nn.Module):
         Run the inferencing model and calculate the accuracy.
 
         :param test_loader: Testing data loader
-        :param layers: Layers to pass data through
+        :param model: Pre-trained network model
         """
-        # Rehsape output spikes into a similarity matrix
-        def create_frequency_array(freq_dict, num_places):
-            # Initialize the array with zeros
-            frequency_array = np.zeros(num_places)
+        # Pre-define a 2d convolutional layer with average pooling weights
+        # Takes pre-pooled [128,128] -> [64,64] -> [8,8]
+        kernel_size = 8
+        self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
+        n = kernel_size*kernel_size
+        avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
+        self.conv.weight.data = avg_weight
+        self.conv.weight.requires_grad = False
 
-            # Populate the array with frequency values
-            for key, value in freq_dict.items():
-                if key < num_places:
-                    frequency_array[key] = value
-
-            return frequency_array
-
-        #nn.init.eye_(self.inert_conv_layer.weight)
+        # Define the inferencing forward pass
         self.inference = nn.Sequential(
+            self.conv,
+            nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
         )
-        # Define the sinabs model
-        input_shape = (1, self.dims[0], self.dims[1])
+
+        # Define name of the devkit
+        devkit_name = "speck2fdevkit"
+
+        # Define the sinabs model, this converts torch model to sinabs model
+        input_shape = (1, 64, 64) # With Conv2d becomes [1, 8, 8]
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
                                 batch_size=1,
                                 add_spiking_output=True
                                 )
-        # Define the dynapcnn model for on chip inference
+        
+        # Create the DYNAPCNN model for on-chip inferencing
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                    input_shape=input_shape, 
-                                    discretize=True, 
-                                    dvs_input=False)
-        devkit_name = "speck2fdevkit"
-        # use the `to` method of DynapcnnNetwork to deploy the SNN to the devkit
-        self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
-        print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
-        factory = ChipFactory(devkit_name)
-        first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
+                                input_shape=input_shape, 
+                                discretize=True, 
+                                dvs_input=True)
+        
+        # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
+        if self.args.onchip: 
+            # Basic configuration
+            config = self.dynapcnn.make_config("auto",device=devkit_name)
+            lyrs = self.dynapcnn.chip_layers_ordering[-1]
+            # Enable layer monitoring
+            config.dvs_layer.monitor_enable = True
+            config.cnn_layers[lyrs].monitor_enable = True
+            # Setup DVS filtering
+            config.dvs_filter.enable = True
+            config.dvs_filter.hot_pixel_filter_enable = True
+            config.dvs_filter.threshold = 3
+            # Switch only on channels from DVS
+            config.dvs_layer.off_channel = False
+            config.dvs_layer.on_channel = True
+            # Set input pooling for DVS events [128,128] -> [64,64]
+            config.dvs_layer.pooling.x = 2
+            config.dvs_layer.pooling.y = 2
+            # Get the Speck2fDevKit configuration for graph sequential routing
+            dk = s.get_speck2f()
+            # Apply the configuration to the DYNAPCNN model
+            dk.get_model().apply_configuration(config)
+            # Open the GUI process
+            streamer_endpoint = "tcp://0.0.0.0:40000"
+            gui_process = s.open_visualizer(streamer_endpoint)
+            # Setup the graph for routing to the GUI process
+            graph = samna.graph.EventFilterGraph()
+            streamer = s.build_samna_event_route(graph, dk)
+            # Define spike collection nodes for GUI plotting
+            (_,readout_spike, spike_collection_filter, spike_count_filter,_) = graph.sequential(
+                    [
+                        dk.get_model_source_node(),
+                        "Speck2fOutputMemberSelect",
+                        "Speck2fSpikeCollectionNode",
+                        "Speck2fSpikeCountNode",
+                        streamer,
+                    ]
+            )
+            spike_collection_filter.set_interval_milli_sec(1000)
+            readout_spike.set_white_list([lyrs], "layer")
+
+            # # Set the interval for spike collection
+            _, readout_filter, _ = graph.sequential(
+                                            [spike_collection_filter, "Speck2fCustomFilterNode", streamer]
+                                            ) 
+            readout_filter.set_filter_function(s.custom_readout)
+            # Setup power and readout filter
+            power = dk.get_power_monitor()
+            power.start_auto_power_measurement(20)
+            graph.sequential([power.get_source_node(), "MeasurementToVizConverter", streamer])
+            # Configure the visualizer
+            config_source, visualizer_config = s.configure_visualizer(graph, streamer, self.args.reference_places)
+            config_source.write([visualizer_config])
+            graph.start()
 
         # Initiliaze the output spikes variable
         all_arrays = []
-
-        # Set up the power monitoring (if user input)
-        if self.power_monitor:
-            # Initialize samna
-            samna.init_samna()
-            # Get the devkit device
-            dk = samna.device.open_device("Speck2fDevKit:0")
-            # Start the stop watch
-            stop_watch = dk.get_stop_watch()
-            # Get the power monitor, source node, and buffer
-            power = dk.get_power_monitor()
-            source = power.get_source_node()
-            power_buffer_node = samna.BasicSinkNode_unifirm_modules_events_measurement()
-            # Get the graph sink from the source node
-            sink = samna.graph.sink_from(source)
-            # Initialize the samna graph
-            samna_graph = samna.graph.EventFilterGraph()
-            samna_graph.sequential([source, power_buffer_node])
-            # Set the sample rate
-            sample_rate = 100.0  # Hz
-
-        # Initialize the tqdm progress bar
-        pbar = tqdm(total=self.query_places,
-                    desc="Running the test network",
-                    position=0)
         
-        # Run inference for the specified number of timesteps
-        with torch.no_grad():
-            # Run power monitoring during the inference (if user input)
-            if self.power_monitor:
-                # start samna graph
-                samna_graph.start()
-                # start the stop-watch of devkit, then each output data has a proper timestamp
-                stop_watch.set_enable_value(True)
+        # Run inference for event stream or pre-recorded DVS data
+        with torch.no_grad():    
+            # Run inference on-chip
+            if self.args.onchip:
+                # Set timestamps for spike events
+                stopWatch = dk.get_stop_watch()
+                stopWatch.set_enable_value(True)
+                # Set the slow clock rate
+                dk_io = dk.get_io_module()
+                dk_io.set_slow_clk_rate(10)
+                dk_io.set_slow_clk(True)
+                # Start the process, and wait for window to be destroyed
+                gui_process.join()
+                # Stop the GUI process & close the Speck2f device
+                readout_filter.stop()
+                graph.stop()
+                samna.device.close_device(dk)
+            # Run inference for pre-recorded DVS data    
+            else:
+                # Deploy the model to the Speck2fDevKit
+                self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
+                print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
+                factory = ChipFactory(devkit_name)
+                first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
+                # Initialize the tqdm progress bar
+                pbar = tqdm(total=self.query_places,
+                            desc="Running the test network",
+                            position=0)
 
-                # clear buffer
-                power_buffer_node.get_events()
-                # start monitor, we need pass a sample rate argument to the power monitor
-                power.start_auto_power_measurement(sample_rate)
+                # Run through the input data
+                for spikes, _ , _, _ in test_loader:
+                    # Squeeze the batch dimension
+                    spikes = spikes.squeeze(0)
 
-            # Run through the input data
-            for spikes, _ , _ in test_loader:
-                # Squeeze the batch dimension
-                spikes = spikes.squeeze(0)
+                    # create samna Spike events stream
+                    try:
+                        events_in = factory.raster_to_events(spikes, 
+                                                            layer=first_layer_idx,
+                                                            dt=1e-6)
+                        # Forward pass
+                        events_out = self.forward(events_in)
 
-                # create samna Spike events stream
-                try:
-                    events_in = factory.raster_to_events(spikes, 
-                                                        layer=first_layer_idx,
-                                                        dt=1e-6)
-                    # Forward pass
-                    events_out = self.forward(events_in)
+                        # Get prediction
+                        neuron_idx = [each.feature for each in events_out]
+                        if len(neuron_idx) != 0:
+                            frequent_counter = Counter(neuron_idx)
+                            #prediction = frequent_counter.most_common(1)[0][0]
+                    except:
+                        frequent_counter = Counter([])
+                        pass   
 
-                    # Get prediction
-                    neuron_idx = [each.feature for each in events_out]
-                    if len(neuron_idx) != 0:
-                        frequent_counter = Counter(neuron_idx)
-                        #prediction = frequent_counter.most_common(1)[0][0]
-                except:
-                    frequent_counter = Counter([])
-                    pass   
+                    # Rehsape output spikes into a similarity matrix
+                    def create_frequency_array(freq_dict, num_places):
+                        # Initialize the array with zeros
+                        frequency_array = np.zeros(num_places)
 
-                freq_array = create_frequency_array(frequent_counter, self.reference_places)
-                all_arrays.append(freq_array)
+                        # Populate the array with frequency values
+                        for key, value in freq_dict.items():
+                            if key < num_places:
+                                frequency_array[key] = value
 
-                # Update the progress bar
-                pbar.update(1)
+                        return frequency_array
 
-            # Stop monitoring power (if monitoring)
-            if self.power_monitor:
-                power_events = power_buffer_node.get_events()
-                power.stop_auto_power_measurement()
-                stop_watch.set_enable_value(False)
-                # stop samna graph
-                samna_graph.stop()
+                    freq_array = create_frequency_array(frequent_counter, self.reference_places)
+                    all_arrays.append(freq_array)
 
-        # Close the tqdm progress bar
-        pbar.close()
-        print("Inference on-chip succesully completed")
+                    # Update the progress bar
+                    pbar.update(1)
+
+                # Close the tqdm progress bar
+                pbar.close()
+                print("Inference on-chip succesully completed")
 
         # Reset the chip state
-        self.dynapcnn.reset_states()
-        print("Chip state has been reset")
+        #self.dynapcnn.reset_states()
+        #print("Chip state has been reset")
 
-        # Get power data (if user input)
-        if self.power_monitor:
-            # Number of power tracks to observe
-            num_power_tracks = 5
+        # # Convert output to numpy
+        # out = np.array(all_arrays)
 
-            # init dict for storing data of each power track
-            power_each_track = dict()
-            event_count_each_track = dict()
+        # # Perform sequence matching convolution on similarity matrix
+        # if self.sequence_length != 0:
+        #     dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        #     precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        #     dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        # else:
+        #     dist_matrix_seq = out
 
-            # loop through all collected power events and get data
-            for evt in power_events:
-                p_track_id = evt.channel
-                tmp_power = power_each_track.get(p_track_id, 0) + evt.value
-                tmp_count = event_count_each_track.get(p_track_id, 0) + 1
-                
-                power_each_track.update({p_track_id: tmp_power})
-                event_count_each_track.update({p_track_id: tmp_count})
-
-            # average power and current of each track
-            for p_track_id in range(num_power_tracks):
-                
-                # average power in microwatt
-                avg_power = power_each_track[p_track_id] / event_count_each_track[p_track_id] * 1e6
-                # calculate current
-                if p_track_id == 0:
-                    current = avg_power / 2.5 
-                else:
-                    current = avg_power / 1.2
-                    
-                print(f'track{p_track_id}: {avg_power}uW, {current}uA') 
-
-        # Convert output to numpy
-        out = np.array(all_arrays)
-
-        # Perform sequence matching convolution on similarity matrix
-        if self.sequence_length != 0:
-            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
-        else:
-            dist_matrix_seq = out
-
-        # Recall@N
-        N = [1,5,10,15,20,25] # N values to calculate
-        R = [] # Recall@N values
-        # Create GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        if self.sequence_length != 0:
-            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
-        # Calculate Recall@N
-        for n in N:
-            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-        # Print the results
-        table = PrettyTable()
-        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        model.logger.info(table)
-
-        # Plot power monitoring results and similarity matrix
-        if self.power_monitor:
-            # Define the plot style
-            plt.style.use('ggplot')
-
-            # Create a figure with two side-by-side subplots
-            fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3, 2]})
-
-            # Plot for power consumption
-            p_track_name = ["io", "ram", "logic", "pixel digital", "pixel analog"]
-            for p_track_id in range(num_power_tracks):
-                x = [each.timestamp for each in power_events if each.channel == p_track_id]
-                y = [each.value * 1e6 for each in power_events if each.channel == p_track_id]
-                axs[0].plot(x, y, label=p_track_name[p_track_id], alpha=0.8)
-
-            axs[0].set_xlabel("time(us)")
-            axs[0].set_ylabel("power(uW)")
-            axs[0].set_title("Power consumption")
-            axs[0].legend(loc="upper right", fontsize=10)
-
-            # Plot for similarity matrix
-            cax = axs[1].matshow(all_arrays, cmap="viridis")
-            fig.colorbar(cax, ax=axs[1], shrink=0.75, label="Number of output spikes")
-            axs[1].set_title('Similarity matrix', pad=20)  # Add padding to the title
-            axs[1].set_xlabel("Query")
-            axs[1].set_ylabel("Database")
-            axs[1].grid(False)  # Disable grid lines for the similarity matrix
-
-            # Adjust the layout to prevent cutting off the title
-            plt.tight_layout()
-            plt.show()  
+        # # Recall@N
+        # N = [1,5,10,15,20,25] # N values to calculate
+        # R = [] # Recall@N values
+        # # Create GT matrix
+        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        # if self.sequence_length != 0:
+        #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+        # # Calculate Recall@N
+        # for n in N:
+        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # # Print the results
+        # table = PrettyTable()
+        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        # model.logger.info(table)
+         
         if self.sim_mat: # Plot only the similarity matrix
             plt.matshow(dist_matrix_seq)
             plt.colorbar(shrink=0.75,label="Output spike intensity")
@@ -386,7 +379,7 @@ def run_inference(model, model_name):
     """
     # Initialize the image transforms and datasets
     image_transform = transforms.Compose([
-        ProcessImage()
+        ProcessImage(model.conv)
     ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,

@@ -195,7 +195,7 @@ def calc_stdp(prespike, spikes, noclp, layer, idx, prev_layer=None):
         # Difference between forced and calculated spikes
         layer.x = torch.full_like(layer.x, 0)
         xdiff = layer.x.index_fill_(-1, idx_sel, 0.5) - spikes
-        xdiff.clamp(min=0.0, max=1.0)
+        xdiff = xdiff.clamp(min=0.0, max=1.0)
 
         # Pre and Post spikes tiled across and down for all synapses
         if prev_layer.fire_rate == None:
@@ -234,13 +234,14 @@ def calc_stdp(prespike, spikes, noclp, layer, idx, prev_layer=None):
     layer.w.weight.data[layer.havconnCombinedExc] = layer.w.weight.data[layer.havconnCombinedExc].clamp(min=1e-06, max=10)
     layer.w.weight.data[layer.havconnCombinedInh] = layer.w.weight.data[layer.havconnCombinedInh].clamp(min=-10, max=-1e-06)
 
+
     # Check if layer has target firing rate and an ITP learning rate
     if layer.have_rate and layer.eta_ip > 0.0:
         
         # Replace the original layer.thr with the updated one
         layer.thr.data += layer.eta_ip * (layer.x - layer.fire_rate)
         layer.thr.data[layer.thr.data < 0] = 0
-    
+        #print(layer.thr.data)
     # Check if layer has inhibitory weights and an stdp learning rate
     if torch.any(layer.w.weight.data).item() and layer.eta_stdp != 0:
         

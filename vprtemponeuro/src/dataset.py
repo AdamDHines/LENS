@@ -6,29 +6,14 @@ import math
 import torch
 
 import pandas as pd
+import torch.nn as nn
 
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
 class SetImageAsSpikes:
     def __init__(self, intensity=255, test=True):
-        self.intensity = intensity
-        
-        # Setup QAT FakeQuantize for the activations (your spikes)
-        self.fake_quantize = torch.quantization.FakeQuantize(
-            observer=torch.quantization.MovingAverageMinMaxObserver, 
-            quant_min=0, 
-            quant_max=255, 
-            dtype=torch.quint8, 
-            qscheme=torch.per_tensor_affine, 
-            reduce_range=False
-        )
-        
-    def train(self):
-        self.fake_quantize.train()
-
-    def eval(self):
-        self.fake_quantize.eval()    
+        self.intensity = intensity   
     
     def __call__(self, img_tensor):
         N, W, H = img_tensor.shape
@@ -36,23 +21,27 @@ class SetImageAsSpikes:
         
         # Divide all pixel values by 255
         normalized_batch = reshaped_batch / self.intensity
-        normalized_batch  = torch.squeeze(normalized_batch, 0)
-
-        # Apply FakeQuantize
-        spikes = self.fake_quantize(normalized_batch)
-        
-        if not self.fake_quantize.training:
-            scale, zero_point = self.fake_quantize.calculate_qparams()
-            spikes = torch.quantize_per_tensor(spikes, float(scale), int(zero_point), dtype=torch.quint8)
+        spikes  = torch.squeeze(normalized_batch, 0)
 
         return spikes
 
 class ProcessImage:
-    def __init__(self, mid=0.5):
+    def __init__(self, convolve, mid=0.5):
         self.mid = mid
+        if convolve is not None:
+            self.cnn = nn.Sequential(
+                nn.AvgPool2d(kernel_size=(2, 2)),
+                
+            )
+        else:
+            self.cnn = None
         
     def __call__(self, img):
         # Add a channel dimension to the resulting grayscale image
+        if self.cnn is not None:
+            with torch.no_grad():
+                img = self.cnn(img.to(torch.float32))
+
         img= img.unsqueeze(0)
         img = img.to(dtype=torch.float32)
         # gamma correction
@@ -76,7 +65,8 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=255):
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100,
+                 convolve=None):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
@@ -123,9 +113,11 @@ class CustomImageDataset(Dataset):
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
-
+        image_og = []
         # Raster the input for image
         if self.is_raster:
+            image_og = image.clone()
+            torch.manual_seed(50)
             image = (torch.rand(self.time_window, *image.shape) < image).float()
         # Prepare the spikes for deployment to speck2devkit
         if self.is_spiking:
@@ -133,4 +125,4 @@ class CustomImageDataset(Dataset):
             image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
             image = image.unsqueeze(1)
 
-        return image, label, gps_coordinate
+        return image, label, gps_coordinate, image_og
