@@ -164,8 +164,15 @@ class VPRTempoNeuro(nn.Module):
             config = self.dynapcnn.make_config("auto",device=devkit_name)
             lyrs = self.dynapcnn.chip_layers_ordering[-1]
             # Enable layer monitoring
-            #config.dvs_layer.monitor_enable = True
+            config.dvs_layer.monitor_enable = True
             config.cnn_layers[lyrs].monitor_enable = True
+            # Setup DVS filtering
+            config.dvs_filter.enable = True
+            config.dvs_filter.hot_pixel_filter_enable = True
+            config.dvs_filter.threshold = 3
+            # Switch only on channels from DVS
+            config.dvs_layer.off_channel = False
+            config.dvs_layer.on_channel = True
             # Set input pooling for DVS events [128,128] -> [64,64]
             config.dvs_layer.pooling.x = 2
             config.dvs_layer.pooling.y = 2
@@ -180,15 +187,17 @@ class VPRTempoNeuro(nn.Module):
             graph = samna.graph.EventFilterGraph()
             streamer = s.build_samna_event_route(graph, dk)
             # Define spike collection nodes for GUI plotting
-            (_,spike_collection_filter, spike_count_filter,_) = graph.sequential(
+            (_,readout_spike, spike_collection_filter, spike_count_filter,_) = graph.sequential(
                     [
                         dk.get_model_source_node(),
+                        "Speck2fOutputMemberSelect",
                         "Speck2fSpikeCollectionNode",
                         "Speck2fSpikeCountNode",
                         streamer,
                     ]
             )
             spike_collection_filter.set_interval_milli_sec(1000)
+            readout_spike.set_white_list([lyrs], "layer")
 
             # # Set the interval for spike collection
             _, readout_filter, _ = graph.sequential(
@@ -199,9 +208,8 @@ class VPRTempoNeuro(nn.Module):
             power = dk.get_power_monitor()
             power.start_auto_power_measurement(20)
             graph.sequential([power.get_source_node(), "MeasurementToVizConverter", streamer])
-            # readout_filter.set_feature_count(self.args.reference_places)
             # Configure the visualizer
-            config_source, visualizer_config = s.configure_visualizer(graph, streamer)
+            config_source, visualizer_config = s.configure_visualizer(graph, streamer, self.args.reference_places)
             config_source.write([visualizer_config])
             graph.start()
 
@@ -212,16 +220,17 @@ class VPRTempoNeuro(nn.Module):
         with torch.no_grad():    
             # Run inference on-chip
             if self.args.onchip:
+                # Set timestamps for spike events
                 stopWatch = dk.get_stop_watch()
                 stopWatch.set_enable_value(True)
-
+                # Set the slow clock rate
                 dk_io = dk.get_io_module()
                 dk_io.set_slow_clk_rate(10)
                 dk_io.set_slow_clk(True)
-
                 # Start the process, and wait for window to be destroyed
                 gui_process.join()
-                # Stop the GUI process
+                # Stop the GUI process & close the Speck2f device
+                readout_filter.stop()
                 graph.stop()
                 samna.device.close_device(dk)
             # Run inference for pre-recorded DVS data    
