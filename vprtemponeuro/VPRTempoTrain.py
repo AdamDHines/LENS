@@ -79,6 +79,7 @@ class VPRTempoTrain(nn.Module):
             ip_rate=self.ip_rate_feat,
             stdp_rate=self.stdp_rate_feat,
             p=[self.f_exc, self.f_inh],
+            const_inp=[self.const_input_l,self.const_input_h],
             device=self.device
         )
         self.add_layer(
@@ -89,9 +90,15 @@ class VPRTempoTrain(nn.Module):
             ip_rate=self.ip_rate_out,
             stdp_rate=self.stdp_rate_out,
             p=[self.o_exc, self.o_inh],
+            const_inp=[self.const_input_l,self.const_input_h],
             spk_force=True,
             device=self.device
         )
+        if self.convolve_events:
+            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+        else:
+            self.conv = None
+            # self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -140,22 +147,22 @@ class VPRTempoTrain(nn.Module):
             self.epoch = self.args.epoch_feat
         else:
             self.epoch = self.args.epoch_out
+        
         # Set the total timestep count
         self.T = int((self.reference_places) * self.epoch)
         # Initialize the tqdm progress bar
         pbar = tqdm(total=int(self.T),
                     desc="Training ",
                     position=0)
-                    
         
         # Initialize the learning rates for each layer (used for annealment)
-        init_itp = layer.eta_ip.detach()
+        init_itp = layer.eta_stdp.detach() * 2
         init_stdp = layer.eta_stdp.detach()
         mod = 0  # Used to determine the learning rate annealment, resets at each epoch
         # Run training for the specified number of epochs
         for _ in range(self.epoch):
             # Run training for the specified number of timesteps
-            for spikes, labels, gps in train_loader:
+            for spikes, labels, gps, _ in train_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.to(torch.float32)
                 spikes = torch.squeeze(spikes,0)
@@ -241,15 +248,14 @@ def train_new_model(model, model_name):
     :param qconfig: Quantization configuration
     """
     # Initialize the image transforms and datasets
-    image_transform = transforms.Compose([
-                                        ProcessImage()
-                                            ])
+    image_transform = transforms.Compose([ProcessImage(model.conv)])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.reference_places,
-                                      test=False)
+                                      test=False,
+                                      convolve=model.conv)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 
                               batch_size=1, 

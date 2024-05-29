@@ -39,6 +39,7 @@ def generate_model_name(model):
     """
     Generate the model name based on its parameters.
     """
+
     model_name = (''.join(model.reference)+"_"+
             "VPRTempo_" +
             "IN"+str(model.input)+"_" +
@@ -51,18 +52,17 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
+    args.onchip = True
 
-    # If user wants to train a new network
-    if args.train_new_model:
+    if args.train_new_model: # If user wants to train a new network
         # Initialize the model
         model = VPRTempoTrain(args)
         # Generate the model name
         model_name = generate_model_name(model)
         # Train the model
         train_new_model(model, model_name)
-
-    # Run a weights and biases sweep    
-    elif args.wandb:
+    
+    elif args.wandb: # Run a weights and biases sweep    
         # Log into weights & biases
         wandb.login()
         
@@ -72,7 +72,8 @@ def initialize_and_run_model(args):
         sweep_config['metric'] = metric
         
         # Define the parameters for the search
-        parameters_dict = {}
+        parameters_dict = {
+                        }
         sweep_config['parameters'] = parameters_dict
         pprint.pprint(sweep_config)
     
@@ -86,6 +87,7 @@ def initialize_and_run_model(args):
                 config = wandb.config
 
                 # Set arguments for the sweep
+
 
                 # Initialize the training model
                 args.train_new_model = True
@@ -109,17 +111,15 @@ def initialize_and_run_model(args):
         # Start the agent with the sweeps
         wandb.agent(sweep_id,wandsearch)
 
-    # Run the inference network
-    else:
-        # Set the quantization configuration
-        if args.raster:
+    else: # Run the inference network
+        if args.raster: # Runs the sinabs model on CPU/GPU hardware
             # Initialize the quantized model
             model = VPRTempoRaster(args)
             # Generate the model name
             model_name = generate_model_name(model)
             # Run the quantized inference model
             run_inference_raster(model, model_name)
-        elif args.norm:
+        elif args.norm: # Runs base VPRTempo
             # Initialize the model
             model = VPRTempo(args)
             # Generate the model name
@@ -128,7 +128,7 @@ def initialize_and_run_model(args):
             run_inference_norm(model, model_name)
         else:
             # Initialize the model
-            model = VPRTempoNeuro(args)
+            model = VPRTempoNeuro(args) # Runs the DynapCNN on-chip model
             # Generate the model name
             model_name = generate_model_name(model)
             # Run the inference model
@@ -141,23 +141,23 @@ def parse_network():
     parser = argparse.ArgumentParser(description="Args for base configuration file")
 
     # Define the dataset arguments
-    parser.add_argument('--dataset', type=str, default='brisbane_event',
+    parser.add_argument('--dataset', type=str, default='qcr',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--camera', type=str, default='davis',
+    parser.add_argument('--camera', type=str, default='speck',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='sunset2',
+    parser.add_argument('--reference', type=str, default='test001',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='sunset1',
+    parser.add_argument('--query', type=str, default='test002',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=641,
+    parser.add_argument('--reference_places', type=int, default=79,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=724,
+    parser.add_argument('--query_places', type=int, default=79,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
-    parser.add_argument('--feature_multiplier', type=float, default=1.0,
+    parser.add_argument('--feature_multiplier', type=float, default=4.0,
                         help="Size multiplier for the feature/hidden layer")
 
     # Define training parameters
@@ -171,24 +171,29 @@ def parse_network():
     # Hyperparameters - feature layer
     parser.add_argument('--thr_l_feat', type=float, default=0,
                         help="Low threshold value")
-    parser.add_argument('--thr_h_feat', type=float, default=0.1,
+    parser.add_argument('--thr_h_feat', type=float, default=0.75,
                             help="High threshold value")
     parser.add_argument('--fire_l_feat', type=float, default=0.4,
                             help="Low threshold value")
     parser.add_argument('--fire_h_feat', type=float, default=0.6,
                             help="High threshold value")
-    parser.add_argument('--ip_rate_feat', type=float, default=0.5,
+    parser.add_argument('--const_input_l', type=float, default=0.0,
+                            help="Low constant input value"),
+    parser.add_argument('--const_input_h', type=float, default=0.0,
+                            help="High constant input value"),
+    parser.add_argument('--ip_rate_feat', type=float, default=0.02,
                             help="ITP learning rate")
     parser.add_argument('--stdp_rate_feat', type=float, default=0.01,
                             help="STDP learning rate")
+    
    # Hyperparameters - output layer 
     parser.add_argument('--thr_l_out', type=float, default=0,
                         help="Low threshold value")
-    parser.add_argument('--thr_h_out', type=float, default=0.2,
+    parser.add_argument('--thr_h_out', type=float, default=0.5,
                             help="High threshold value")
-    parser.add_argument('--fire_l_out', type=float, default=0.4,
+    parser.add_argument('--fire_l_out', type=float, default=0.5,
                             help="Low threshold value")
-    parser.add_argument('--fire_h_out', type=float, default=0.6,
+    parser.add_argument('--fire_h_out', type=float, default=0.5,
                             help="High threshold value")
     parser.add_argument('--ip_rate_out', type=float, default=0.02,
                             help="ITP learning rate")
@@ -196,18 +201,20 @@ def parse_network():
                             help="STDP learning rate")
 
     # Connection probabilities
-    parser.add_argument('--f_exc', type=float, default=0.9,
+    parser.add_argument('--f_exc', type=float, default=0.1,
                         help="Feature layer excitatory connection")
-    parser.add_argument('--f_inh', type=float, default=0.8,
+    parser.add_argument('--f_inh', type=float, default=0.5,
                         help="Feature layer inhibitory connection")
-    parser.add_argument('--o_exc', type=float, default=0.7,
+    parser.add_argument('--o_exc', type=float, default=1.0,
                         help="Output layer excitatory connection")
-    parser.add_argument('--o_inh', type=float, default=0.9,
+    parser.add_argument('--o_inh', type=float, default=1.0,
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[7,7],
+    parser.add_argument('--dims', nargs='+', type=int, default=[8,8],
                             help="Dimensions to resize the image to")
+    parser.add_argument('--convolve_events', action='store_true',
+                            help="Decide to convolve the events or not")
 
     # Define the network functionality
     parser.add_argument('--train_new_model', action='store_true',
@@ -228,6 +235,8 @@ def parse_network():
                             help="Run the regular VPRTempo")
     parser.add_argument('--reference_annotation', action='store_true', 
                             help='Flag to limit frames (True) or just create all frames (False)')
+    parser.add_argument('--onchip', action='store_true', 
+                            help='Define the source of the input data to be from the speck event sensor')
     
     # Run weights and biases
     parser.add_argument('--wandb', action='store_true',
