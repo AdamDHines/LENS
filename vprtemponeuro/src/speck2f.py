@@ -103,7 +103,7 @@ def custom_readout(collection):
         e = samna.ui.Readout()
         e.feature = feature
         return [e]
-    start = timeit.timeit()
+
     # Preset total number of unique spike features
     total_features = 79
     # Initialize sum dictionary with all features set to 0
@@ -150,5 +150,5 @@ def custom_readout(collection):
         json.dump(data_blocks, file, indent=4)
 
     print(f"The key with the maximum value is: {argmax_key}")
-    print(timeit.timeit() - start)
-    return generate_result(argmax_key)
+
+    return generate_result(int(argmax_key))
