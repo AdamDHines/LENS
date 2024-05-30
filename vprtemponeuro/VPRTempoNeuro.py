@@ -207,7 +207,11 @@ class VPRTempoNeuro(nn.Module):
             # Setup power and readout filter
             power = dk.get_power_monitor()
             power.start_auto_power_measurement(20)
-            graph.sequential([power.get_source_node(), "MeasurementToVizConverter", streamer])
+            power_source, _, _ = graph.sequential([power.get_source_node(), "MeasurementToVizConverter", streamer])
+            power_sink = samna.graph.sink_from(power_source)
+            # Function to read out power from sink node
+            def get_events():
+                return power_sink.get_events()
             # Configure the visualizer
             config_source, visualizer_config = s.configure_visualizer(graph, streamer, self.args.reference_places)
             config_source.write([visualizer_config])
@@ -229,6 +233,9 @@ class VPRTempoNeuro(nn.Module):
                 dk_io.set_slow_clk(True)
                 # Start the process, and wait for window to be destroyed
                 gui_process.join()
+                # Read out the power consumption measurements and save
+                power.stop_auto_power_measurement()
+                ps = get_events()
                 # Stop the GUI process & close the Speck2f device
                 readout_filter.stop()
                 graph.stop()
@@ -288,6 +295,24 @@ class VPRTempoNeuro(nn.Module):
                 # Close the tqdm progress bar
                 pbar.close()
                 print("Inference on-chip succesully completed")
+
+        # Organise energy measurements into a NumPy array
+        if self.args.onchip:
+            # Initialize a list to store arrays for each channel
+            channel_data = [[] for _ in range(5)]
+            
+            # Loop through the data and append values to the corresponding channel list
+            for record in ps:
+                channel_data[record.channel].append((record.timestamp, record.value))
+            
+            # Convert lists to numpy arrays
+            numpy_arrays = [np.array(data) for data in channel_data]
+            np.save(f"{self.output_folder}/power_data.npy", numpy_arrays)
+
+        # Move output spikes from continual inference to output folder
+        if self.args.onchip:
+            # Move the output spikes to the output folder
+            os.rename("spike_data.json", f"{self.output_folder}/spike_data.json")
 
         # Reset the chip state
         #self.dynapcnn.reset_states()
