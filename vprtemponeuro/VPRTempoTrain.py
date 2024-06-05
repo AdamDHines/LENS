@@ -32,7 +32,7 @@ import numpy as np
 import torch.nn as nn
 import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
-
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from vprtemponeuro.src.loggers import model_logger
@@ -95,7 +95,12 @@ class VPRTempoTrain(nn.Module):
             device=self.device
         )
         if self.convolve_events:
-            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+            kernel_size = 8
+            self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
+            n = kernel_size*kernel_size
+            avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
+            self.conv.weight.data = avg_weight
+            self.conv.weight.requires_grad = False
         else:
             self.conv = None
             # self.register_buffer('conv', None)
@@ -143,6 +148,7 @@ class VPRTempoTrain(nn.Module):
         :param layer: Layer to train
         :param prev_layers: Previous layers to pass data through
         """
+
         if not prev_layers:
             self.epoch = self.args.epoch_feat
         else:
@@ -159,6 +165,21 @@ class VPRTempoTrain(nn.Module):
         init_itp = layer.eta_stdp.detach() * 2
         init_stdp = layer.eta_stdp.detach()
         mod = 0  # Used to determine the learning rate annealment, resets at each epoch
+        kernel_size = 8
+        self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
+        n = kernel_size*kernel_size
+        avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
+        self.conv.weight.data = avg_weight
+        self.conv.weight.requires_grad = False
+        self.conv.to(self.device)
+        pre_train = nn.Sequential(
+                        self.conv,
+            nn.ReLU(),
+            nn.Flatten()
+        )
+        pool = nn.AvgPool2d(kernel_size=(2, 2))
+        relu = nn.ReLU()
+        flat = nn.Flatten()
         # Run training for the specified number of epochs
         for _ in range(self.epoch):
             # Run training for the specified number of timesteps
@@ -167,6 +188,10 @@ class VPRTempoTrain(nn.Module):
                 spikes = spikes.to(torch.float32)
                 spikes = torch.squeeze(spikes,0)
                 idx = labels / self.filter # Set output index for spike forcing
+                # Pass through an nn.pool initially
+                spikes = torch.reshape(spikes, (128, 128))
+                spikes = pool(spikes.unsqueeze(0).unsqueeze(0))
+                spikes = pre_train(spikes)
                 # Pass through previous layers if they exist
                 if prev_layers:
                     with torch.no_grad():
@@ -174,6 +199,8 @@ class VPRTempoTrain(nn.Module):
                             prev_layer = getattr(self, prev_layer_name) # Get the previous layer object
                             spikes = self.forward(spikes, prev_layer) # Pass spikes through the previous layer
                             spikes = bn.clamp_spikes(spikes, prev_layer) # Clamp spikes [0, 0.9]
+                            spikes = relu(spikes)
+                            spikes = flat(spikes)
                 else:
                     prev_layer = None
                 # Get the output spikes from the current layer
@@ -248,14 +275,14 @@ def train_new_model(model, model_name):
     :param qconfig: Quantization configuration
     """
     # Initialize the image transforms and datasets
-    image_transform = transforms.Compose([ProcessImage(model.conv)])
+    image_transform = transforms.Compose([ProcessImage(None)])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.reference_places,
                                       test=False,
-                                      convolve=model.conv)
+                                      convolve=None)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 
                               batch_size=1, 

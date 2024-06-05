@@ -487,3 +487,6 @@
 [2024-05-30 09:54:10.501] [Speck2fBoards] [info] Speck 2f dev kit initialized.
 [2024-05-30 09:54:13.258] [Speck2fBoards] [info] Speck 2f model initialized.
 [2024-05-30 09:54:13.525] [ZMQ] [info] ZMQPublisher set endpoint: tcp://0.0.0.0:40000
+[2024-05-30 15:27:55.699] [Speck2fBoards] [info] Speck 2f dev kit initialized.
+[2024-05-30 15:27:58.452] [Speck2fBoards] [info] Speck 2f model initialized.
+[2024-05-30 15:27:58.790] [Graph] [warning] Graph is destroyed without any start! Graph is required to start manually to work.

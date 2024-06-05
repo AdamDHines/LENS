@@ -35,7 +35,7 @@ def open_visualizer(streamer_endpoint, window_width=0.75, window_height=0.75):
         target=samnagui.run_visualizer,
         args=(streamer_endpoint, window_width, window_height),
     )
-    gui_process.start()
+    #gui_process.start()
 
     return gui_process
 

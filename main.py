@@ -52,8 +52,12 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
+    #args.train_new_model = True
+    #args.convolve_events = True
+    #args.norm = True
+    args.sim_mat = True
     args.onchip = True
-
+    # args.train_new_model = True
     if args.train_new_model: # If user wants to train a new network
         # Initialize the model
         model = VPRTempoTrain(args)
@@ -145,15 +149,15 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--camera', type=str, default='speck',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='test001',
+    parser.add_argument('--reference', type=str, default='qcr-qry-full',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='test002',
+    parser.add_argument('--query', type=str, default='qcr-qry',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=79,
+    parser.add_argument('--reference_places', type=int, default=161,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=79,
+    parser.add_argument('--query_places', type=int, default=161,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
