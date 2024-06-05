@@ -171,25 +171,25 @@ class VPRTempoRaster(nn.Module):
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
 
-        # Create GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        if self.sequence_length != 0:
-            GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+        # # Create GT matrix
+        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        # if self.sequence_length != 0:
+        #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
         
-        # Calculate Recall@N
-        for n in N:
-            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # # Calculate Recall@N
+        # for n in N:
+        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
 
-        # Print the results
-        table = PrettyTable()
-        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        model.logger.info(table)
+        # # Print the results
+        # table = PrettyTable()
+        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        # model.logger.info(table)
     
         # Plot similarity matrix
         if self.sim_mat:
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq, annot=False, cmap='viridis')
+            sns.heatmap(dist_matrix_seq.T, annot=False, cmap='viridis')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")

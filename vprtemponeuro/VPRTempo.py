@@ -92,11 +92,17 @@ class VPRTempo(nn.Module):
         # Define the forward pass
         self.snn = nn.Sequential(
             self.feature_layer.w,
+            nn.ReLU(),
             self.output_layer.w
         )
 
         if self.convolve_events:
-            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
+            kernel_size = 8
+            self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
+            n = kernel_size*kernel_size
+            avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
+            self.conv.weight.data = avg_weight
+            self.conv.weight.requires_grad = False
         else:
             self.conv = None
             #self.register_buffer('conv', None)
@@ -109,6 +115,7 @@ class VPRTempo(nn.Module):
         :type name: str
         :param kwargs: Hyperparameters for the layer
         """
+
         # Check for layer name duplicates
         if name in self.layer_dict:
             raise ValueError(f"Layer with name {name} already exists.")
@@ -166,14 +173,14 @@ class VPRTempo(nn.Module):
         R = [] # Recall@N values
         
         # Create a perfect square GT matrix
-        # GT = np.eye(model.query_places, model.reference_places)
-        # if self.args.sequence_length != 0:
-        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
-
-        # Load GT matrix
-        GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        GT = np.eye(model.query_places, model.reference_places)
         if self.args.sequence_length != 0:
             GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+
+        # Load GT matrix
+        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+        # if self.args.sequence_length != 0:
+        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
 
         # Calculate Recall@N
         for n in N:
@@ -187,7 +194,7 @@ class VPRTempo(nn.Module):
         # Plot similarity matrix
         if self.sim_mat:
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq, annot=False, cmap='viridis')
+            sns.heatmap(dist_matrix_seq.T, annot=False, cmap='coolwarm')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")

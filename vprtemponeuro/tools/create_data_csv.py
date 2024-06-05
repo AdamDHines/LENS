@@ -1,7 +1,7 @@
 import os
 import csv
 import numpy as np
-from read_gps import get_gps
+# from read_gps import get_gps
 
 def haversine(lon1, lat1, lon2, lat2):
     # Radius of the Earth in kilometers
@@ -17,7 +17,7 @@ def haversine(lon1, lat1, lon2, lat2):
     distance = R * c
     return distance * 1000  # Convert to meters
 
-def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, distance_threshold=100):
+def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, distance_threshold=100):
     files = os.listdir(folder_path)
     png_files = sorted([f for f in files if f.endswith('.png')])
 
@@ -63,7 +63,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=1, dis
 
 
 # Example usage
-folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/test002' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/test002.csv' # Path for the CSV file
+folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/qcr-qry-full' # Replace with your folder path
+csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr-qry-full.csv' # Path for the CSV file
 gps_path = None
 create_csv_from_images(folder_path, csv_file_path, gps_path=gps_path)

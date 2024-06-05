@@ -132,6 +132,7 @@ class VPRTempoNeuro(nn.Module):
 
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
+            nn.AvgPool2d(kernel_size=(2, 2)),
             self.conv,
             nn.ReLU(),
             nn.Flatten(),
@@ -144,7 +145,7 @@ class VPRTempoNeuro(nn.Module):
         devkit_name = "speck2fdevkit"
 
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, 64, 64) # With Conv2d becomes [1, 8, 8]
+        input_shape = (1, 128, 128) # With Conv2d becomes [1, 8, 8]
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -174,8 +175,8 @@ class VPRTempoNeuro(nn.Module):
             config.dvs_layer.off_channel = False
             config.dvs_layer.on_channel = True
             # Set input pooling for DVS events [128,128] -> [64,64]
-            config.dvs_layer.pooling.x = 2
-            config.dvs_layer.pooling.y = 2
+            # config.dvs_layer.pooling.x = 2
+            # config.dvs_layer.pooling.y = 2
             # Get the Speck2fDevKit configuration for graph sequential routing
             dk = s.get_speck2f()
             # Apply the configuration to the DYNAPCNN model
