@@ -35,7 +35,7 @@ def open_visualizer(streamer_endpoint, window_width=0.75, window_height=0.75):
         target=samnagui.run_visualizer,
         args=(streamer_endpoint, window_width, window_height),
     )
-    #gui_process.start()
+    gui_process.start()
 
     return gui_process
 
@@ -55,13 +55,13 @@ def build_samna_event_route(graph, dk):
 
 def configure_visualizer(graph, streamer, num_channels):
     config_source, _ = graph.sequential([samna.BasicSourceNode_ui_event(), streamer])
-    graph.start()
+    #graph.start()
     
     visualizer_config = samna.ui.VisualizerConfiguration(
         # add plots to gui
         plots=[
             # add plot to show pixels
-            samna.ui.ActivityPlotConfiguration(64, 64, "DVS Layer", [0, 0, 0.5, 0.75]),
+            samna.ui.ActivityPlotConfiguration(10, 10, "DVS Layer", [0, 0, 0.5, 0.75]),
             # add plot to show readout. params: plot title and images array of the same size of feature count. these images correspond to each feature.
             # samna.ui.ReadoutPlotConfiguration(
             #     "Readout Layer",
@@ -105,7 +105,7 @@ def custom_readout(collection):
         return [e]
 
     # Preset total number of unique spike features
-    total_features = 79
+    total_features = 161
     # Initialize sum dictionary with all features set to 0
     sum = {f'{i}': 0 for i in range(0, total_features)}
 

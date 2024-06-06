@@ -40,12 +40,14 @@ class ProcessImage:
     def __call__(self, img):
         # Add a channel dimension to the resulting grayscale image
         copy = img.clone()
-        if self.cnn is not None:
-            with torch.no_grad():
-                img = self.cnn(img.to(torch.float32))
-                img = self.pool(img)
+        # if self.cnn is not None:
+        #     with torch.no_grad():
+        #         img = self.cnn(img.to(torch.float32))
+        #         img = self.pool(img)
+        # pool = nn.AvgPool2d(kernel_size=(16,16))
+        #img = pool(img.to(torch.float32))
         # img= img.unsqueeze(0)
-        img = img.to(dtype=torch.float32)
+        #img = img.to(dtype=torch.float32)
         # # gamma correction
         # mean = torch.mean(img)
 
@@ -67,7 +69,7 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=100,
+                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=1000,
                  convolve=None):
         self.transform = transform
         self.target_transform = target_transform

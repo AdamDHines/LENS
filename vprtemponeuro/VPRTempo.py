@@ -92,17 +92,11 @@ class VPRTempo(nn.Module):
         # Define the forward pass
         self.snn = nn.Sequential(
             self.feature_layer.w,
-            nn.ReLU(),
             self.output_layer.w
         )
 
         if self.convolve_events:
-            kernel_size = 8
-            self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
-            n = kernel_size*kernel_size
-            avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
-            self.conv.weight.data = avg_weight
-            self.conv.weight.requires_grad = False
+            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
         else:
             self.conv = None
             #self.register_buffer('conv', None)
@@ -115,7 +109,6 @@ class VPRTempo(nn.Module):
         :type name: str
         :param kwargs: Hyperparameters for the layer
         """
-
         # Check for layer name duplicates
         if name in self.layer_dict:
             raise ValueError(f"Layer with name {name} already exists.")
@@ -173,28 +166,28 @@ class VPRTempo(nn.Module):
         R = [] # Recall@N values
         
         # Create a perfect square GT matrix
-        GT = np.eye(model.query_places, model.reference_places)
-        if self.args.sequence_length != 0:
-            GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+        # GT = np.eye(model.query_places, model.reference_places)
+        # if self.args.sequence_length != 0:
+        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
 
         # Load GT matrix
         # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
         # if self.args.sequence_length != 0:
         #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
 
-        # Calculate Recall@N
-        for n in N:
-            R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-        # Print the results
-        table = PrettyTable()
-        table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        model.logger.info(table)
+        # # Calculate Recall@N
+        # for n in N:
+        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # # Print the results
+        # table = PrettyTable()
+        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+        # model.logger.info(table)
 
         # Plot similarity matrix
         if self.sim_mat:
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq.T, annot=False, cmap='coolwarm')
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='viridis')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")

@@ -51,7 +51,7 @@ from sinabs.backend.dynapcnn import DynapcnnNetwork
 from vprtemponeuro.src.metrics import recallAtK, createPR
 from sinabs.backend.dynapcnn.chip_factory import ChipFactory
 from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
-
+import math
 class VPRTempoNeuro(nn.Module):
     def __init__(self, args):
         super(VPRTempoNeuro, self).__init__()
@@ -121,20 +121,8 @@ class VPRTempoNeuro(nn.Module):
         :param test_loader: Testing data loader
         :param model: Pre-trained network model
         """
-        # Pre-define a 2d convolutional layer with average pooling weights
-        # Takes pre-pooled [128,128] -> [64,64] -> [8,8]
-        kernel_size = 8
-        self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
-        n = kernel_size*kernel_size
-        avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
-        self.conv.weight.data = avg_weight
-        self.conv.weight.requires_grad = False
-
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
-            nn.AvgPool2d(kernel_size=(2, 2)),
-            self.conv,
-            nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
@@ -145,7 +133,7 @@ class VPRTempoNeuro(nn.Module):
         devkit_name = "speck2fdevkit"
 
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, 128, 128) # With Conv2d becomes [1, 8, 8]
+        input_shape = (1, 10, 10) # With Conv2d becomes [1, 8, 8]
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -170,13 +158,17 @@ class VPRTempoNeuro(nn.Module):
             # Setup DVS filtering
             config.dvs_filter.enable = True
             config.dvs_filter.hot_pixel_filter_enable = True
-            config.dvs_filter.threshold = 3
+            config.dvs_filter.threshold = 5
             # Switch only on channels from DVS
-            config.dvs_layer.off_channel = False
-            config.dvs_layer.on_channel = True
+            config.dvs_layer.merge = True
             # Set input pooling for DVS events [128,128] -> [64,64]
-            # config.dvs_layer.pooling.x = 2
-            # config.dvs_layer.pooling.y = 2
+            config.dvs_layer.pooling.x = 4
+            config.dvs_layer.pooling.y = 4
+            # Set the ROI
+            config.dvs_layer.origin.x = 0
+            config.dvs_layer.origin.y = 0
+            config.dvs_layer.cut.x = 9
+            config.dvs_layer.cut.y = 9
             # Get the Speck2fDevKit configuration for graph sequential routing
             dk = s.get_speck2f()
             # Apply the configuration to the DYNAPCNN model
@@ -252,12 +244,15 @@ class VPRTempoNeuro(nn.Module):
                 pbar = tqdm(total=self.query_places,
                             desc="Running the test network",
                             position=0)
-
+                torch.manual_seed(50)
                 # Run through the input data
                 for spikes, _ , _, _ in test_loader:
                     # Squeeze the batch dimension
                     spikes = spikes.squeeze(0)
-
+                    # spikes = (torch.rand(100, *spikes.shape) < spikes).float()
+                    # sqrt_div = math.sqrt(spikes[-1].size()[0])
+                    # spikes = spikes.view(100,int(sqrt_div),int(sqrt_div))
+                    # spikes = spikes.unsqueeze(1)
                     # create samna Spike events stream
                     try:
                         events_in = factory.raster_to_events(spikes, 
@@ -271,6 +266,8 @@ class VPRTempoNeuro(nn.Module):
                         if len(neuron_idx) != 0:
                             frequent_counter = Counter(neuron_idx)
                             #prediction = frequent_counter.most_common(1)[0][0]
+                        else:
+                            frequent_counter = Counter([])
                     except:
                         frequent_counter = Counter([])
                         pass   
@@ -287,7 +284,11 @@ class VPRTempoNeuro(nn.Module):
 
                         return frequency_array
 
-                    freq_array = create_frequency_array(frequent_counter, self.reference_places)
+                    if not frequent_counter:
+                        freq_array = np.zeros(self.reference_places)
+                    else:
+                        freq_array = create_frequency_array(frequent_counter, self.reference_places)
+
                     all_arrays.append(freq_array)
 
                     # Update the progress bar
@@ -320,7 +321,7 @@ class VPRTempoNeuro(nn.Module):
         #print("Chip state has been reset")
 
         # # Convert output to numpy
-        # out = np.array(all_arrays)
+        out = np.array(all_arrays)
 
         # # Perform sequence matching convolution on similarity matrix
         # if self.sequence_length != 0:
@@ -347,7 +348,7 @@ class VPRTempoNeuro(nn.Module):
         # model.logger.info(table)
          
         if self.sim_mat: # Plot only the similarity matrix
-            plt.matshow(dist_matrix_seq)
+            plt.matshow(out)
             plt.colorbar(shrink=0.75,label="Output spike intensity")
             plt.title('Similarity matrix')
             plt.xlabel("Query")

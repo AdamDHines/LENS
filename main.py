@@ -56,6 +56,9 @@ def initialize_and_run_model(args):
     #args.convolve_events = True
     #args.norm = True
     args.sim_mat = True
+    #args.raster = True
+    #args.raster = True
+    args.sequence_length = 3
     args.onchip = True
     # args.train_new_model = True
     if args.train_new_model: # If user wants to train a new network
@@ -149,27 +152,27 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--camera', type=str, default='speck',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--reference', type=str, default='qcr-qry-full',
+    parser.add_argument('--reference', type=str, default='trolley-ref',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='qcr-qry',
+    parser.add_argument('--query', type=str, default='trolley-qry',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=161,
+    parser.add_argument('--reference_places', type=int, default=78,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=161,
+    parser.add_argument('--query_places', type=int, default=90,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
-    parser.add_argument('--feature_multiplier', type=float, default=4.0,
+    parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
 
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch_feat', type=int, default=8,
+    parser.add_argument('--epoch_feat', type=int, default=128,
                             help="Number of epochs to train the model")
-    parser.add_argument('--epoch_out', type=int, default=64,
+    parser.add_argument('--epoch_out', type=int, default=128,
                             help="Number of epochs to train the model")
     
     # Hyperparameters - feature layer
@@ -215,7 +218,7 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[8,8],
+    parser.add_argument('--dims', nargs='+', type=int, default=[10,10],
                             help="Dimensions to resize the image to")
     parser.add_argument('--convolve_events', action='store_true',
                             help="Decide to convolve the events or not")
