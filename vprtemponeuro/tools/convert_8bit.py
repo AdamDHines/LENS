@@ -17,4 +17,4 @@ def convert_to_8bit_png(folder_path):
                 img_8bit.save(file_path, format='PNG')
 
 # Replace 'your_folder_path' with the path to your folder
-convert_to_8bit_png('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/030624-qcr-qry')
+convert_to_8bit_png('/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/trolley-qry')

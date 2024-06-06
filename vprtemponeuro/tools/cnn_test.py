@@ -26,16 +26,16 @@ def process_image(image_paths):
     #new_img = new_img.unsqueeze(0)  # Add batch dimension    
     
     # Apply the neural network
-    with torch.no_grad():
-        new_img = snn(new_img.unsqueeze(0))  # Add batch dimension
+    # with torch.no_grad():
+    #     new_img = snn(new_img.unsqueeze(0))  # Add batch dimension
     
     # Convert back to PIL Image to save
     output_image = to_pil_image(new_img)  # Remove batch dimension
     return output_image
 
 # Load images from a directory
-source_directory1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/030624-qcr-qry'
-destination_directory1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/qcr-qry'
+source_directory1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/030624-qcr-ref'
+destination_directory1 = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/qcr-ref-full'
 
 if not os.path.exists(destination_directory1):
     os.makedirs(destination_directory1)
@@ -60,27 +60,27 @@ for idx, img_path in enumerate(tqdm(image_files, desc="Processing Images")):
         img_paths.append(img_path)
 
         # Load images from a directory
-source_directory2 = '/home/adam/Downloads/test002'
-destination_directory2= '/home/adam/Documents/test002'
+# source_directory2 = '/home/adam/Downloads/test002'
+# destination_directory2= '/home/adam/Documents/test002'
 
-if not os.path.exists(destination_directory2):
-    os.makedirs(destination_directory2)
+# if not os.path.exists(destination_directory2):
+#     os.makedirs(destination_directory2)
 
-# Get sorted list of image file paths
-image_files = sorted([os.path.join(source_directory2, f) for f in os.listdir(source_directory2) if f.endswith(('.png', '.jpg', '.jpeg'))])
+# # Get sorted list of image file paths
+# image_files = sorted([os.path.join(source_directory2, f) for f in os.listdir(source_directory2) if f.endswith(('.png', '.jpg', '.jpeg'))])
 
-# Process each image and save the result
-img_paths = []
-count = 0
-for idx, img_path in enumerate(tqdm(image_files, desc="Processing Images")):
-    if count == 30:
-        output_image = process_image(img_paths)
-        # Define a new file name for the processed image
-        base_name = os.path.basename(img_path)
-        save_path = os.path.join(destination_directory2, base_name)
-        output_image.save(save_path)
-        img_paths = []
-        count = 0
-    else:
-        count += 1
-        img_paths.append(img_path)
+# # Process each image and save the result
+# img_paths = []
+# count = 0
+# for idx, img_path in enumerate(tqdm(image_files, desc="Processing Images")):
+#     if count == 30:
+#         output_image = process_image(img_paths)
+#         # Define a new file name for the processed image
+#         base_name = os.path.basename(img_path)
+#         save_path = os.path.join(destination_directory2, base_name)
+#         output_image.save(save_path)
+#         img_paths = []
+#         count = 0
+#     else:
+#         count += 1
+#         img_paths.append(img_path)

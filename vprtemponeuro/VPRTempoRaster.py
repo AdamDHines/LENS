@@ -120,14 +120,27 @@ class VPRTempoRaster(nn.Module):
         
         # Define the inferencing model
         # ReLU layer required for the sinabs model, this becomes the spiking layer
+        kernel_size = 8
+        self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
+        n = kernel_size*kernel_size
+        avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
+        self.conv.weight.data = avg_weight
+        self.conv.weight.requires_grad = False
+        self.conv.to(self.device)
+
+        # Define the forward pass
         self.inference = nn.Sequential(
+            # nn.AvgPool2d(kernel_size=(2, 2)),
+            # self.conv,
+            # nn.ReLU(),
+            nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
-            self.output_layer.w
+            self.output_layer.w,
         )
         
         # Set up the sinabs model
-        input_shape = (1, 1, self.dims[0] * self.dims[1])
+        input_shape = (1, 8, 8)
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -145,8 +158,10 @@ class VPRTempoRaster(nn.Module):
         with torch.no_grad():
             for spikes, labels, _, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
+                #spikes = spikes.view(1, 100, 128, 128)
                 spikes = sl.FlattenTime()(spikes)
                 #self.sinabs_model.reset_states()
+                
                 # Forward pass
                 spikes = self.forward(spikes)
                 output = spikes.sum(dim=0).squeeze()
