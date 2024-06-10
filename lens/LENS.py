@@ -27,10 +27,7 @@ Imports
 import os
 import json
 import torch
-import samna, samnagui
-import time
-import multiprocessing
-import threading
+import samna
 
 import numpy as np
 import torch.nn as nn
@@ -40,7 +37,6 @@ import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
-from multiprocessing import Process
 from queue import Queue
 from collections import Counter
 from prettytable import PrettyTable
@@ -51,10 +47,10 @@ from sinabs.backend.dynapcnn import DynapcnnNetwork
 from vprtemponeuro.src.metrics import recallAtK, createPR
 from sinabs.backend.dynapcnn.chip_factory import ChipFactory
 from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
-import math
-class VPRTempoNeuro(nn.Module):
+
+class LENS(nn.Module):
     def __init__(self, args):
-        super(VPRTempoNeuro, self).__init__()
+        super(LENS, self).__init__()
 
         # Set the arguments
         self.args = args
@@ -92,8 +88,6 @@ class VPRTempoNeuro(nn.Module):
             device=self.device,
             inference=True
         )
-
-        self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
 
     def add_layer(self, name, **kwargs):
         """

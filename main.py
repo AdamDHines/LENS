@@ -30,10 +30,10 @@ import argparse
 
 import numpy as np
 
-from vprtemponeuro.VPRTempo import VPRTempo, run_inference_norm
-from vprtemponeuro.VPRTempoNeuro import VPRTempoNeuro, run_inference
-from vprtemponeuro.VPRTempoTrain import VPRTempoTrain, train_new_model
-from vprtemponeuro.VPRTempoRaster import VPRTempoRaster, run_inference_raster
+from lens.VPRTempo import VPRTempo, run_inference_norm
+from lens.LENS import LENS, run_inference
+from lens.VPRTempoTrain import VPRTempoTrain, train_new_model
+from lens.VPRTempoRaster import VPRTempoRaster, run_inference_raster
 
 def generate_model_name(model):
     """
@@ -41,7 +41,7 @@ def generate_model_name(model):
     """
 
     model_name = (''.join(model.reference)+"_"+
-            "VPRTempo_" +
+            "LENS_" +
             "IN"+str(model.input)+"_" +
             "FN"+str(model.feature)+"_" + 
             "DB"+str(model.reference_places) +
@@ -128,7 +128,7 @@ def initialize_and_run_model(args):
             run_inference_norm(model, model_name)
         else:
             # Initialize the model
-            model = VPRTempoNeuro(args) # Runs the DynapCNN on-chip model
+            model = LENS(args) # Runs the DynapCNN on-chip model
             # Generate the model name
             model_name = generate_model_name(model)
             # Run the inference model
