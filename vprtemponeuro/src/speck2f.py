@@ -105,7 +105,7 @@ def custom_readout(collection):
         return [e]
 
     # Preset total number of unique spike features
-    total_features = 161
+    total_features = 63
     # Initialize sum dictionary with all features set to 0
     sum = {f'{i}': 0 for i in range(0, total_features)}
 

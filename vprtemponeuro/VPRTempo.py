@@ -48,7 +48,6 @@ class VPRTempo(nn.Module):
         super(VPRTempo, self).__init__()
 
         # Set the arguments
-        self.args = args
         for arg in vars(args):
             setattr(self, arg, getattr(args, arg))
 
@@ -94,12 +93,6 @@ class VPRTempo(nn.Module):
             self.feature_layer.w,
             self.output_layer.w
         )
-
-        if self.convolve_events:
-            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
-        else:
-            self.conv = None
-            #self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -126,8 +119,6 @@ class VPRTempo(nn.Module):
         :param model: Model to run inference on
         :param test_loader: Testing data loader
         """
-        
-
         # Initiliaze the output spikes variable
         out = []
         # Initialize the tqdm progress bar
@@ -165,24 +156,21 @@ class VPRTempo(nn.Module):
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
         
-        # Create a perfect square GT matrix
-        # GT = np.eye(model.query_places, model.reference_places)
-        # if self.args.sequence_length != 0:
-        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
+        # Perform matching if GT is available
+        if self.matching:
+            # Load GT matrix
+            GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+            if self.sequence_length != 0:
+                GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
 
-        # Load GT matrix
-        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        # if self.args.sequence_length != 0:
-        #     GT = GT[self.args.sequence_length-2:-1,self.args.sequence_length-2:-1]
-
-        # # Calculate Recall@N
-        # for n in N:
-        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-        # # Print the results
-        # table = PrettyTable()
-        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        # model.logger.info(table)
+            # Calculate Recall@N
+            for n in N:
+                R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+            # Print the results
+            table = PrettyTable()
+            table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+            table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+            model.logger.info(table)
 
         # Plot similarity matrix
         if self.sim_mat:
@@ -191,8 +179,6 @@ class VPRTempo(nn.Module):
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
-            # plt.xticks(np.arange(0, 641, 50), np.arange(0, 641, 50))
-            # plt.yticks(np.arange(0, 724, 50), np.arange(0, 724, 50))
             plt.show()
 
         # Plot precision recall curve
@@ -251,7 +237,7 @@ def run_inference_norm(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage(model.conv)
+                                        ProcessImage()
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
