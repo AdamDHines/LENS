@@ -52,14 +52,7 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    #args.train_new_model = True
-    #args.convolve_events = True
-    #args.norm = True
-    args.sim_mat = True
-    #args.raster = True
-    #args.raster = True
-    args.sequence_length = 3
-    args.onchip = True
+
     # args.train_new_model = True
     if args.train_new_model: # If user wants to train a new network
         # Initialize the model
@@ -162,7 +155,7 @@ def parse_network():
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--query_places', type=int, default=90,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=10,
+    parser.add_argument('--sequence_length', type=int, default=3,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
@@ -232,6 +225,8 @@ def parse_network():
                             help="Plot a similarity matrix")
     parser.add_argument('--PR_curve', action='store_true',
                             help="Plot a precision recall curve")
+    parser.add_argument('--matching', action='store_true',
+                            help="Perform matching to GT, if available")
     
     # On-chip specific parameters
     parser.add_argument('--power_monitor', action='store_true',

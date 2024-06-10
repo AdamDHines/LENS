@@ -49,7 +49,6 @@ class VPRTempoRaster(nn.Module):
         super(VPRTempoRaster, self).__init__()
 
         # Set the arguments
-        self.args = args
         for arg in vars(args):
             setattr(self, arg, getattr(args, arg))
 
@@ -84,12 +83,6 @@ class VPRTempoRaster(nn.Module):
             device=self.device,
             inference=True
         )
-
-        if self.convolve_events:
-            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
-        else:
-            self.conv = None
-            #self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -117,51 +110,33 @@ class VPRTempoRaster(nn.Module):
         :param test_loader: Testing data loader
         :param layers: Layers to pass data through
         """
-        
-        # Define the inferencing model
-        # ReLU layer required for the sinabs model, this becomes the spiking layer
-        kernel_size = 8
-        self.conv = nn.Conv2d(1, 1, kernel_size=(kernel_size, kernel_size), stride=(8, 8), bias=False)
-        n = kernel_size*kernel_size
-        avg_weight = torch.full((1,1,kernel_size,kernel_size), 1.0/n)
-        self.conv.weight.data = avg_weight
-        self.conv.weight.requires_grad = False
-        self.conv.to(self.device)
-
         # Define the forward pass
         self.inference = nn.Sequential(
-            # nn.AvgPool2d(kernel_size=(2, 2)),
-            # self.conv,
-            # nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
         )
-        
         # Set up the sinabs model
-        input_shape = (1, 8, 8)
+        input_shape = (1, self.dims[0], self.dims[1])
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
                                 batch_size=1,
                                 add_spiking_output=True
                                 )
-
         # Initialize the tqdm progress bar
         pbar = tqdm(total=self.query_places,
                     desc="Running the test network",
                     position=0)
         # Initiliaze the output spikes variable
         out = []
+        
         # Run inference for the specified number of timesteps
         with torch.no_grad():
             for spikes, labels, _, _ in test_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
-                #spikes = spikes.view(1, 100, 128, 128)
                 spikes = sl.FlattenTime()(spikes)
-                #self.sinabs_model.reset_states()
-                
                 # Forward pass
                 spikes = self.forward(spikes)
                 output = spikes.sum(dim=0).squeeze()
@@ -186,20 +161,22 @@ class VPRTempoRaster(nn.Module):
         N = [1,5,10,15,20,25] # N values to calculate
         R = [] # Recall@N values
 
-        # # Create GT matrix
-        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        # if self.sequence_length != 0:
-        #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
-        
-        # # Calculate Recall@N
-        # for n in N:
-        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+        # Perform matching (if GT available)
+        if self.matching:
+            # Create GT matrix
+            GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+            if self.sequence_length != 0:
+                GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+            
+            # Calculate Recall@N
+            for n in N:
+                R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
 
-        # # Print the results
-        # table = PrettyTable()
-        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        # model.logger.info(table)
+            # Print the results
+            table = PrettyTable()
+            table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+            table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+            model.logger.info(table)
     
         # Plot similarity matrix
         if self.sim_mat:
@@ -208,8 +185,6 @@ class VPRTempoRaster(nn.Module):
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
-            # plt.xticks(np.arange(0, 641, 50), np.arange(0, 641, 50))
-            # plt.yticks(np.arange(0, 724, 50), np.arange(0, 724, 50))
             plt.show()
         
         # Plot PR curve
@@ -269,7 +244,7 @@ def run_inference_raster(model, model_name):
     """
     # Create the dataset from the numpy array
     image_transform = transforms.Compose([
-                                        ProcessImage(model.conv)
+                                        ProcessImage()
                                             ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,

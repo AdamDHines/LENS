@@ -133,13 +133,16 @@ class VPRTempoNeuro(nn.Module):
         devkit_name = "speck2fdevkit"
 
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, 10, 10) # With Conv2d becomes [1, 8, 8]
+        input_shape = (1, self.dims[0], self.dims[1])
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
                                 batch_size=1,
                                 add_spiking_output=True
                                 )
+        # Adjust the spiking thresholds
+        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
+        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2),requires_grad=False)
         
         # Create the DYNAPCNN model for on-chip inferencing
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
@@ -249,10 +252,7 @@ class VPRTempoNeuro(nn.Module):
                 for spikes, _ , _, _ in test_loader:
                     # Squeeze the batch dimension
                     spikes = spikes.squeeze(0)
-                    # spikes = (torch.rand(100, *spikes.shape) < spikes).float()
-                    # sqrt_div = math.sqrt(spikes[-1].size()[0])
-                    # spikes = spikes.view(100,int(sqrt_div),int(sqrt_div))
-                    # spikes = spikes.unsqueeze(1)
+
                     # create samna Spike events stream
                     try:
                         events_in = factory.raster_to_events(spikes, 
@@ -265,7 +265,6 @@ class VPRTempoNeuro(nn.Module):
                         neuron_idx = [each.feature for each in events_out]
                         if len(neuron_idx) != 0:
                             frequent_counter = Counter(neuron_idx)
-                            #prediction = frequent_counter.most_common(1)[0][0]
                         else:
                             frequent_counter = Counter([])
                     except:
@@ -297,6 +296,8 @@ class VPRTempoNeuro(nn.Module):
                 # Close the tqdm progress bar
                 pbar.close()
                 print("Inference on-chip succesully completed")
+                # Convert output to numpy
+                out = np.array(all_arrays)
 
         # Organise energy measurements into a NumPy array
         if self.args.onchip:
@@ -316,36 +317,31 @@ class VPRTempoNeuro(nn.Module):
             # Move the output spikes to the output folder
             os.rename("spike_data.json", f"{self.output_folder}/spike_data.json")
 
-        # Reset the chip state
-        #self.dynapcnn.reset_states()
-        #print("Chip state has been reset")
+        # Perform sequence matching convolution on similarity matrix
+        if self.sequence_length != 0:
+            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+        else:
+            dist_matrix_seq = out
 
-        # # Convert output to numpy
-        out = np.array(all_arrays)
-
-        # # Perform sequence matching convolution on similarity matrix
-        # if self.sequence_length != 0:
-        #     dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-        #     precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-        #     dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
-        # else:
-        #     dist_matrix_seq = out
-
-        # # Recall@N
-        # N = [1,5,10,15,20,25] # N values to calculate
-        # R = [] # Recall@N values
-        # # Create GT matrix
-        # GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-        # if self.sequence_length != 0:
-        #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
-        # # Calculate Recall@N
-        # for n in N:
-        #     R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
-        # # Print the results
-        # table = PrettyTable()
-        # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-        # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-        # model.logger.info(table)
+        # Perform matching if GT is available
+        if self.matching:
+            # Recall@N
+            N = [1,5,10,15,20,25] # N values to calculate
+            R = [] # Recall@N values
+            # Create GT matrix
+            GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
+            if self.sequence_length != 0:
+                GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+            # Calculate Recall@N
+            for n in N:
+                R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+            # Print the results
+            table = PrettyTable()
+            table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+            table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+            model.logger.info(table)
          
         if self.sim_mat: # Plot only the similarity matrix
             plt.matshow(out)
@@ -406,7 +402,7 @@ def run_inference(model, model_name):
     """
     # Initialize the image transforms and datasets
     image_transform = transforms.Compose([
-        ProcessImage(model.conv)
+        ProcessImage()
     ])
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
