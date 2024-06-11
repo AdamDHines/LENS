@@ -1,4 +1,4 @@
-# LENS - Locational Encoding with Neuromorphic Systems
+# :eye: LENS - Locational Encoding with Neuromorphic Systems
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![stars](https://img.shields.io/github/stars/AdamDHines/LENS.svg?style=flat-square)](https://github.com/AdamDHines/LENS/stargazers)
@@ -43,7 +43,7 @@ All dependencies can be instlled from our [PyPi package]() or local `requirement
 ```
 
 ## Usage
-LENS was developed with and deployed on the Speck2fDevKit from [SynSense](https://www.synsense.ai/). However, LENS does not require a SPECK<sup>TM</sup> in order to be used and provides a general framework for training and inferencing data from a dynamic vision sensor for visual place recognition. Below we describe three of the main uses LENS offers, only one of which requires a SPECK<sup>TM</sup> device.
+LENS was developed with and deployed on the Speck2fDevKit from [SynSense](https://www.synsense.ai/). However, it is not required to have a SPECK<sup>TM</sup> to be use LENS. We provide a general framework for training and inferencing data from a dynamic vision sensor for visual place recognition.
 
 Please [click here]() to see the full documentation, which describes in more detail the full functionality of LENS.
 
@@ -51,6 +51,7 @@ Please [click here]() to see the full documentation, which describes in more det
 If you have a Speck2fDevKit, you can try out LENS using our pre-trained model and datasets conveniently provided in this repository.
 
 ```console
+# Generate a timebased simulation of event streams with pre-recorded data
 $ python main.py --simulated_speck --sim_mat
 ```
 
@@ -59,10 +60,50 @@ $ python main.py --simulated_speck --sim_mat
 If you have collected data and trained your own model (see below, [Data Collection](##data-collection) & [Training a new model](###training-a-new-model), then you can evaluate the model with online inferencing by running the following.
 
 ```console
+# Run the online inferencing model
 $ python main.py --event_driven
 ```
 
-This will open up a `samnagui` instance whereby you can see the events collected by SPECK<sup>TM</sup> after passing through an event pre-processing layer and the power consumption over time. On each `--timebin` iteration, the model will return the predicted place. Power consumption and output spikes is output as a `.npy` file in the `./lens/outputs/` subfolder. For limitations on training and inferencing models, please see [Limitations](##limitations).
+This will open up a `samnagui` instance whereby you can see the events collected by SPECK<sup>TM</sup> after passing through an event pre-processing layer and the power consumption over time. On each `--timebin` iteration, the model will return the predicted place. Power consumption and output spikes is output as a `.npy` file in the `./lens/outputs/` subfolder. 
+
+For limitations and requiremnts for training and inferencing models, please see [Limitations](##limitations).
+
+### Simulate event stream on von Neumann hardware
+To run a simulated event stream on non-neuromorphic hardware, you can try our pre-trained model and datasets. If CUDA is enabled, you can inference on GPU.
+
+```console
+# CPU
+$ python main.py --sim_mat
+
+# GPU (note: due to the small size of the data, it can actually be slower to run on GPU hardware compared to CPU)
+$ python main.py --sim_mat --raster_device GPU
+```
+
+### Train a new model
+To train your own model, you first will need to collect your own dataset (see [Data Collection](##data-collection) for SPECK<sup>TM</sup> or [Datasets]() for event data sourced elsewhere). 
+
+```console
+# Train a new model
+$ python main.py --train_model --reference dataset001 --reference_places -80
+```
+
+`--reference` is the name of the dataset you're training and `--reference_places` is the number of images in the dataset you wish to train. This trained model can then be evaluated on any of the above inferencing methods.
+
+For a full reference on training your own model, please see the [LENS Documentation]().
+
+## Data Collection
+If using a Speck2fDevKit, you can collect event data and produce temporal frame representations as images.
+
+```console
+$ python main.py --collect_data --data_name experiment001
+```
+
+This will export to the `./lens/dataset/<data>/<camera>/` folder with .png images which you can then train a new model on.
+
+## Limitations
+For deployment on SPECK<sup>TM</sup>, models must be no bigger than 144kB in total (see [Memory Constraints and Network Sizing](https://sinabs.readthedocs.io/en/v2.0.0/speck/overview.html#memory-constraints-and-network-sizing). If customizing the network training for on-chip deployment, input size, feature layer size multiplier, and number of learned places must be carefully considered. Generally speaking, a neuron model size of 100 input, 200 feature, and 80 output neurons is roughly the maximum sizing. These constraints do not impact off-chip deployment.
+
+See more at the [LENS Documentation]().
 
 ## Issues, bugs, and feature requests
 If you encounter problems whilst running the code or if you have a suggestion for a feature or improvement, please report it as an [issue](https://github.com/AdamDHines/VPRTempoNeuro/issues).
