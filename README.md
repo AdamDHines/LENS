@@ -1,4 +1,4 @@
-# VPRTempoNeuro - Neuromorphic pipeline for VPR
+# LENS - Locational Encoding with Neuromorphic Systems
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 This repository contains code for VPRTempoNeuro - fully neuromorphic place recognition.

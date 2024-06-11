@@ -1,6 +1,4 @@
-vprtemponeuro/__pycache__/
-vprtemponeuro/src/__pycache__/
-vprtemponeuro/dataset/
-wandb/
+lens/__pycache__/
+lens/src/__pycache__/
 imgui.ini
 samna.log
