@@ -24,7 +24,11 @@
 Imports
 '''
 
+import wandb
+import pprint
 import argparse
+
+import numpy as np
 
 from lens.run_model import LENS, run_inference
 from lens.train_model import LENS_Trainer, train_model
@@ -34,7 +38,7 @@ def generate_model_name(model):
     """
     Generate the model name based on its parameters.
     """
-    # Define model name based on the parameters
+
     model_name = (''.join(model.reference)+"_"+
             "LENS_" +
             "IN"+str(model.input)+"_" +
@@ -47,6 +51,7 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
+
     # args.train_new_model = True
     if args.train_model: # If user wants to train a new network
         # Initialize the model
@@ -55,18 +60,78 @@ def initialize_and_run_model(args):
         model_name = generate_model_name(model)
         # Train the model
         train_model(model, model_name)
-    elif args.collect_data:
-        # Initialize the model
-        model = LENS_Collector(args)
-        # Collect the data
-        run_collector(model)
+    
+    elif args.wandb: # Run a weights and biases sweep    
+        # Log into weights & biases
+        wandb.login()
+        
+        # Define the method and parameters for grid search
+        sweep_config = {'method':'random'}
+        metric = {'name':'AUC', 'goal':'maximize'}
+        sweep_config['metric'] = metric
+        
+        # Define the parameters for the search
+        parameters_dict = {
+                        }
+        sweep_config['parameters'] = parameters_dict
+        pprint.pprint(sweep_config)
+    
+        # Start sweep controller
+        sweep_id = wandb.sweep(sweep_config, project="")
+
+        # Initialize w&b search
+        def wandsearch(config=None):
+            with wandb.init(config=config):
+                # Initialize config
+                config = wandb.config
+
+                # Set arguments for the sweep
+
+
+                # Initialize the training model
+                args.train_new_model = True
+                model = VPRTempoTrain(args)
+                model_name = generate_model_name(model)
+
+                train_new_model(model, model_name)
+                
+                # Initialize the inference model
+                model = VPRTempo(args)
+
+                # Run the inference model
+                R_all = run_inference_norm(model, model_name)
+                
+                # Evaluate the model
+                x = [1,5,10,15,20,25]
+                AUC= np.trapz(R_all, x)
+                wandb.log({"AUC" : AUC})
+                print("AUC: ", AUC)
+
+        # Start the agent with the sweeps
+        wandb.agent(sweep_id,wandsearch)
+
     else: # Run the inference network
-        # Initialize the model
-        model = LENS(args) # Runs the DynapCNN on-chip model
-        # Generate the model name
-        model_name = generate_model_name(model)
-        # Run the inference model
-        run_inference(model, model_name)
+        if args.raster: # Runs the sinabs model on CPU/GPU hardware
+            # Initialize the quantized model
+            model = VPRTempoRaster(args)
+            # Generate the model name
+            model_name = generate_model_name(model)
+            # Run the quantized inference model
+            run_inference_raster(model, model_name)
+        elif args.norm: # Runs base VPRTempo
+            # Initialize the model
+            model = VPRTempo(args)
+            # Generate the model name
+            model_name = generate_model_name(model)
+            # Run the inference model
+            run_inference_norm(model, model_name)
+        else:
+            # Initialize the model
+            model = LENS(args) # Runs the DynapCNN on-chip model
+            # Generate the model name
+            model_name = generate_model_name(model)
+            # Run the inference model
+            run_inference(model, model_name)
 
 def parse_network():
     '''
@@ -79,13 +144,11 @@ def parse_network():
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--camera', type=str, default='speck',
                             help="Camera to use for training and/or inferencing")
-    parser.add_argument('--data_name', type=str, default='experiment001',
-                            help="Define dataset same for data collection")
     parser.add_argument('--reference', type=str, default='trolley-ref',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--query', type=str, default='trolley-qry',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
+    parser.add_argument('--data_dir', type=str, default='./vprtemponeuro/dataset/',
                             help="Directory where dataset files are stored")
     parser.add_argument('--reference_places', type=int, default=78,
                             help="Number of places to use for training and/or inferencing")
@@ -163,8 +226,6 @@ def parse_network():
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
-    parser.add_argument('--timebin', type=int, default=1000,
-                        help="dt for spike collection window and time based simulation")
     
     # On-chip specific parameters
     parser.add_argument('--power_monitor', action='store_true',
@@ -179,8 +240,9 @@ def parse_network():
                             help='Define the source of the input data to be from the speck event sensor')
     parser.add_argument('--simulated_speck', action='store_true', 
                             help='Run time based simulation on the Speck2fDevKit')
-    parser.add_argument('--collect_data', action='store_true', 
-                            help='Run time based simulation on the Speck2fDevKit')
+    # Run weights and biases
+    parser.add_argument('--wandb', action='store_true',
+                            help="Run weights and biases")
     
     # Output base configuration
     args = parser.parse_args()
