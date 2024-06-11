@@ -1,6 +1,4 @@
 lens/__pycache__/
 lens/src/__pycache__/
-lens/dataset/
-wandb/
 imgui.ini
 samna.log

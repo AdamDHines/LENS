@@ -10,19 +10,19 @@ def model_logger(model):
     """   
     if os.path.isdir('../output'):
         now = datetime.now()
-        model.output_folder = '../vprtemponeuro/output/' + now.strftime("%d%m%y-%H-%M-%S")
+        model.output_folder = '../lens/output/' + now.strftime("%d%m%y-%H-%M-%S")
     else:
         now = datetime.now()
-        model.output_folder = './vprtemponeuro/output/' + now.strftime("%d%m%y-%H-%M-%S")
+        model.output_folder = './lens/output/' + now.strftime("%d%m%y-%H-%M-%S")
     
     os.mkdir(model.output_folder)
     # Create the logger
-    model.logger = logging.getLogger("VPRTempo")
+    model.logger = logging.getLogger("LENS")
     if (model.logger.hasHandlers()):
         model.logger.handlers.clear()
     # Set the logger level
     model.logger.setLevel(logging.DEBUG)
-    logging.basicConfig(filename=os.path.join(model.output_folder, 'vprtemponeuro.log'),
+    logging.basicConfig(filename=os.path.join(model.output_folder, 'lens.log'),
                         filemode="a+",
                         format="%(asctime)-15s %(levelname)-8s %(message)s")
     # Add the logger to the console (if specified)
@@ -50,7 +50,7 @@ def model_logger(model):
         else:
             model.logger.info(f'Current device is CPU')
             device = torch.device("cpu")
-    elif model.train_new_model or model.norm:
+    elif model.train_model:
         if torch.cuda.is_available():
             model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')
             device = torch.device("cuda")

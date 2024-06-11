@@ -1,7 +1,7 @@
 import os
 import csv
 import numpy as np
-# from read_gps import get_gps
+from read_gps import get_gps
 
 def haversine(lon1, lat1, lon2, lat2):
     # Radius of the Earth in kilometers
@@ -24,15 +24,12 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, di
     if gps_path is not None:
         gps = get_gps(gps_path)
 
-    with open(csv_file_path, 'w', newline='') as file, open(csv_file_path.replace('.csv', '_reference.csv'), 'w', newline='') as subset_file:
+    with open(csv_file_path, 'w', newline='') as file:
         writer = csv.writer(file)
-        subset_writer = csv.writer(subset_file)
         if gps_path is not None:
             writer.writerow(['Image_name', 'index', 'gps_coordinate'])
-            subset_writer.writerow(['Image_name', 'index', 'gps_coordinate'])
         else:
             writer.writerow(['Image_name', 'index'])
-            subset_writer.writerow(['Image_name', 'index'])
 
         if gps_path is not None:
             time_interval = 1 / fps
@@ -47,7 +44,6 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, di
                 writer.writerow([image_name, index, gps_coord])
 
                 if last_written_gps is None or haversine(last_written_gps[1], last_written_gps[0], gps_coord[1], gps_coord[0]) > distance_threshold:
-                    subset_writer.writerow([image_name, subset_index, gps_coord])
                     subset_index += 1
                     last_written_gps = gps_coord
 

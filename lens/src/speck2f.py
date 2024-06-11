@@ -2,9 +2,6 @@ import samna, samnagui
 import multiprocessing
 import json
 import os
-import timeit
-from datetime import datetime
-
 
 # Function to retrieve Speck2fDevKit device and default configuration
 def get_speck2f():
@@ -53,7 +50,7 @@ def build_samna_event_route(graph, dk):
     return streamer
 
 
-def configure_visualizer(graph, streamer, num_channels):
+def configure_visualizer(graph, streamer):
     config_source, _ = graph.sequential([samna.BasicSourceNode_ui_event(), streamer])
     #graph.start()
     
@@ -61,25 +58,7 @@ def configure_visualizer(graph, streamer, num_channels):
         # add plots to gui
         plots=[
             # add plot to show pixels
-            samna.ui.ActivityPlotConfiguration(10, 10, "DVS Layer", [0, 0, 0.5, 0.75]),
-            # add plot to show readout. params: plot title and images array of the same size of feature count. these images correspond to each feature.
-            # samna.ui.ReadoutPlotConfiguration(
-            #     "Readout Layer",
-            #     [f"./vprtemponeuro/dataset/qcr/speck/test002/{name}.png" for name in image_names],
-            #     [0.5, 0, 1, 0.8],
-            # ),
-            # add plot to show spike count. params: plot title and feature count and name of each feature
-            samna.ui.SpikeCountPlotConfiguration(
-                title="Spike Count",
-                channel_count=num_channels,
-                line_names=["Spike Count"],
-                layout=[0.5, 0.375, 1, 0.75],
-                show_x_span=25,
-                label_interval=2.5,
-                max_y_rate=1.2,
-                show_point_circle=True,
-                default_y_max=10,
-            ),
+            samna.ui.ActivityPlotConfiguration(10, 10, "DVS Layer", [0, 0, 1.0, 1.0]),
             samna.ui.PowerMeasurementPlotConfiguration(
             title="Power Consumption",
             channel_count=5,
@@ -104,19 +83,18 @@ def custom_readout(collection):
         e.feature = feature
         return [e]
 
-    # Preset total number of unique spike features
-    total_features = 63
     # Initialize sum dictionary with all features set to 0
-    sum = {f'{i}': 0 for i in range(0, total_features)}
+    sum = {}
 
     for spike in collection:
-        if spike.feature in sum:
-            sum[spike.feature] += 1
-        else:
-            sum[spike.feature] = 1
+        sum[spike.feature] = 1
 
     # Find the key with the maximum value
-    argmax_key = max(sum, key=sum.get)
+    try:
+        argmax_key = max(sum, key=sum.get)
+    except:
+        print("No spikes detected")
+        argmax_key = 0
     
     # Define the path for the JSON file
     json_file_path = 'spike_data.json'
@@ -138,7 +116,6 @@ def custom_readout(collection):
 
     # Create a new block for the current data with a timestamp
     new_data_block = {
-        'timestamp': timeit.timeit(),
         'data': sum
     }
 
