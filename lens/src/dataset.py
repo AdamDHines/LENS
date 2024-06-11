@@ -38,11 +38,12 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, time_window=1000):
+                 skip=1, max_samples=None, test=True, is_spiking = False, time_window=1000):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
         self.time_window = time_window
+        self.is_spiking = is_spiking
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
         self.img_labels = []
@@ -84,12 +85,13 @@ class CustomImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         image_og = []
-        # Raster the input for image
-        torch.manual_seed(50)
-        image = (torch.rand(self.time_window, *image.shape) < image).float()
-        # Prepare the spikes for deployment to speck2devkit
-        sqrt_div = math.sqrt(image[-1].size()[0])
-        image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
-        image = image.unsqueeze(1)
+        if self.is_spiking:
+            # Raster the input for image
+            torch.manual_seed(50)
+            image = (torch.rand(self.time_window, *image.shape) < image).float()
+            # Prepare the spikes for deployment to speck2devkit
+            sqrt_div = math.sqrt(image[-1].size()[0])
+            image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
+            image = image.unsqueeze(1)
 
         return image, label, gps_coordinate, image_og

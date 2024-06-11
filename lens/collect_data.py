@@ -186,7 +186,7 @@ class LENS_Collector(nn.Module):
                 if events:
                     for event in events:
                         frame[event.y, event.x] += 1
-                    imageio.imwrite(f'{self.img_folder}/{self.infer_count}.png',frame.detach().cpu().numpy().astype(np.uint8))
+                    imageio.imwrite(f'{self.img_folder}/frame_{self.infer_count:05d}.png',frame.detach().cpu().numpy().astype(np.uint8))
                     self.infer_count += 1
                     print(f'{self.img_folder}/{self.infer_count}.png')
                 else:
