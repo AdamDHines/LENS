@@ -30,17 +30,17 @@ import torch
 
 import numpy as np
 import torch.nn as nn
-import vprtemponeuro.src.blitnet as bn
+import lens.src.blitnet as bn
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from vprtemponeuro.src.loggers import model_logger
-from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
+from lens.src.loggers import model_logger
+from lens.src.dataset import CustomImageDataset, ProcessImage
 
-class VPRTempoTrain(nn.Module):
+class LENS_Trainer(nn.Module):
     def __init__(self, args):
-        super(VPRTempoTrain, self).__init__()
+        super(LENS_Trainer, self).__init__()
 
         # Set the arguments
         self.args = args
@@ -162,7 +162,7 @@ class VPRTempoTrain(nn.Module):
         # Run training for the specified number of epochs
         for _ in range(self.epoch):
             # Run training for the specified number of timesteps
-            for spikes, labels, gps, _ in train_loader:
+            for spikes, labels, _, _ in train_loader:
                 spikes, labels = spikes.to(self.device), labels.to(self.device)
                 spikes = spikes.to(torch.float32)
                 spikes = torch.squeeze(spikes,0)
@@ -239,7 +239,7 @@ def check_pretrained_model(model_name):
         return retrain == 'n'
     return False
 
-def train_new_model(model, model_name):
+def train_model(model, model_name):
     """
     Train a new model.
 
@@ -248,14 +248,13 @@ def train_new_model(model, model_name):
     :param qconfig: Quantization configuration
     """
     # Initialize the image transforms and datasets
-    image_transform = transforms.Compose([ProcessImage(model.conv)])
+    image_transform = transforms.Compose([ProcessImage()])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.reference_places,
-                                      test=False,
-                                      convolve=model.conv)
+                                      test=False)
     # Initialize the data loader
     train_loader = DataLoader(train_dataset, 
                               batch_size=1, 

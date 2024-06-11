@@ -6,7 +6,6 @@ import math
 import torch
 
 import pandas as pd
-import torch.nn as nn
 
 from torch.utils.data import Dataset
 from torchvision.io import read_image
@@ -39,12 +38,10 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking=False, is_raster=False, time_window=1000):
+                 skip=1, max_samples=None, test=True, time_window=1000):
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
-        self.is_spiking = is_spiking
-        self.is_raster = is_raster
         self.time_window = time_window
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
@@ -88,14 +85,11 @@ class CustomImageDataset(Dataset):
             label = self.target_transform(label)
         image_og = []
         # Raster the input for image
-        if self.is_raster:
-            image_og = image.clone()
-            torch.manual_seed(50)
-            image = (torch.rand(self.time_window, *image.shape) < image).float()
+        torch.manual_seed(50)
+        image = (torch.rand(self.time_window, *image.shape) < image).float()
         # Prepare the spikes for deployment to speck2devkit
-        if self.is_spiking:
-            sqrt_div = math.sqrt(image[-1].size()[0])
-            image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
-            image = image.unsqueeze(1)
+        sqrt_div = math.sqrt(image[-1].size()[0])
+        image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
+        image = image.unsqueeze(1)
 
         return image, label, gps_coordinate, image_og

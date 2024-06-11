@@ -31,22 +31,22 @@ import samna
 
 import numpy as np
 import torch.nn as nn
+import sinabs.layers as sl
+import lens.src.speck2f as s
+import lens.src.blitnet as bn
 import matplotlib.pyplot as plt
-import vprtemponeuro.src.speck2f as s
-import vprtemponeuro.src.blitnet as bn
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
-from queue import Queue
 from collections import Counter
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
 from sinabs.from_torch import from_model
-from vprtemponeuro.src.loggers import model_logger
+from lens.src.loggers import model_logger
+from lens.src.metrics import recallAtK, createPR
 from sinabs.backend.dynapcnn import DynapcnnNetwork
-from vprtemponeuro.src.metrics import recallAtK, createPR
 from sinabs.backend.dynapcnn.chip_factory import ChipFactory
-from vprtemponeuro.src.dataset import CustomImageDataset, ProcessImage
+from lens.src.dataset import CustomImageDataset, ProcessImage
 
 class LENS(nn.Module):
     def __init__(self, args):
@@ -135,8 +135,8 @@ class LENS(nn.Module):
                                 add_spiking_output=True
                                 )
         # Adjust the spiking thresholds
-        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
-        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2),requires_grad=False)
+        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(20.),requires_grad=False)
+        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(5.),requires_grad=False)
         
         # Create the DYNAPCNN model for on-chip inferencing
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
@@ -145,7 +145,7 @@ class LENS(nn.Module):
                                 dvs_input=True)
         
         # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
-        if self.args.onchip: 
+        if self.event_driven: 
             # Basic configuration
             config = self.dynapcnn.make_config("auto",device=devkit_name)
             lyrs = self.dynapcnn.chip_layers_ordering[-1]
@@ -186,7 +186,8 @@ class LENS(nn.Module):
                         streamer,
                     ]
             )
-            spike_collection_filter.set_interval_milli_sec(1000)
+            # Set the collection interval for event driven output spikes
+            spike_collection_filter.set_interval_milli_sec(self.timebin)
             readout_spike.set_white_list([lyrs], "layer")
 
             # # Set the interval for spike collection
@@ -203,7 +204,7 @@ class LENS(nn.Module):
             def get_events():
                 return power_sink.get_events()
             # Configure the visualizer
-            config_source, visualizer_config = s.configure_visualizer(graph, streamer, self.args.reference_places)
+            config_source, visualizer_config = s.configure_visualizer(graph, streamer)
             config_source.write([visualizer_config])
             graph.start()
 
@@ -213,7 +214,7 @@ class LENS(nn.Module):
         # Run inference for event stream or pre-recorded DVS data
         with torch.no_grad():    
             # Run inference on-chip
-            if self.args.onchip:
+            if self.event_driven:
                 # Set timestamps for spike events
                 stopWatch = dk.get_stop_watch()
                 stopWatch.set_enable_value(True)
@@ -231,17 +232,16 @@ class LENS(nn.Module):
                 graph.stop()
                 samna.device.close_device(dk)
             # Run inference for pre-recorded DVS data    
-            else:
+            elif self.simulated_speck:
                 # Deploy the model to the Speck2fDevKit
                 self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
-                print(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
+                model.logger.info(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
                 factory = ChipFactory(devkit_name)
                 first_layer_idx = self.dynapcnn.chip_layers_ordering[0] 
                 # Initialize the tqdm progress bar
                 pbar = tqdm(total=self.query_places,
                             desc="Running the test network",
                             position=0)
-                torch.manual_seed(50)
                 # Run through the input data
                 for spikes, _ , _, _ in test_loader:
                     # Squeeze the batch dimension
@@ -289,12 +289,30 @@ class LENS(nn.Module):
 
                 # Close the tqdm progress bar
                 pbar.close()
-                print("Inference on-chip succesully completed")
+                model.logger.info("Inference on-chip succesully completed")
                 # Convert output to numpy
                 out = np.array(all_arrays)
+            else:
+                pbar = tqdm(total=self.query_places,
+                            desc="Running the test network",
+                            position=0)
+                out = []
+                for spikes, labels, _, _ in test_loader:
+                    spikes, labels = spikes.to(self.device), labels.to(self.device)
+                    spikes = sl.FlattenTime()(spikes)
+                    # Forward pass
+                    spikes = self.forward(spikes)
+                    output = spikes.sum(dim=0).squeeze()
+                    # Add output spikes to list
+                    out.append(output.detach().cpu().tolist())
+                    pbar.update(1)
+                        # Close the tqdm progress bar
+                pbar.close()
+                # Rehsape output spikes into a similarity matrix
+                out = np.reshape(np.array(out),(model.query_places,model.reference_places))
 
         # Organise energy measurements into a NumPy array
-        if self.args.onchip:
+        if self.event_driven:
             # Initialize a list to store arrays for each channel
             channel_data = [[] for _ in range(5)]
             
@@ -307,9 +325,23 @@ class LENS(nn.Module):
             np.save(f"{self.output_folder}/power_data.npy", numpy_arrays)
 
         # Move output spikes from continual inference to output folder
-        if self.args.onchip:
+        if self.event_driven:
             # Move the output spikes to the output folder
             os.rename("spike_data.json", f"{self.output_folder}/spike_data.json")
+            # Load the JSON data
+            with open(f"{self.output_folder}/spike_data.json", 'r') as f:
+                json_data = json.load(f)
+
+            # Extract data
+            data_matrix = []
+
+            # Iterate through the JSON objects (assuming the structure as described)
+            for entry in json_data:
+                data = entry['data']
+                data_row = [data[str(i)] if str(i) in data else 0 for i in range(self.reference_places)]
+                data_matrix.append(data_row)
+                # Convert to numpy array
+                out = np.array(data_matrix)
 
         # Perform sequence matching convolution on similarity matrix
         if self.sequence_length != 0:
@@ -366,6 +398,9 @@ class LENS(nn.Module):
             plt.title('Precision-Recall Curve')
             plt.show()
 
+        model.logger.info('')    
+        model.logger.info('Succesfully completed inferencing using LENS')
+
     def forward(self, spikes):
         """
         Compute the forward pass of the model.
@@ -398,13 +433,13 @@ def run_inference(model, model_name):
     image_transform = transforms.Compose([
         ProcessImage()
     ])
+
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.query_places,
-                                      is_raster=True,
-                                      is_spiking=True)
+                                      time_window=model.timebin)
 
     # Initialize the data loader
     test_loader = DataLoader(test_dataset, 
@@ -416,7 +451,7 @@ def run_inference(model, model_name):
     model.eval()
 
     # Load the model
-    model.load_model(os.path.join('./vprtemponeuro/models', model_name))
+    model.load_model(os.path.join('./lens/models', model_name))
 
     # Use evaluate method for inference accuracy
     model.evaluate(test_loader, model)
