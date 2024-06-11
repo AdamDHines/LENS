@@ -34,13 +34,13 @@ import multiprocessing
 
 import numpy as np
 import torch.nn as nn
-import sinabs.layers as sl
 import lens.src.blitnet as bn
 
 from sinabs.from_torch import from_model
 from lens.src.loggers import model_logger
 from sinabs.backend.dynapcnn import DynapcnnNetwork
 from sinabs.backend.dynapcnn.chip_factory import ChipFactory
+from lens.tools.create_data_csv import create_csv_from_images
 
 class LENS_Collector(nn.Module):
     def __init__(self, args):
@@ -135,7 +135,7 @@ class LENS_Collector(nn.Module):
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
                                 input_shape=input_shape, 
                                 discretize=True, 
-                                dvs_input=False)
+                                dvs_input=True)
         
         def open_speck2f_dev_kit():
             devices = [
@@ -183,7 +183,6 @@ class LENS_Collector(nn.Module):
             while gui_process.is_alive():
                 frame = torch.zeros((self.dims[0], self.dims[1]), dtype=int)
                 events = sink.get_events()  # Make sure 'self.sink' is properly initialized
-                print(events)
                 if events:
                     for event in events:
                         frame[event.y, event.x] += 1
@@ -240,6 +239,8 @@ class LENS_Collector(nn.Module):
         # Stop the graph and ensure the collector thread is also stopped
         graph.stop()
         collector_thread.join()
+
+        create_csv_from_images(self.img_folder, f'./lens/dataset/{self.data_name}.csv')
 
 
 def run_collector(model):

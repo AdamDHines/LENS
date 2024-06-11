@@ -1,7 +1,7 @@
 import os
 import csv
 import numpy as np
-from read_gps import get_gps
+from lens.tools.read_gps import get_gps
 
 def haversine(lon1, lat1, lon2, lat2):
     # Radius of the Earth in kilometers
@@ -56,10 +56,3 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, di
         else:
             for index, image_name in enumerate(png_files):
                 writer.writerow([image_name, index])
-
-
-# Example usage
-folder_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/qcr/speck/trolley-qry-vtn' # Replace with your folder path
-csv_file_path = '/home/adam/repo/VPRTempoNeuro/vprtemponeuro/dataset/trolley-qry-vtn.csv' # Path for the CSV file
-gps_path = None
-create_csv_from_images(folder_path, csv_file_path, gps_path=gps_path)
