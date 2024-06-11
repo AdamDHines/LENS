@@ -12,7 +12,7 @@ This repository is licensed under the [MIT License](./LICENSE)
 
 If you use our code, please cite our [paper]():
 ```
-@inproceedings{hines202xlens,
+@arxiv{hines202xlens,
       title={Robotic localization and navigation using a compact neuromorphic ecosystem}, 
       author={Adam D. Hines and Michael Milford and Tobias Fischer},
       year={202x},
@@ -25,8 +25,7 @@ If you use our code, please cite our [paper]():
 All that is needed to run LENS is to download the code and install the dependencies.
 
 ### Get the code
-Get the code by cloning the repository or downloading a [.zip](https://docs.github.com/en/repositories/working-with-files/using-files/downloading-source-code-archives#downloading-source-code-archives-from-the-repository-view) 
-
+Get the code by cloning the repository.
 ```console
 $ git clone git@github.com:AdamDHines/LENS.git
 $ cd ~/LENS
@@ -43,25 +42,27 @@ All dependencies can be instlled from our [PyPi package]() or local `requirement
 > pip install -r requirements.txt
 ```
 
+## Usage
+LENS was developed with and deployed on the Speck2fDevKit from [SynSense](https://www.synsense.ai/). However, LENS does not require a SPECK<sup>TM</sup> in order to be used and provides a general framework for training and inferencing data from a dynamic vision sensor for visual place recognition. Below we describe three of the main uses LENS offers, only one of which requires a SPECK<sup>TM</sup> device.
+
+Please [click here]() to see the full documentation, which describes in more detail the full functionality of LENS.
+
+### Deployment on Speck2fDevKit
+If you have a Speck2fDevKit, you can try out LENS using our pre-trained model and datasets conveniently provided in this repository.
 
 ```console
-pip install python torch torchvision numpy pandas tqdm prettytable scikit-learn matplotlib sinabs samna sinabs-dynapcnn opencv-python
-
-conda create -n vprtemponeuro -c pytorch python torch torchvision numpy pandas tqdm prettytable scikit-learn matplotlib sinabs samna sinabs-dynapcnn opencv-python
+$ python main.py --simulated_speck --sim_mat
 ```
 
-### Get the repository
-Activate the environment & download the Github repository
+`--simulated_speck` will take pre-recorded data from the SPECK<sup>TM</sup>'s built in dynamic vision sensor and create a timebased simulation of event spikes which are sent to the neuromorphic processor to perform visual place recognition. `--sim_mat` generates a similarity matrix between the database reference and incoming queries.
+
+If you have collected data and trained your own model (see below, [Data Collection](##data-collection) & [Training a new model](###training-a-new-model), then you can evaluate the model with online inferencing by running the following.
+
 ```console
-conda activate lens
-git clone https://github.com/AdamDHines/LENS.git
-cd ~/LENS
+$ python main.py --event_driven
 ```
 
-## Datasets
-At the moment, using pre-recorded datasets (see Tobi and Gokul) - likely will be using either QCR Event or Brisbane Event datasets for the initial figures and testing of the system.
-
-Using dvs_tools.py is cool and will make nice videos. Test.
+This will open up a `samnagui` instance whereby you can see the events collected by SPECK<sup>TM</sup> after passing through an event pre-processing layer and the power consumption over time. On each `--timebin` iteration, the model will return the predicted place. Power consumption and output spikes is output as a `.npy` file in the `./lens/outputs/` subfolder. For limitations on training and inferencing models, please see [Limitations](##limitations).
 
 ## Issues, bugs, and feature requests
 If you encounter problems whilst running the code or if you have a suggestion for a feature or improvement, please report it as an [issue](https://github.com/AdamDHines/VPRTempoNeuro/issues).
