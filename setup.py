@@ -19,28 +19,27 @@ requirements = [
                 'matplotlib'
                 'sinabs',
                 'samna',
-                'sinabs-dynapcnn',
                 'opencv-python'    
                 ]
 
 # define the setup
 setup(
-    name="VPRTempoNeuro",
+    name="LENS",
     version="0.1.0",
-    description='VPRTempoNeuro: Neuromorphic Visual Place Recognition',
+    description='LENS: Locational Encoding with Neuromorphic Systems',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Adam D Hines, Michael Milford and Tobias Fischer',
     author_email='adam.hines@qut.edu.au',
-    url='https://github.com/QVPR/VPRTempoNeuro',
+    url='https://github.com/AdamDHines/LENS',
     license='MIT',
     install_requires=requirements,
-    python_requires='>=3.6',
+    python_requires='>=3.6, !=3.12.*',
     classifiers=[
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
@@ -53,9 +52,10 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11'
       ],
     packages=find_packages(),
-    keywords=['python', 'place recognition', 'spiking neural networks',
-              'computer vision', 'robotics'],
+    keywords=['robotics','visual-place-recognition','neuromorphic-computing','spiking-neural-network','dynamic-vision-sensors'],
     scripts=['main.py'],
 )
