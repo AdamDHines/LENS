@@ -135,8 +135,7 @@ class LENS(nn.Module):
                                 add_spiking_output=True
                                 )
         # Adjust the spiking thresholds
-        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(20.),requires_grad=False)
-        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(5.),requires_grad=False)
+        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
         
         # Create the DYNAPCNN model for on-chip inferencing
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
@@ -439,6 +438,7 @@ def run_inference(model, model_name):
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.query_places,
+                                      is_spiking=True,
                                       time_window=model.timebin)
 
     # Initialize the data loader

@@ -87,7 +87,10 @@ def custom_readout(collection):
     sum = {}
 
     for spike in collection:
-        sum[spike.feature] = 1
+        if spike.feature in sum:
+            sum[spike.feature] += 1
+        else:
+            sum[spike.feature] = 1
 
     # Find the key with the maximum value
     try:

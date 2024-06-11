@@ -135,7 +135,7 @@ class LENS_Trainer(nn.Module):
             layer.eta_stdp = torch.mul(stdp, pt) # Anneal STDP learning rate
         return layer
 
-    def train_model(self, train_loader, layer, prev_layers=None):
+    def train_layer(self, train_loader, layer, prev_layers=None):
         """
         Train a layer of the network model.
 
@@ -271,7 +271,7 @@ def train_model(model, model_name):
         # Retrieve the layer object
         layer = getattr(model, layer_name)
         # Train the layer
-        model.train_model(train_loader, layer, prev_layers=trained_layers)
+        model.train_layer(train_loader, layer, prev_layers=trained_layers)
         # After training the current layer, add it to the list of trained layers
         trained_layers.append(layer_name)
     # Convert the model to a quantized model
