@@ -131,7 +131,7 @@ class LENS(nn.Module):
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
-                                batch_size=1,
+                                num_timesteps=self.timebin,
                                 add_spiking_output=True
                                 )
         # Adjust the spiking thresholds
@@ -161,10 +161,10 @@ class LENS(nn.Module):
             config.dvs_layer.pooling.x = 4
             config.dvs_layer.pooling.y = 4
             # Set the ROI
-            config.dvs_layer.origin.x = 0
-            config.dvs_layer.origin.y = 0
-            config.dvs_layer.cut.x = 9
-            config.dvs_layer.cut.y = 9
+            config.dvs_layer.origin.x = 15
+            config.dvs_layer.origin.y = 9
+            config.dvs_layer.cut.x = 20
+            config.dvs_layer.cut.y = 14
             # Get the Speck2fDevKit configuration for graph sequential routing
             dk = s.get_speck2f()
             # Apply the configuration to the DYNAPCNN model

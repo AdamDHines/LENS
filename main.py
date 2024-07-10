@@ -81,15 +81,15 @@ def parse_network():
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--data_name', type=str, default='experiment001',
                             help="Define dataset same for data collection")
-    parser.add_argument('--reference', type=str, default='trolley-ref',
+    parser.add_argument('--reference', type=str, default='query',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='trolley-qry',
+    parser.add_argument('--query', type=str, default='query',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=78,
+    parser.add_argument('--reference_places', type=int, default=64,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=90,
+    parser.add_argument('--query_places', type=int, default=64,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=3,
                         help="Length of the sequence matcher")
@@ -147,7 +147,7 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[10,10],
+    parser.add_argument('--dims', nargs='+', type=int, default=[5,5],
                             help="Dimensions to resize the image to")
     parser.add_argument('--convolve_events', action='store_true',
                             help="Decide to convolve the events or not")

@@ -219,10 +219,10 @@ class LENS_Collector(nn.Module):
         config = samna.speck2f.configuration.SpeckConfiguration()
         config.dvs_layer.monitor_enable = True
         config.dvs_filter.enable = True
-        config.dvs_layer.origin.x = 0
-        config.dvs_layer.origin.y = 0
-        config.dvs_layer.cut.x = 9
-        config.dvs_layer.cut.y = 9
+        config.dvs_layer.origin.x = 15
+        config.dvs_layer.origin.y = 9
+        config.dvs_layer.cut.x = 20
+        config.dvs_layer.cut.y = 14
         config.dvs_layer.pooling.x = 4
         config.dvs_layer.pooling.y = 4
         config.dvs_filter.hot_pixel_filter_enable = True
