@@ -6,6 +6,7 @@ import math
 import torch
 
 import pandas as pd
+import torch.nn as nn
 
 from torch.utils.data import Dataset
 from torchvision.io import read_image
@@ -38,12 +39,20 @@ class ProcessImage:
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None, 
-                 skip=1, max_samples=None, test=True, is_spiking = False, time_window=1000):
+                 skip=1, max_samples=None, test=True, is_spiking = False, time_window=33):
+        
+        def _init_kernel():
+            kernel = torch.zeros(1, 1, 20, 20)
+            kernel[0, 0, 9, 9] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            return kernel
+        
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
         self.time_window = time_window
         self.is_spiking = is_spiking
+        self.conv = nn.Conv2d(1, 1, kernel_size=20, stride=12, padding=0, bias=False)
+        self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
         self.img_labels = []
@@ -79,6 +88,8 @@ class CustomImageDataset(Dataset):
         image = read_image(img_path)
 
         label = self.img_labels.iloc[idx, 1]
+
+        # image = self.forward(image.unsqueeze(0)/255)
         
         if self.transform:
             image = self.transform(image)
@@ -95,3 +106,6 @@ class CustomImageDataset(Dataset):
             image = image.unsqueeze(1)
 
         return image, label, gps_coordinate, image_og
+
+    def forward(self, x):
+        return self.conv(x)

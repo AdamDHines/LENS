@@ -47,7 +47,7 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    # args.train_new_model = True
+    args.collect_data = True
     if args.train_model: # If user wants to train a new network
         # Initialize the model
         model = LENS_Trainer(args)
@@ -81,17 +81,17 @@ def parse_network():
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--data_name', type=str, default='experiment001',
                             help="Define dataset same for data collection")
-    parser.add_argument('--reference', type=str, default='query',
+    parser.add_argument('--reference', type=str, default='test001',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='query',
+    parser.add_argument('--query', type=str, default='test002',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=64,
+    parser.add_argument('--reference_places', type=int, default=80,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=64,
+    parser.add_argument('--query_places', type=int, default=3723,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=3,
+    parser.add_argument('--sequence_length', type=int, default=0,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
@@ -147,7 +147,7 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[5,5],
+    parser.add_argument('--dims', nargs='+', type=int, default=[10,10],
                             help="Dimensions to resize the image to")
     parser.add_argument('--convolve_events', action='store_true',
                             help="Decide to convolve the events or not")
@@ -163,7 +163,7 @@ def parse_network():
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
-    parser.add_argument('--timebin', type=int, default=1000,
+    parser.add_argument('--timebin', type=int, default=500,
                         help="dt for spike collection window and time based simulation")
     
     # On-chip specific parameters

@@ -277,4 +277,4 @@ def train_model(model, model_name):
     # Convert the model to a quantized model
     model.eval()
     # Save the model
-    model.save_model(os.path.join('./vprtemponeuro/models', model_name))    
+    model.save_model(os.path.join('./lens/models', model_name))    

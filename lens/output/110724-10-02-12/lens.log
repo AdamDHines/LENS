@@ -1,0 +1,20 @@
+2024-07-11 10:02:12,392 INFO     
+2024-07-11 10:02:12,392 INFO     ██╗░░░░░███████╗███╗░░██╗░██████╗
+2024-07-11 10:02:12,392 INFO     ██║░░░░░██╔════╝████╗░██║██╔════╝
+2024-07-11 10:02:12,392 INFO     ██║░░░░░█████╗░░██╔██╗██║╚█████╗░
+2024-07-11 10:02:12,392 INFO     ██║░░░░░██╔══╝░░██║╚████║░╚═══██╗
+2024-07-11 10:02:12,392 INFO     ███████╗███████╗██║░╚███║██████╔╝
+2024-07-11 10:02:12,392 INFO     ╚══════╝╚══════╝╚═╝░░╚══╝╚═════╝░
+2024-07-11 10:02:12,392 INFO     
+2024-07-11 10:02:12,392 INFO     \\\\\\\\\\\\
+2024-07-11 10:02:12,392 INFO     LENS: Locational Encoding with Neuromorphic Systems v0.1.0
+2024-07-11 10:02:12,392 INFO     Queensland University of Technology, Centre for Robotics
+2024-07-11 10:02:12,392 INFO     
+2024-07-11 10:02:12,392 INFO     © 2024 Adam D Hines, Michael Milford, Tobias Fischer
+2024-07-11 10:02:12,392 INFO     MIT license - https://github.com/AdamDHines/LENS
+2024-07-11 10:02:12,392 INFO     \\\\\\\\\\\\
+2024-07-11 10:02:12,392 INFO     
+2024-07-11 10:02:12,392 INFO     Current device is: Speck2fDevKit
+2024-07-11 10:02:12,392 INFO     
+2024-07-11 10:02:50,363 INFO     
+2024-07-11 10:02:50,363 INFO     Succesfully completed inferencing using LENS

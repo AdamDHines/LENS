@@ -180,18 +180,21 @@ class LENS_Collector(nn.Module):
 
         def event_collector():
             self.infer_count = 0
+            self.events = []
             while gui_process.is_alive():
-                frame = torch.zeros((self.dims[0], self.dims[1]), dtype=int)
-                events = sink.get_events()  # Make sure 'self.sink' is properly initialized
-                if events:
-                    for event in events:
-                        frame[event.y, event.x] += 1
-                    imageio.imwrite(f'{self.img_folder}/frame_{self.infer_count:05d}.png',frame.detach().cpu().numpy().astype(np.uint8))
-                    self.infer_count += 1
-                    print(f'{self.img_folder}/{self.infer_count}.png')
-                else:
-                    print("No events")
-                time.sleep(self.timebin//1000) # Convert to seconds from ms
+                self.events.append(sink.get_events())  # Make sure 'self.sink' is properly initialized
+                time.sleep(self.timebin/1000) # Convert to seconds from ms
+
+        def create_images(events):
+            if events:
+                frame = torch.zeros((88, 88), dtype=int)
+                for event in events:
+                    frame[event.y, event.x] += 1
+                imageio.imwrite(f'{self.img_folder}/frame_{self.infer_count:05d}.png',frame.detach().cpu().numpy().astype(np.uint8))
+                self.infer_count += 1
+                print(f'{self.img_folder}/{self.infer_count}.png')
+            else:
+                print("No events")
             
         gui_process = open_visualizer(0.75, 0.75, "tcp://0.0.0.0:40000")
         dk = open_speck2f_dev_kit()
@@ -206,7 +209,7 @@ class LENS_Collector(nn.Module):
         sink = samna.graph.sink_from(dk.get_model().get_source_node())
         # Configuring the visualizer
         visualizer_config = samna.ui.VisualizerConfiguration(
-            plots=[samna.ui.ActivityPlotConfiguration(10, 10, "DVS Layer", [0, 0, 1, 1])]
+            plots=[samna.ui.ActivityPlotConfiguration(88, 88, "DVS Layer", [0, 0, 1, 1])]
         )
         config_source.write([visualizer_config])
 
@@ -219,12 +222,12 @@ class LENS_Collector(nn.Module):
         config = samna.speck2f.configuration.SpeckConfiguration()
         config.dvs_layer.monitor_enable = True
         config.dvs_filter.enable = True
-        config.dvs_layer.origin.x = 15
-        config.dvs_layer.origin.y = 9
-        config.dvs_layer.cut.x = 20
-        config.dvs_layer.cut.y = 14
-        config.dvs_layer.pooling.x = 4
-        config.dvs_layer.pooling.y = 4
+        config.dvs_layer.origin.x = 0
+        config.dvs_layer.origin.y = 0
+        config.dvs_layer.cut.x = 87
+        config.dvs_layer.cut.y = 87
+        # config.dvs_layer.pooling.x = 4
+        # config.dvs_layer.pooling.y = 4
         config.dvs_filter.hot_pixel_filter_enable = True
         config.dvs_filter.threshold = 5
         # Apply the configuration
@@ -239,6 +242,9 @@ class LENS_Collector(nn.Module):
         # Stop the graph and ensure the collector thread is also stopped
         graph.stop()
         collector_thread.join()
+
+        for events in self.events:
+            create_images(events)
 
         create_csv_from_images(self.img_folder, f'./lens/dataset/{self.data_name}.csv')
 
