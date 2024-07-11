@@ -30,6 +30,7 @@ import torch
 import samna
 
 import numpy as np
+import seaborn as sns
 import torch.nn as nn
 import sinabs.layers as sl
 import lens.src.speck2f as s
@@ -115,8 +116,16 @@ class LENS(nn.Module):
         :param test_loader: Testing data loader
         :param model: Pre-trained network model
         """
+        def _init_kernel():
+            kernel = torch.zeros(1, 1, 20, 20)
+            kernel[0, 0, 9, 9] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            return kernel
+        self.conv = nn.Conv2d(1, 1, kernel_size=16, stride=8, padding=0, bias=False)
+        self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
+            self.conv,
+            nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
@@ -127,7 +136,7 @@ class LENS(nn.Module):
         devkit_name = "speck2fdevkit"
 
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, self.dims[0], self.dims[1])
+        input_shape = (1, 128, 128)
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -135,7 +144,7 @@ class LENS(nn.Module):
                                 add_spiking_output=True
                                 )
         # Adjust the spiking thresholds
-        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
+        #self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
         
         # Create the DYNAPCNN model for on-chip inferencing
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
@@ -369,8 +378,8 @@ class LENS(nn.Module):
             model.logger.info(table)
          
         if self.sim_mat: # Plot only the similarity matrix
-            plt.matshow(out)
-            plt.colorbar(shrink=0.75,label="Output spike intensity")
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='crest')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
