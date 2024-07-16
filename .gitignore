@@ -2,3 +2,6 @@ lens/__pycache__/
 lens/src/__pycache__/
 imgui.ini
 samna.log
+lens/dataset/
+lens/output/
+lens/models/

@@ -112,18 +112,26 @@ class LENS_Collector(nn.Module):
         :param model: Pre-trained network model
         """
         # Define the inferencing forward pass
+        def _init_kernel():
+            kernel = torch.zeros(1, 1, 8, 8)
+            kernel[0, 0, 4, 4] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            return kernel
+        self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
+        self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
+        # Define the inferencing forward pass
         self.inference = nn.Sequential(
+            self.conv,
+            nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
         )
-
         # Define name of the devkit
         devkit_name = "speck2fdevkit"
 
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, self.dims[0], self.dims[1]) # With Conv2d becomes [1, 8, 8]
+        input_shape = (1, 80, 80) # With Conv2d becomes [1, 8, 8]
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -187,9 +195,9 @@ class LENS_Collector(nn.Module):
 
         def create_images(events):
             if events:
-                frame = torch.zeros((88, 88), dtype=int)
+                frame = torch.zeros((80, 80), dtype=int)
                 for event in events:
-                    frame[event.y, event.x] += 1
+                    frame[event.y-1, event.x-1] += 1
                 imageio.imwrite(f'{self.img_folder}/frame_{self.infer_count:05d}.png',frame.detach().cpu().numpy().astype(np.uint8))
                 self.infer_count += 1
                 print(f'{self.img_folder}/{self.infer_count}.png')
@@ -209,7 +217,7 @@ class LENS_Collector(nn.Module):
         sink = samna.graph.sink_from(dk.get_model().get_source_node())
         # Configuring the visualizer
         visualizer_config = samna.ui.VisualizerConfiguration(
-            plots=[samna.ui.ActivityPlotConfiguration(88, 88, "DVS Layer", [0, 0, 1, 1])]
+            plots=[samna.ui.ActivityPlotConfiguration(80, 80, "DVS Layer", [0, 0, 1, 1])]
         )
         config_source.write([visualizer_config])
 
@@ -222,10 +230,10 @@ class LENS_Collector(nn.Module):
         config = samna.speck2f.configuration.SpeckConfiguration()
         config.dvs_layer.monitor_enable = True
         config.dvs_filter.enable = True
-        config.dvs_layer.origin.x = 0
-        config.dvs_layer.origin.y = 0
-        config.dvs_layer.cut.x = 87
-        config.dvs_layer.cut.y = 87
+        config.dvs_layer.origin.x = 23
+        config.dvs_layer.origin.y = 23
+        config.dvs_layer.cut.x = 103
+        config.dvs_layer.cut.y = 103
         # config.dvs_layer.pooling.x = 4
         # config.dvs_layer.pooling.y = 4
         config.dvs_filter.hot_pixel_filter_enable = True
