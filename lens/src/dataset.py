@@ -26,11 +26,14 @@ class SetImageAsSpikes:
         return spikes
 
 class ProcessImage:
-    def __init__(self):
-        init = []
+    def __init__(self, is_train=False):
+        if is_train:
+            self.intensity = 1
+        else:
+            self.intensity = 255
     def __call__(self, img):
         # Resize the image to the specified dimensions
-        spike_maker = SetImageAsSpikes()
+        spike_maker = SetImageAsSpikes(intensity=self.intensity)
         img = spike_maker(img)
         img = torch.squeeze(img,0)
 
@@ -42,16 +45,16 @@ class CustomImageDataset(Dataset):
                  skip=1, max_samples=None, test=True, is_spiking = False, time_window=33):
         
         def _init_kernel():
-            kernel = torch.zeros(1, 1, 20, 20)
-            kernel[0, 0, 9, 9] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            kernel = torch.zeros(1, 1, 8, 8)
+            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
             return kernel
-        
+        self.test = test
         self.transform = transform
         self.target_transform = target_transform
         self.skip = skip
         self.time_window = time_window
         self.is_spiking = is_spiking
-        self.conv = nn.Conv2d(1, 1, kernel_size=20, stride=12, padding=0, bias=False)
+        self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate
@@ -88,8 +91,12 @@ class CustomImageDataset(Dataset):
         image = read_image(img_path)
 
         label = self.img_labels.iloc[idx, 1]
-
-        # image = self.forward(image.unsqueeze(0)/255)
+        
+        if not self.test:
+            # drop = nn.Dropout(p=0.5)
+            # image = drop(image.float())
+            image = self.forward(image.unsqueeze(0)/255)
+            image = image.squeeze(0)
         
         if self.transform:
             image = self.transform(image)
