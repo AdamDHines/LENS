@@ -248,7 +248,7 @@ def train_model(model, model_name):
     :param qconfig: Quantization configuration
     """
     # Initialize the image transforms and datasets
-    image_transform = transforms.Compose([ProcessImage()])
+    image_transform = transforms.Compose([ProcessImage(is_train=True)])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
                                       transform=image_transform,

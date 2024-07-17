@@ -47,7 +47,7 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    args.collect_data = True
+    #args.collect_data = True
     if args.train_model: # If user wants to train a new network
         # Initialize the model
         model = LENS_Trainer(args)
@@ -91,7 +91,7 @@ def parse_network():
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--query_places', type=int, default=3723,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=0,
+    parser.add_argument('--sequence_length', type=int, default=3,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
@@ -163,7 +163,7 @@ def parse_network():
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
-    parser.add_argument('--timebin', type=int, default=500,
+    parser.add_argument('--timebin', type=int, default=1000,
                         help="dt for spike collection window and time based simulation")
     
     # On-chip specific parameters
