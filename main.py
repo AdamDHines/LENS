@@ -47,7 +47,6 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    # args.train_new_model = True
     if args.train_model: # If user wants to train a new network
         # Initialize the model
         model = LENS_Trainer(args)
@@ -55,7 +54,7 @@ def initialize_and_run_model(args):
         model_name = generate_model_name(model)
         # Train the model
         train_model(model, model_name)
-    elif args.collect_data:
+    elif args.collect_data:  # If user wants to collect data to train new model
         # Initialize the model
         model = LENS_Collector(args)
         # Collect the data
@@ -81,15 +80,15 @@ def parse_network():
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--data_name', type=str, default='experiment001',
                             help="Define dataset same for data collection")
-    parser.add_argument('--reference', type=str, default='trolley-ref',
+    parser.add_argument('--reference', type=str, default='test001',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='trolley-qry',
+    parser.add_argument('--query', type=str, default='test002',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=78,
+    parser.add_argument('--reference_places', type=int, default=80,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=90,
+    parser.add_argument('--query_places', type=int, default=3723,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=3,
                         help="Length of the sequence matcher")
@@ -113,10 +112,6 @@ def parse_network():
                             help="Low threshold value")
     parser.add_argument('--fire_h_feat', type=float, default=0.6,
                             help="High threshold value")
-    parser.add_argument('--const_input_l', type=float, default=0.0,
-                            help="Low constant input value"),
-    parser.add_argument('--const_input_h', type=float, default=0.0,
-                            help="High constant input value"),
     parser.add_argument('--ip_rate_feat', type=float, default=0.02,
                             help="ITP learning rate")
     parser.add_argument('--stdp_rate_feat', type=float, default=0.01,
@@ -149,38 +144,26 @@ def parse_network():
     # Define image transformation parameters
     parser.add_argument('--dims', nargs='+', type=int, default=[10,10],
                             help="Dimensions to resize the image to")
-    parser.add_argument('--convolve_events', action='store_true',
-                            help="Decide to convolve the events or not")
-
+    
     # Define the network functionality
     parser.add_argument('--train_model', action='store_true',
                             help="Flag to run the training or inferencing model")
-    parser.add_argument('--raster', action='store_true',
-                            help="Run the raster version of VPRTempo, for non-neuromorphic chip inferencing")
     parser.add_argument('--sim_mat', action='store_true',
                             help="Plot a similarity matrix")
     parser.add_argument('--PR_curve', action='store_true',
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
-    parser.add_argument('--timebin', type=int, default=1000,
+    parser.add_argument('--timebin', type=int, default=100,
                         help="dt for spike collection window and time based simulation")
     
     # On-chip specific parameters
-    parser.add_argument('--power_monitor', action='store_true',
-                            help="Whether or not to use the power monitor")
-    parser.add_argument('--raster_device', type=str, default='cpu',
-                            help="When using raster analysis, use CPU or GPU")
-    parser.add_argument('--norm', action='store_true',
-                            help="Run the regular VPRTempo")
-    parser.add_argument('--reference_annotation', action='store_true', 
-                            help='Flag to limit frames (True) or just create all frames (False)')
     parser.add_argument('--event_driven', action='store_true', 
-                            help='Define the source of the input data to be from the speck event sensor')
+                            help='Run the online inferencing model on Speck2fDevKit')
     parser.add_argument('--simulated_speck', action='store_true', 
                             help='Run time based simulation on the Speck2fDevKit')
     parser.add_argument('--collect_data', action='store_true', 
-                            help='Run time based simulation on the Speck2fDevKit')
+                            help='Collect images from SPECK to train new model')
     
     # Output base configuration
     args = parser.parse_args()
