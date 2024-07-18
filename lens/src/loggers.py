@@ -43,8 +43,8 @@ def model_logger(model):
     model.logger.info('MIT license - https://github.com/AdamDHines/LENS')
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
     model.logger.info('')
-    if model.raster:
-        if torch.cuda.is_available() and model.raster_device == 'gpu':
+    if not model.event_driven and not model.simulated_speck:
+        if torch.cuda.is_available():
             model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')
             device = torch.device("cuda")
         else:

@@ -1,7 +1,7 @@
 import os
 import csv
 import numpy as np
-from lens.tools.read_gps import get_gps
+from read_gps import get_gps
 
 def haversine(lon1, lat1, lon2, lat2):
     # Radius of the Earth in kilometers
@@ -56,3 +56,7 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, di
         else:
             for index, image_name in enumerate(png_files):
                 writer.writerow([image_name, index])
+
+create_csv_from_images('/home/adam/repo/LENS/lens/dataset/qcr/speck/indoor-reference', 
+                       '/home/adam/repo/LENS/lens/dataset/indoor-reference.csv', 
+                       gps_path=None)

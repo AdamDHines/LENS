@@ -107,18 +107,15 @@ class LENS_Collector(nn.Module):
     def evaluate(self):
         """
         Run the inferencing model and calculate the accuracy.
-
-        :param test_loader: Testing data loader
-        :param model: Pre-trained network model
         """
         # Define the inferencing forward pass
         def _init_kernel():
             kernel = torch.zeros(1, 1, 8, 8)
-            kernel[0, 0, 4, 4] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            kernel[0, 0, 4, 4] = 1
             return kernel
         self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
-        # Define the inferencing forward pass
+        # Create a dummy sequence
         self.inference = nn.Sequential(
             self.conv,
             nn.ReLU(),
@@ -156,8 +153,6 @@ class LENS_Collector(nn.Module):
             # default_config is a optional parameter of open_device
             self.default_config = samna.speck2fBoards.DevKitDefaultConfig()
 
-            # if nothing is modified on default_config, this invoke is totally same to
-            # samna.device.open_device(devices[0])
             return samna.device.open_device(devices[0], self.default_config)
 
 
@@ -231,11 +226,9 @@ class LENS_Collector(nn.Module):
         config.dvs_layer.monitor_enable = True
         config.dvs_filter.enable = True
         config.dvs_layer.origin.x = 23
-        config.dvs_layer.origin.y = 23
+        config.dvs_layer.origin.y = 0
         config.dvs_layer.cut.x = 103
-        config.dvs_layer.cut.y = 103
-        # config.dvs_layer.pooling.x = 4
-        # config.dvs_layer.pooling.y = 4
+        config.dvs_layer.cut.y = 79
         config.dvs_filter.hot_pixel_filter_enable = True
         config.dvs_filter.threshold = 5
         # Apply the configuration
@@ -262,8 +255,6 @@ def run_collector(model):
     Run inference on a pre-trained model.
 
     :param model: Model to run inference on
-    :param model_name: Name of the model to load
-    :param qconfig: Quantization configuration
     """
     # Set the model to evaluation mode and set configuration
     model.eval()

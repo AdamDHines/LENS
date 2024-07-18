@@ -9,7 +9,7 @@ The following tools are available:
     - video_create: From a series of generated DVS frames, reconstructs into an .avi video file
 TODO- event_stats: Calculates a variety of statistics from the event data, including event rate, event density, and event entropy
 
-See https://github.com/AdamDHines/VPRTempoNeuro for more details. 
+See https://github.com/AdamDHines/LENS for more details. 
 
 REQUIRED: The output from a DAVIS camera, other sensors/output are not supported.
 '''
@@ -18,7 +18,7 @@ REQUIRED: The output from a DAVIS camera, other sensors/output are not supported
 import sys
 import argparse
 
-from vprtemponeuro.tools.dvstools import ExtractRosbag, FrameRep, CreateVideo
+from lens.tools.dvstools import ExtractRosbag, FrameRep, CreateVideo
 
 def run_tool(args):
     #args.tool = 'simple_rep'
@@ -57,7 +57,7 @@ def dvs_parser():
     parser.add_argument('--output_name', type=str, default='sunset1_profile', help='Output name')
 
     # Define the dataset folder, used as the output folder as well (default is relative path to ./dataset)
-    parser.add_argument('--dataset_folder', type=str, default='./vprtemponeuro/dataset/brisbane_event/davis', help='Dataset folder')
+    parser.add_argument('--dataset_folder', type=str, default='./lens/dataset/brisbane_event/davis', help='Dataset folder')
 
     # Define the arguments for the frame representations
     parser.add_argument('--timebin', type=float, default=1, 
