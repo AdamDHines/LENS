@@ -30,7 +30,7 @@ def get_speck2f():
 def open_visualizer(streamer_endpoint, window_width=0.75, window_height=0.75):
     gui_process = multiprocessing.Process(
         target=samnagui.run_visualizer,
-        args=(streamer_endpoint, window_width, window_height),
+        args=(streamer_endpoint, window_width, window_height, headless:=True),
     )
     gui_process.start()
 
@@ -75,60 +75,3 @@ def configure_visualizer(graph, streamer):
     )
 
     return config_source, visualizer_config
-
-# Find the argmax of the output spikes
-def custom_readout(collection):
-    def generate_result(feature):
-        e = samna.ui.Readout()
-        e.feature = feature
-        return [e]
-
-    # Initialize sum dictionary with all features set to 0
-    sum = {}
-
-    for spike in collection:
-        if spike.feature in sum:
-            sum[spike.feature] += 1
-        else:
-            sum[spike.feature] = 1
-
-    # Find the key with the maximum value
-    try:
-        argmax_key = max(sum, key=sum.get)
-    except:
-        print("No spikes detected")
-        argmax_key = 0
-    
-    # Define the path for the JSON file
-    json_file_path = 'spike_data.json'
-
-    # Check if file exists and load existing data
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as file:
-            # Load the existing data
-            try:
-                data_blocks = json.load(file)
-                if not isinstance(data_blocks, list):
-                    # Ensure data_blocks is a list, otherwise initialize it as an empty list
-                    data_blocks = []
-            except json.JSONDecodeError:
-                # Handle cases where the file is empty or corrupted
-                data_blocks = []
-    else:
-        data_blocks = []
-
-    # Create a new block for the current data with a timestamp
-    new_data_block = {
-        'data': sum
-    }
-
-    # Append the new data block to the list of blocks
-    data_blocks.append(new_data_block)
-
-    # Save the updated blocks back to the JSON file
-    with open(json_file_path, 'w') as file:
-        json.dump(data_blocks, file, indent=4)
-
-    print(f"The key with the maximum value is: {argmax_key}")
-
-    return generate_result(int(argmax_key))

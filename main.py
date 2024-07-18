@@ -47,6 +47,7 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
+    args.event_driven = True
     if args.train_model: # If user wants to train a new network
         # Initialize the model
         model = LENS_Trainer(args)
@@ -80,15 +81,15 @@ def parse_network():
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--data_name', type=str, default='experiment001',
                             help="Define dataset same for data collection")
-    parser.add_argument('--reference', type=str, default='test001',
+    parser.add_argument('--reference', type=str, default='indoor-reference',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='test002',
+    parser.add_argument('--query', type=str, default='indoor-query',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=80,
+    parser.add_argument('--reference_places', type=int, default=75,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=3723,
+    parser.add_argument('--query_places', type=int, default=312,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=3,
                         help="Length of the sequence matcher")
@@ -154,7 +155,7 @@ def parse_network():
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
-    parser.add_argument('--timebin', type=int, default=100,
+    parser.add_argument('--timebin', type=int, default=1000,
                         help="dt for spike collection window and time based simulation")
     
     # On-chip specific parameters
