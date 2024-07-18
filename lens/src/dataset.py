@@ -46,7 +46,7 @@ class CustomImageDataset(Dataset):
         
         def _init_kernel():
             kernel = torch.zeros(1, 1, 8, 8)
-            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1
             return kernel
         self.test = test
         self.transform = transform

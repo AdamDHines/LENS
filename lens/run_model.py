@@ -116,12 +116,14 @@ class LENS(nn.Module):
         :param test_loader: Testing data loader
         :param model: Pre-trained network model
         """
+        # Define convolutional kernel to select the center pixel
         def _init_kernel():
             kernel = torch.zeros(1, 1, 8, 8)
-            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1 (for a 20x20 kernel)
+            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1
             return kernel
+        # Define the Conv2d selection layer
         self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
-        self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
+        self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False) # Set the kernel weights
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
             self.conv,
@@ -131,10 +133,8 @@ class LENS(nn.Module):
             nn.ReLU(),
             self.output_layer.w,
         )
-
         # Define name of the devkit
         devkit_name = "speck2fdevkit"
-
         # Define the sinabs model, this converts torch model to sinabs model
         input_shape = (1, 80, 80)
         self.sinabs_model = from_model(
@@ -144,13 +144,14 @@ class LENS(nn.Module):
                                 add_spiking_output=True
                                 )
         # Adjust the spiking thresholds
-        # self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
-        # self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2.),requires_grad=False)
+        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
+        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2.),requires_grad=False)
         # Create the DYNAPCNN model for on-chip inferencing
-        self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                input_shape=input_shape, 
-                                discretize=True, 
-                                dvs_input=True)
+        if self.event_driven or self.simulated_speck:
+            self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
+                                    input_shape=input_shape, 
+                                    discretize=True, 
+                                    dvs_input=True)
         
         # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
         if self.event_driven: 
@@ -300,6 +301,7 @@ class LENS(nn.Module):
                 model.logger.info("Inference on-chip succesully completed")
                 # Convert output to numpy
                 out = np.array(all_arrays)
+            # Run inference for time based simulation off-chip
             else:
                 pbar = tqdm(total=self.query_places,
                             desc="Running the test network",
