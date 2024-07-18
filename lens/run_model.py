@@ -30,6 +30,7 @@ import torch
 import samna
 
 import numpy as np
+import seaborn as sns
 import torch.nn as nn
 import sinabs.layers as sl
 import lens.src.speck2f as s
@@ -115,33 +116,42 @@ class LENS(nn.Module):
         :param test_loader: Testing data loader
         :param model: Pre-trained network model
         """
+        # Define convolutional kernel to select the center pixel
+        def _init_kernel():
+            kernel = torch.zeros(1, 1, 8, 8)
+            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1
+            return kernel
+        # Define the Conv2d selection layer
+        self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
+        self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False) # Set the kernel weights
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
+            self.conv,
+            nn.ReLU(),
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
             self.output_layer.w,
         )
-
         # Define name of the devkit
         devkit_name = "speck2fdevkit"
-
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, self.dims[0], self.dims[1])
+        input_shape = (1, 80, 80)
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
-                                batch_size=1,
+                                num_timesteps=self.timebin,
                                 add_spiking_output=True
                                 )
         # Adjust the spiking thresholds
         self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
-        
+        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2.),requires_grad=False)
         # Create the DYNAPCNN model for on-chip inferencing
-        self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                input_shape=input_shape, 
-                                discretize=True, 
-                                dvs_input=True)
+        if self.event_driven or self.simulated_speck:
+            self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
+                                    input_shape=input_shape, 
+                                    discretize=True, 
+                                    dvs_input=True)
         
         # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
         if self.event_driven: 
@@ -161,10 +171,10 @@ class LENS(nn.Module):
             config.dvs_layer.pooling.x = 4
             config.dvs_layer.pooling.y = 4
             # Set the ROI
-            config.dvs_layer.origin.x = 0
-            config.dvs_layer.origin.y = 0
-            config.dvs_layer.cut.x = 9
-            config.dvs_layer.cut.y = 9
+            config.dvs_layer.origin.x = 15
+            config.dvs_layer.origin.y = 9
+            config.dvs_layer.cut.x = 20
+            config.dvs_layer.cut.y = 14
             # Get the Speck2fDevKit configuration for graph sequential routing
             dk = s.get_speck2f()
             # Apply the configuration to the DYNAPCNN model
@@ -291,6 +301,7 @@ class LENS(nn.Module):
                 model.logger.info("Inference on-chip succesully completed")
                 # Convert output to numpy
                 out = np.array(all_arrays)
+            # Run inference for time based simulation off-chip
             else:
                 pbar = tqdm(total=self.query_places,
                             desc="Running the test network",
@@ -369,8 +380,8 @@ class LENS(nn.Module):
             model.logger.info(table)
          
         if self.sim_mat: # Plot only the similarity matrix
-            plt.matshow(out)
-            plt.colorbar(shrink=0.75,label="Output spike intensity")
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(dist_matrix_seq.T, annot=False, cmap='crest')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")

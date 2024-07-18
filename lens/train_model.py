@@ -1,6 +1,6 @@
 #MIT License
 
-#Copyright (c) 2023 Adam Hines, Peter G Stratton, Michael Milford, Tobias Fischer
+#Copyright (c) 2024 Adam Hines, Michael Milford, Tobias Fischer
 
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
@@ -94,11 +94,6 @@ class LENS_Trainer(nn.Module):
             spk_force=True,
             device=self.device
         )
-        if self.convolve_events:
-            self.conv = nn.Conv2d(1, 1, kernel_size=(8, 8), stride=(8, 8), bias=False)
-        else:
-            self.conv = None
-            # self.register_buffer('conv', None)
         
     def add_layer(self, name, **kwargs):
         """
@@ -217,27 +212,6 @@ class LENS_Trainer(nn.Module):
         Save the trained model to models output folder.
         """
         torch.save(self.state_dict(), model_out) 
-            
-def generate_model_name(model):
-    """
-    Generate the model name based on its parameters.
-    """
-    return ("VPRTempo" +
-            str(model.input) +
-            str(model.feature) +
-            str(model.output) +
-            str(model.num_modules) +
-            '.pth')
-
-def check_pretrained_model(model_name):
-    """
-    Check if a pre-trained model exists and prompt the user to retrain if desired.
-    """
-    if os.path.exists(os.path.join('./vprtemponeuro/models', model_name)):
-        prompt = "A network with these parameters exists, re-train network? (y/n):\n"
-        retrain = input(prompt).strip().lower()
-        return retrain == 'n'
-    return False
 
 def train_model(model, model_name):
     """
@@ -245,10 +219,9 @@ def train_model(model, model_name):
 
     :param model: Model to train
     :param model_name: Name of the model to save after training
-    :param qconfig: Quantization configuration
     """
     # Initialize the image transforms and datasets
-    image_transform = transforms.Compose([ProcessImage()])
+    image_transform = transforms.Compose([ProcessImage(is_train=True)])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
                                       transform=image_transform,
@@ -277,4 +250,4 @@ def train_model(model, model_name):
     # Convert the model to a quantized model
     model.eval()
     # Save the model
-    model.save_model(os.path.join('./vprtemponeuro/models', model_name))    
+    model.save_model(os.path.join('./lens/models', model_name))    
