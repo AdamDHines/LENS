@@ -26,8 +26,10 @@ Imports
 
 import os
 import json
+import time
 import torch
 import samna
+import threading
 
 import numpy as np
 import seaborn as sns
@@ -155,6 +157,51 @@ class LENS(nn.Module):
         
         # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
         if self.event_driven: 
+            # Custom readout function to get output spikes
+            def custom_readout(collection):
+                def generate_result(feature):
+                    e = samna.ui.Readout()
+                    e.feature = feature
+                    return [e]
+
+                # Collect event count information
+                for spike in collection:
+                    if spike.feature in self.sum:
+                        self.sum[spike.feature] += 1
+                    else:
+                        self.sum[spike.feature] = 1
+                # Update number of queries for sequence matching
+                self.qry += 1
+                # Generate dummy result
+                return generate_result(int(0))
+            
+            # Custom function for online sequence matching
+            def seq_match():
+                while gui_process.is_alive(): 
+                    if self.qry == 4: # Wait for 4 input queries
+                        # Initialize a NumPy array of zeros
+                        vector = np.zeros(self.reference_places, dtype=int)
+                        # Fill in the values from the dictionary
+                        for key, value in self.sum.items():
+                            vector[key] = value
+                        # Divide by 4 to get the average and add to sequence matrix
+                        if not self.seq_check:
+                            self.sequence = vector // 4
+                            self.seq_check = True
+                        else:
+                            # Append the new sequence to the existing sequence
+                            self.sequence = np.vstack((self.sequence, vector // 4))
+                            # Check if appropriate number of sequences are collected
+                            if self.sequence.shape[0] == 4:
+                                print(time.time())
+                                self.sum = {}
+                                self.seq_check = False
+                                self.sequence = []
+                            else:
+                                pass
+                        # Reset qry counter
+                        self.qry = 0
+
             # Basic configuration
             config = self.dynapcnn.make_config("auto",device=devkit_name)
             lyrs = self.dynapcnn.chip_layers_ordering[-1]
@@ -167,14 +214,11 @@ class LENS(nn.Module):
             config.dvs_filter.threshold = 5
             # Switch only on channels from DVS
             config.dvs_layer.merge = True
-            # Set input pooling for DVS events [128,128] -> [64,64]
-            config.dvs_layer.pooling.x = 4
-            config.dvs_layer.pooling.y = 4
             # Set the ROI
-            config.dvs_layer.origin.x = 15
-            config.dvs_layer.origin.y = 9
-            config.dvs_layer.cut.x = 20
-            config.dvs_layer.cut.y = 14
+            config.dvs_layer.origin.x = 23
+            config.dvs_layer.origin.y = 0
+            config.dvs_layer.cut.x = 102
+            config.dvs_layer.cut.y = 79
             # Get the Speck2fDevKit configuration for graph sequential routing
             dk = s.get_speck2f()
             # Apply the configuration to the DYNAPCNN model
@@ -203,7 +247,7 @@ class LENS(nn.Module):
             _, readout_filter, _ = graph.sequential(
                                             [spike_collection_filter, "Speck2fCustomFilterNode", streamer]
                                             ) 
-            readout_filter.set_filter_function(s.custom_readout)
+            readout_filter.set_filter_function(custom_readout)
             # Setup power and readout filter
             power = dk.get_power_monitor()
             power.start_auto_power_measurement(20)
@@ -231,6 +275,12 @@ class LENS(nn.Module):
                 dk_io = dk.get_io_module()
                 dk_io.set_slow_clk_rate(10)
                 dk_io.set_slow_clk(True)
+                # Start the thread collector for the sequence matcher
+                self.qry = 0
+                self.sum = {}
+                self.seq_check = False
+                collector_thread = threading.Thread(target=seq_match)
+                collector_thread.start()
                 # Start the process, and wait for window to be destroyed
                 gui_process.join()
                 # Read out the power consumption measurements and save
