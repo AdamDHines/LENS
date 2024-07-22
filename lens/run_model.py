@@ -202,18 +202,22 @@ class LENS(nn.Module):
                             # Check if appropriate number of sequences are collected
                             if self.sequence.shape[0] == 4:
                                 # Apply the sequence matching convolution
-                                result = convolve2d(self.sequence.T, self.precomputed_convWeight, mode='valid')/ self.sequence_length
-                                # Print the result
+                                result = convolve2d(self.sequence.T, self.precomputed_convWeight, mode='same')/ self.sequence_length
+                                # Find the argmax for each column
+                                argmax_columns = np.argmax(result, axis=0)
+
+                                # Log the results
                                 model.logger.info('')
                                 model.logger.info('\\\\\ Place matching result ////')
-                                model.logger.info(f'The current location is place number: {np.argmax(result[:,0])+(self.sequence_length-1)}')
+                                for i, argmax in enumerate(argmax_columns):
+                                    model.logger.info(f'The sequence match location for {i} is place number: {argmax}')
                                 model.logger.info('')
                                 # If matrix doesn't exist, initialize it with the first result
                                 if self.matrix is None:
-                                    self.matrix = result[:,0]
+                                    self.matrix = result
                                 else:
                                     # Append the result to the existing matrix using vstack
-                                    self.matrix = np.vstack((self.matrix, result[:,0]))
+                                    self.matrix = np.concatenate((self.matrix, result),axis=1)
                                 # Save the matrix to a file
                                 np.save(f"{self.output_folder}/similarity_matrix.npy", self.matrix.T)
                                 # Reset the sequencing variables

@@ -57,6 +57,6 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, di
             for index, image_name in enumerate(png_files):
                 writer.writerow([image_name, index])
 
-create_csv_from_images('/home/adam/repo/LENS/lens/dataset/qcr/speck/indoor-reference', 
-                       '/home/adam/repo/LENS/lens/dataset/indoor-reference.csv', 
-                       gps_path=None)
+#create_csv_from_images('/home/adam/repo/LENS/lens/dataset/qcr/speck/indoor-reference', 
+#                       '/home/adam/repo/LENS/lens/dataset/indoor-reference.csv', 
+#                       gps_path=None)
