@@ -167,15 +167,22 @@ class LENS(nn.Module):
                     e = samna.ui.Readout()
                     e.feature = feature
                     return [e]
-
+                cur_time = time.time()
                 # Collect event count information
                 for spike in collection:
                     if spike.feature in self.sum:
                         self.sum[spike.feature] += 1
                     else:
                         self.sum[spike.feature] = 1
+
+                # Convert the list of events to a numpy array with dtype=object
+                events_array = np.array(self.event_sink.get_events(), dtype=object)
+                if not os.path.exists(os.path.join(model.output_folder, 'events')):
+                    os.makedirs(os.path.join(model.output_folder, 'events'))
+                # Save the numpy array to a file
+                np.save(os.path.join(model.output_folder, 'events', f"{cur_time}_events.npy"), events_array)
                 # Print out timestep details
-                model.logger.info(f'Collected {len(collection)} output spikes at time {time.time()}')
+                model.logger.info(f'Collected {len(collection)} output spikes at time {cur_time}')
                 # Update number of queries for sequence matching
                 self.qry += 1
                 # Save the output spikes as a NumPy array
@@ -255,8 +262,9 @@ class LENS(nn.Module):
             # Setup the graph for routing to the GUI process
             graph = samna.graph.EventFilterGraph()
             streamer = s.build_samna_event_route(graph, dk)
+
             # Define spike collection nodes for GUI plotting
-            (_,readout_spike, spike_collection_filter, _,_) = graph.sequential(
+            (source,readout_spike, spike_collection_filter, _,_) = graph.sequential(
                     [
                         dk.get_model_source_node(),
                         "Speck2fOutputMemberSelect",
@@ -265,6 +273,7 @@ class LENS(nn.Module):
                         streamer,
                     ]
             )
+            self.event_sink = samna.graph.sink_from(source)
             # Set the collection interval for event driven output spikes
             spike_collection_filter.set_interval_milli_sec(self.timebin)
             readout_spike.set_white_list([lyrs], "layer")
@@ -306,6 +315,7 @@ class LENS(nn.Module):
                 self.sum = {}
                 self.sequence = None
                 self.collection = []
+                self.events = []
                 self.precomputed_convWeight = np.eye(self.sequence_length, dtype=np.float32)
                 collector_thread = threading.Thread(target=seq_match)
                 collector_thread.start()
