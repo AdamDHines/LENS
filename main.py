@@ -91,7 +91,7 @@ def parse_network():
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--query_places', type=int, default=312,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=3,
+    parser.add_argument('--sequence_length', type=int, default=4,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
