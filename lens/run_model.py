@@ -175,12 +175,6 @@ class LENS(nn.Module):
                     else:
                         self.sum[spike.feature] = 1
 
-                # Convert the list of events to a numpy array with dtype=object
-                events_array = np.array(self.event_sink.get_events(), dtype=object)
-                if not os.path.exists(os.path.join(model.output_folder, 'events')):
-                    os.makedirs(os.path.join(model.output_folder, 'events'))
-                # Save the numpy array to a file
-                np.save(os.path.join(model.output_folder, 'events', f"{cur_time}_events.npy"), events_array)
                 # Print out timestep details
                 model.logger.info(f'Collected {len(collection)} output spikes at time {cur_time}')
                 # Update number of queries for sequence matching
@@ -195,6 +189,12 @@ class LENS(nn.Module):
             def seq_match():
                 while gui_process.is_alive(): 
                     if self.qry == 4: # Wait for 4 input queries
+                        # Convert the list of events to a numpy array with dtype=object
+                        events_array = np.array(self.event_sink.get_events(), dtype=object)
+                        if not os.path.exists(os.path.join(model.output_folder, 'events')):
+                            os.makedirs(os.path.join(model.output_folder, 'events'))
+                        # Save the numpy array to a file
+                        np.save(os.path.join(model.output_folder, 'events', f"{time.time()}_events.npy"), events_array)
                         # Initialize a NumPy array of zeros
                         vector = np.zeros(self.reference_places, dtype=int)
                         # Fill in the values from the dictionary
