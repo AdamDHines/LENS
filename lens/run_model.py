@@ -43,6 +43,7 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 from collections import Counter
 from prettytable import PrettyTable
+from scipy.signal import convolve2d
 from torch.utils.data import DataLoader
 from sinabs.from_torch import from_model
 from lens.src.loggers import model_logger
@@ -91,6 +92,9 @@ class LENS(nn.Module):
             device=self.device,
             inference=True
         )
+
+        if not hasattr(self, 'matrix'):
+            self.matrix = None
 
     def add_layer(self, name, **kwargs):
         """
@@ -170,8 +174,13 @@ class LENS(nn.Module):
                         self.sum[spike.feature] += 1
                     else:
                         self.sum[spike.feature] = 1
+                # Print out timestep details
+                model.logger.info(f'Collected {len(collection)} output spikes at time {time.time()}')
                 # Update number of queries for sequence matching
                 self.qry += 1
+                # Save the output spikes as a NumPy array
+                self.collection.append([self.sum])
+                np.save(os.path.join(model.output_folder,"spike_data.npy"), np.array(self.collection))
                 # Generate dummy result
                 return generate_result(int(0))
             
@@ -185,18 +194,31 @@ class LENS(nn.Module):
                         for key, value in self.sum.items():
                             vector[key] = value
                         # Divide by 4 to get the average and add to sequence matrix
-                        if not self.seq_check:
+                        if self.sequence is None:
                             self.sequence = vector // 4
-                            self.seq_check = True
                         else:
                             # Append the new sequence to the existing sequence
                             self.sequence = np.vstack((self.sequence, vector // 4))
                             # Check if appropriate number of sequences are collected
                             if self.sequence.shape[0] == 4:
-                                print(time.time())
+                                # Apply the sequence matching convolution
+                                result = convolve2d(self.sequence.T, self.precomputed_convWeight, mode='valid')/ self.sequence_length
+                                # Print the result
+                                model.logger.info('')
+                                model.logger.info('\\\\\ Place matching result ////')
+                                model.logger.info(f'The current location is place number: {np.argmax(result[:,0])+(self.sequence_length-1)}')
+                                model.logger.info('')
+                                # If matrix doesn't exist, initialize it with the first result
+                                if self.matrix is None:
+                                    self.matrix = result[:,0]
+                                else:
+                                    # Append the result to the existing matrix using vstack
+                                    self.matrix = np.vstack((self.matrix, result[:,0]))
+                                # Save the matrix to a file
+                                np.save(f"{self.output_folder}/similarity_matrix.npy", self.matrix.T)
+                                # Reset the sequencing variables
                                 self.sum = {}
-                                self.seq_check = False
-                                self.sequence = []
+                                self.sequence = None
                             else:
                                 pass
                         # Reset qry counter
@@ -230,7 +252,7 @@ class LENS(nn.Module):
             graph = samna.graph.EventFilterGraph()
             streamer = s.build_samna_event_route(graph, dk)
             # Define spike collection nodes for GUI plotting
-            (_,readout_spike, spike_collection_filter, spike_count_filter,_) = graph.sequential(
+            (_,readout_spike, spike_collection_filter, _,_) = graph.sequential(
                     [
                         dk.get_model_source_node(),
                         "Speck2fOutputMemberSelect",
@@ -278,10 +300,14 @@ class LENS(nn.Module):
                 # Start the thread collector for the sequence matcher
                 self.qry = 0
                 self.sum = {}
-                self.seq_check = False
+                self.sequence = None
+                self.collection = []
+                self.precomputed_convWeight = np.eye(self.sequence_length, dtype=np.float32)
                 collector_thread = threading.Thread(target=seq_match)
                 collector_thread.start()
                 # Start the process, and wait for window to be destroyed
+                model.logger.info('')
+                model.logger.info("Starting the inferencing system")
                 gui_process.join()
                 # Read out the power consumption measurements and save
                 power.stop_auto_power_measurement()
