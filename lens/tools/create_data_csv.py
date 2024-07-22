@@ -1,7 +1,7 @@
 import os
 import csv
 import numpy as np
-from read_gps import get_gps
+from lens.tools.read_gps import get_gps
 
 def haversine(lon1, lat1, lon2, lat2):
     # Radius of the Earth in kilometers
