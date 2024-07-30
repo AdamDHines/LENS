@@ -1,5 +1,5 @@
-lens/__pycache__/
-lens/src/__pycache__/
+__pycache__
 imgui.ini
 samna.log
+.vscode
 lens/output/

@@ -27,6 +27,7 @@ Imports
 import argparse
 
 from lens.run_model import LENS, run_inference
+from lens.run_speck import LENSSpeck, run_speck
 from lens.train_model import LENS_Trainer, train_model
 from lens.collect_data import LENS_Collector, run_collector
 
@@ -47,7 +48,6 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
-    args.event_driven = True
     if args.train_model: # If user wants to train a new network
         # Initialize the model
         model = LENS_Trainer(args)
@@ -60,6 +60,13 @@ def initialize_and_run_model(args):
         model = LENS_Collector(args)
         # Collect the data
         run_collector(model)
+    elif args.event_driven:
+        # Initialize the model
+        model = LENSSpeck(args)
+        # Generate the model name
+        model_name = generate_model_name(model)
+        # Run the model on the Speck2fDevKit
+        run_speck(model, model_name)
     else: # Run the inference network
         # Initialize the model
         model = LENS(args) # Runs the DynapCNN on-chip model

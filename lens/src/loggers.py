@@ -8,13 +8,14 @@ def model_logger(model):
     """
     Configure the model logger
     """   
-    if os.path.isdir('../output'):
-        now = datetime.now()
-        model.output_folder = '../lens/output/' + now.strftime("%d%m%y-%H-%M-%S")
-    else:
-        now = datetime.now()
-        model.output_folder = './lens/output/' + now.strftime("%d%m%y-%H-%M-%S")
+    now = datetime.now()
+    output_base_folder = './lens/output/'
+    model.output_folder = output_base_folder + now.strftime("%d%m%y-%H-%M-%S")
+
+    # Create the base output folder if it does not exist
+    os.makedirs(output_base_folder, exist_ok=True)
     
+    # Create the specific output folder
     os.mkdir(model.output_folder)
     # Create the logger
     model.logger = logging.getLogger("LENS")
@@ -44,12 +45,8 @@ def model_logger(model):
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
     model.logger.info('')
     if not model.event_driven and not model.simulated_speck:
-        if torch.cuda.is_available():
-            model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')
-            device = torch.device("cuda")
-        else:
-            model.logger.info(f'Current device is CPU')
-            device = torch.device("cpu")
+        model.logger.info(f'Current device is CPU')
+        device = torch.device("cpu")
     elif model.train_model:
         if torch.cuda.is_available():
             model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')

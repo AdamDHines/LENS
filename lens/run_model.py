@@ -26,16 +26,12 @@ Imports
 
 import os
 import json
-import time
 import torch
-import samna
-import threading
 
 import numpy as np
 import seaborn as sns
 import torch.nn as nn
 import sinabs.layers as sl
-import lens.src.speck2f as s
 import lens.src.blitnet as bn
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
@@ -43,7 +39,6 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 from collections import Counter
 from prettytable import PrettyTable
-from scipy.signal import convolve2d
 from torch.utils.data import DataLoader
 from sinabs.from_torch import from_model
 from lens.src.loggers import model_logger
@@ -153,185 +148,18 @@ class LENS(nn.Module):
         self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
         self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2.),requires_grad=False)
         # Create the DYNAPCNN model for on-chip inferencing
-        if self.event_driven or self.simulated_speck:
-            self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                    input_shape=input_shape, 
-                                    discretize=True, 
-                                    dvs_input=True)
-        
-        # Modify the configuartion of the DYNAPCNN model if streaming DVS events for inferencing
-        if self.event_driven: 
-            # Custom readout function to get output spikes
-            def custom_readout(collection):
-                def generate_result(feature):
-                    e = samna.ui.Readout()
-                    e.feature = feature
-                    return [e]
-                cur_time = time.time()
-                # Collect event count information
-                for spike in collection:
-                    if spike.feature in self.sum:
-                        self.sum[spike.feature] += 1
-                    else:
-                        self.sum[spike.feature] = 1
-
-                # Print out timestep details
-                model.logger.info(f'Collected {len(collection)} output spikes at time {cur_time}')
-                # Update number of queries for sequence matching
-                self.qry += 1
-                # Save the output spikes as a NumPy array
-                self.collection.append([self.sum])
-                np.save(os.path.join(model.output_folder,"spike_data.npy"), np.array(self.collection))
-                # Generate dummy result
-                return generate_result(int(0))
-            
-            # Custom function for online sequence matching
-            def seq_match():
-                while gui_process.is_alive(): 
-                    if self.qry == 4: # Wait for 4 input queries
-                        # Convert the list of events to a numpy array with dtype=object
-                        events_array = np.array(self.event_sink.get_events(), dtype=object)
-                        if not os.path.exists(os.path.join(model.output_folder, 'events')):
-                            os.makedirs(os.path.join(model.output_folder, 'events'))
-                        # Save the numpy array to a file
-                        np.save(os.path.join(model.output_folder, 'events', f"{time.time()}_events.npy"), events_array)
-                        # Initialize a NumPy array of zeros
-                        vector = np.zeros(self.reference_places, dtype=int)
-                        # Fill in the values from the dictionary
-                        for key, value in self.sum.items():
-                            vector[key] = value
-                        # Divide by 4 to get the average and add to sequence matrix
-                        if self.sequence is None:
-                            self.sequence = vector // 4
-                        else:
-                            # Append the new sequence to the existing sequence
-                            self.sequence = np.vstack((self.sequence, vector // 4))
-                            # Check if appropriate number of sequences are collected
-                            if self.sequence.shape[0] == 4:
-                                # Apply the sequence matching convolution
-                                result = convolve2d(self.sequence.T, self.precomputed_convWeight, mode='same')/ self.sequence_length
-                                # Find the argmax for each column
-                                argmax_columns = np.argmax(result, axis=0)
-
-                                # Log the results
-                                model.logger.info('')
-                                model.logger.info('\\\\\ Place matching result ////')
-                                for i, argmax in enumerate(argmax_columns):
-                                    model.logger.info(f'The sequence match location for {i} is place number: {argmax}')
-                                model.logger.info('')
-                                # If matrix doesn't exist, initialize it with the first result
-                                if self.matrix is None:
-                                    self.matrix = result
-                                else:
-                                    # Append the result to the existing matrix using vstack
-                                    self.matrix = np.concatenate((self.matrix, result),axis=1)
-                                # Save the matrix to a file
-                                np.save(f"{self.output_folder}/similarity_matrix.npy", self.matrix.T)
-                                # Reset the sequencing variables
-                                self.sum = {}
-                                self.sequence = None
-                            else:
-                                pass
-                        # Reset qry counter
-                        self.qry = 0
-
-            # Basic configuration
-            config = self.dynapcnn.make_config("auto",device=devkit_name)
-            lyrs = self.dynapcnn.chip_layers_ordering[-1]
-            # Enable layer monitoring
-            config.dvs_layer.monitor_enable = True
-            config.cnn_layers[lyrs].monitor_enable = True
-            # Setup DVS filtering
-            config.dvs_filter.enable = True
-            config.dvs_filter.hot_pixel_filter_enable = True
-            config.dvs_filter.threshold = 5
-            # Switch only on channels from DVS
-            config.dvs_layer.merge = True
-            # Set the ROI
-            config.dvs_layer.origin.x = 23
-            config.dvs_layer.origin.y = 0
-            config.dvs_layer.cut.x = 102
-            config.dvs_layer.cut.y = 79
-            # Get the Speck2fDevKit configuration for graph sequential routing
-            dk = s.get_speck2f()
-            # Apply the configuration to the DYNAPCNN model
-            dk.get_model().apply_configuration(config)
-            # Open the GUI process
-            streamer_endpoint = "tcp://0.0.0.0:40000"
-            gui_process = s.open_visualizer(streamer_endpoint)
-            # Setup the graph for routing to the GUI process
-            graph = samna.graph.EventFilterGraph()
-            streamer = s.build_samna_event_route(graph, dk)
-
-            # Define spike collection nodes for GUI plotting
-            (source,readout_spike, spike_collection_filter, _,_) = graph.sequential(
-                    [
-                        dk.get_model_source_node(),
-                        "Speck2fOutputMemberSelect",
-                        "Speck2fSpikeCollectionNode",
-                        "Speck2fSpikeCountNode",
-                        streamer,
-                    ]
-            )
-            self.event_sink = samna.graph.sink_from(source)
-            # Set the collection interval for event driven output spikes
-            spike_collection_filter.set_interval_milli_sec(self.timebin)
-            readout_spike.set_white_list([lyrs], "layer")
-
-            # # Set the interval for spike collection
-            _, readout_filter, _ = graph.sequential(
-                                            [spike_collection_filter, "Speck2fCustomFilterNode", streamer]
-                                            ) 
-            readout_filter.set_filter_function(custom_readout)
-            # Setup power and readout filter
-            power = dk.get_power_monitor()
-            power.start_auto_power_measurement(20)
-            power_source, _, _ = graph.sequential([power.get_source_node(), "MeasurementToVizConverter", streamer])
-            power_sink = samna.graph.sink_from(power_source)
-            # Function to read out power from sink node
-            def get_events():
-                return power_sink.get_events()
-            # Configure the visualizer
-            config_source, visualizer_config = s.configure_visualizer(graph, streamer)
-            config_source.write([visualizer_config])
-            graph.start()
+        self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
+                                input_shape=input_shape, 
+                                discretize=True, 
+                                dvs_input=True)
 
         # Initiliaze the output spikes variable
         all_arrays = []
         
         # Run inference for event stream or pre-recorded DVS data
         with torch.no_grad():    
-            # Run inference on-chip
-            if self.event_driven:
-                # Set timestamps for spike events
-                stopWatch = dk.get_stop_watch()
-                stopWatch.set_enable_value(True)
-                # Set the slow clock rate
-                dk_io = dk.get_io_module()
-                dk_io.set_slow_clk_rate(10)
-                dk_io.set_slow_clk(True)
-                # Start the thread collector for the sequence matcher
-                self.qry = 0
-                self.sum = {}
-                self.sequence = None
-                self.collection = []
-                self.events = []
-                self.precomputed_convWeight = np.eye(self.sequence_length, dtype=np.float32)
-                collector_thread = threading.Thread(target=seq_match)
-                collector_thread.start()
-                # Start the process, and wait for window to be destroyed
-                model.logger.info('')
-                model.logger.info("Starting the inferencing system")
-                gui_process.join()
-                # Read out the power consumption measurements and save
-                power.stop_auto_power_measurement()
-                ps = get_events()
-                # Stop the GUI process & close the Speck2f device
-                readout_filter.stop()
-                graph.stop()
-                samna.device.close_device(dk)
             # Run inference for pre-recorded DVS data    
-            elif self.simulated_speck:
+            if self.simulated_speck:
                 # Deploy the model to the Speck2fDevKit
                 self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
                 model.logger.info(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
@@ -410,38 +238,6 @@ class LENS(nn.Module):
                 pbar.close()
                 # Rehsape output spikes into a similarity matrix
                 out = np.reshape(np.array(out),(model.query_places,model.reference_places))
-
-        # Organise energy measurements into a NumPy array
-        if self.event_driven:
-            # Initialize a list to store arrays for each channel
-            channel_data = [[] for _ in range(5)]
-            
-            # Loop through the data and append values to the corresponding channel list
-            for record in ps:
-                channel_data[record.channel].append((record.timestamp, record.value))
-            
-            # Convert lists to numpy arrays
-            numpy_arrays = [np.array(data) for data in channel_data]
-            np.save(f"{self.output_folder}/power_data.npy", numpy_arrays)
-
-        # Move output spikes from continual inference to output folder
-        if self.event_driven:
-            # Move the output spikes to the output folder
-            os.rename("spike_data.json", f"{self.output_folder}/spike_data.json")
-            # Load the JSON data
-            with open(f"{self.output_folder}/spike_data.json", 'r') as f:
-                json_data = json.load(f)
-
-            # Extract data
-            data_matrix = []
-
-            # Iterate through the JSON objects (assuming the structure as described)
-            for entry in json_data:
-                data = entry['data']
-                data_row = [data[str(i)] if str(i) in data else 0 for i in range(self.reference_places)]
-                data_matrix.append(data_row)
-                # Convert to numpy array
-                out = np.array(data_matrix)
 
         # Perform sequence matching convolution on similarity matrix
         if self.sequence_length != 0:
