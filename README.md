@@ -47,6 +47,25 @@ LENS was developed with and deployed on the Speck2fDevKit from [SynSense](https:
 
 Please [click here]() to see the full documentation, which describes in more detail the full functionality of LENS.
 
+### Run the inferencing model
+To run a simulated event stream, you can try our pre-trained model and datasets. Parse the `--sim_mat` and `--matching` flag to see the similarity matrix and matching to the provided ground truth.
+
+```console
+$ python main.py --sim_mat --matching
+```
+
+### Train a new model
+To train your own model, you first will need to collect your own dataset (see [Data Collection](##data-collection) for SPECK<sup>TM</sup> or [Datasets]() for event data sourced elsewhere). 
+
+```console
+# Train a new model
+$ python main.py --train_model --reference dataset001 --reference_places -80
+```
+
+`--reference` is the name of the dataset you're training and `--reference_places` is the number of images in the dataset you wish to train. This trained model can then be evaluated on any of the above inferencing methods.
+
+For a full reference on training your own model, please see the [LENS Documentation]().
+
 ### Deployment on Speck2fDevKit
 If you have a Speck2fDevKit, you can try out LENS using our pre-trained model and datasets conveniently provided in this repository.
 
@@ -68,29 +87,6 @@ This will open up a `samnagui` instance whereby you can see the events collected
 
 For limitations and requiremnts for training and inferencing models, please see [Limitations](##limitations).
 
-### Simulate event stream on von Neumann hardware
-To run a simulated event stream on non-neuromorphic hardware, you can try our pre-trained model and datasets. If CUDA is enabled, you can inference on GPU.
-
-```console
-# CPU
-$ python main.py --sim_mat
-
-# GPU (note: due to the small size of the data, it can actually be slower to run on GPU hardware compared to CPU)
-$ python main.py --sim_mat --raster_device GPU
-```
-
-### Train a new model
-To train your own model, you first will need to collect your own dataset (see [Data Collection](##data-collection) for SPECK<sup>TM</sup> or [Datasets]() for event data sourced elsewhere). 
-
-```console
-# Train a new model
-$ python main.py --train_model --reference dataset001 --reference_places -80
-```
-
-`--reference` is the name of the dataset you're training and `--reference_places` is the number of images in the dataset you wish to train. This trained model can then be evaluated on any of the above inferencing methods.
-
-For a full reference on training your own model, please see the [LENS Documentation]().
-
 ## Data Collection
 If using a Speck2fDevKit, you can collect event data and produce temporal frame representations as images.
 
@@ -98,7 +94,7 @@ If using a Speck2fDevKit, you can collect event data and produce temporal frame 
 $ python main.py --collect_data --data_name experiment001
 ```
 
-This will export to the `./lens/dataset/<data>/<camera>/` folder with .png images which you can then train a new model on.
+This will export to the `./lens/dataset/<data>/<camera>/` folder with .png images which you can then train a new model on. A .csv file of for the image names will be automatically generated.
 
 ## Limitations
 For deployment on SPECK<sup>TM</sup>, models must be no bigger than 144kB in total (see [Memory Constraints and Network Sizing](https://sinabs.readthedocs.io/en/v2.0.0/speck/overview.html#memory-constraints-and-network-sizing). If customizing the network training for on-chip deployment, input size, feature layer size multiplier, and number of learned places must be carefully considered. Generally speaking, a neuron model size of 100 input, 200 feature, and 80 output neurons is roughly the maximum sizing. These constraints do not impact off-chip deployment.
