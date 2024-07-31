@@ -3,3 +3,4 @@ imgui.ini
 samna.log
 .vscode
 lens/output/
+wandb/
