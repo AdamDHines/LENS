@@ -1,7 +1,5 @@
 import samna, samnagui
-import multiprocessing
-import json
-import os
+from multiprocessing import Process
 
 # Function to retrieve Speck2fDevKit device and default configuration
 def get_speck2f():
@@ -27,10 +25,10 @@ def get_speck2f():
     return samna.device.open_device(devices[0], default_config)
 
 # Open the samna GUI process
-def open_visualizer(streamer_endpoint, window_width=0.75, window_height=0.75):
-    gui_process = multiprocessing.Process(
+def open_visualizer(streamer_endpoint, window_width=0.75, window_height=0.75, headless=False):
+    gui_process = Process(
         target=samnagui.run_visualizer,
-        args=(streamer_endpoint, window_width, window_height, headless:=True),
+        args=(streamer_endpoint, window_width, window_height, headless:=headless),
     )
     gui_process.start()
 

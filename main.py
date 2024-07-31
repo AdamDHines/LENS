@@ -20,16 +20,8 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
-'''
-Imports
-'''
-
 import argparse
 
-from lens.run_model import LENS, run_inference
-from lens.run_speck import LENSSpeck, run_speck
-from lens.train_model import LENS_Trainer, train_model
-from lens.collect_data import LENS_Collector, run_collector
 
 def generate_model_name(model):
     """
@@ -49,6 +41,7 @@ def initialize_and_run_model(args):
     Initialize the model and run the desired functionality.
     """
     if args.train_model: # If user wants to train a new network
+        from lens.train_model import LENS_Trainer, train_model
         # Initialize the model
         model = LENS_Trainer(args)
         # Generate the model name
@@ -56,11 +49,13 @@ def initialize_and_run_model(args):
         # Train the model
         train_model(model, model_name)
     elif args.collect_data:  # If user wants to collect data to train new model
+        from lens.collect_data import LENS_Collector, run_collector
         # Initialize the model
         model = LENS_Collector(args)
         # Collect the data
         run_collector(model)
     elif args.event_driven:
+        from lens.run_speck import LENSSpeck, run_speck
         # Initialize the model
         model = LENSSpeck(args)
         # Generate the model name
@@ -68,6 +63,7 @@ def initialize_and_run_model(args):
         # Run the model on the Speck2fDevKit
         run_speck(model, model_name)
     else: # Run the inference network
+        from lens.run_model import LENS, run_inference
         # Initialize the model
         model = LENS(args) # Runs the DynapCNN on-chip model
         # Generate the model name
@@ -96,7 +92,7 @@ def parse_network():
                             help="Directory where dataset files are stored")
     parser.add_argument('--reference_places', type=int, default=75,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=312,
+    parser.add_argument('--query_places', type=int, default=75,
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--sequence_length', type=int, default=4,
                         help="Length of the sequence matcher")
@@ -150,7 +146,9 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', nargs='+', type=int, default=[10,10],
+    parser.add_argument('--dims', type=int, default=10,
+                            help="Dimensions to resize the image to")
+    parser.add_argument('--roi_dim', type=int, default=80,
                             help="Dimensions to resize the image to")
     
     # Define the network functionality
@@ -172,6 +170,10 @@ def parse_network():
                             help='Run time based simulation on the Speck2fDevKit')
     parser.add_argument('--collect_data', action='store_true', 
                             help='Collect images from SPECK to train new model')
+    parser.add_argument('--headless', action='store_true',
+                            help="Runs the Speck2fDevKit in headless mode")
+    parser.add_argument('--save_input', action='store_true',
+                            help="Collects and saves the input spikes as NumPy arrays")
     
     # Output base configuration
     args = parser.parse_args()

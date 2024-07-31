@@ -65,7 +65,7 @@ class LENS_Collector(nn.Module):
         self.layer_counter = 0
 
         # Define layer architecture
-        self.input = int(args.dims[0]*args.dims[1])
+        self.input = int(args.dims*args.dims)
         self.feature = int(self.input*self.feature_multiplier)
         self.output = int(args.reference_places)
 
@@ -128,7 +128,7 @@ class LENS_Collector(nn.Module):
         devkit_name = "speck2fdevkit"
 
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, 80, 80) # With Conv2d becomes [1, 8, 8]
+        input_shape = (1, self.roi_dim, self.roi_dim) # With Conv2d becomes [1, 8, 8]
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -190,7 +190,7 @@ class LENS_Collector(nn.Module):
 
         def create_images(events):
             if events:
-                frame = torch.zeros((80, 80), dtype=int)
+                frame = torch.zeros((self.roi_dim, self.roi_dim), dtype=int)
                 for event in events:
                     frame[event.y-1, event.x-1] += 1
                 imageio.imwrite(f'{self.img_folder}/frame_{self.infer_count:05d}.png',frame.detach().cpu().numpy().astype(np.uint8))
@@ -212,7 +212,7 @@ class LENS_Collector(nn.Module):
         sink = samna.graph.sink_from(dk.get_model().get_source_node())
         # Configuring the visualizer
         visualizer_config = samna.ui.VisualizerConfiguration(
-            plots=[samna.ui.ActivityPlotConfiguration(80, 80, "DVS Layer", [0, 0, 1, 1])]
+            plots=[samna.ui.ActivityPlotConfiguration(self.roi_dim, self.roi_dim, "DVS Layer", [0, 0, 1, 1])]
         )
         config_source.write([visualizer_config])
 

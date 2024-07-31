@@ -61,7 +61,7 @@ class LENSSpeck(nn.Module):
         self.layer_counter = 0
 
         # Define layer architecture
-        self.input = int(args.dims[0]*args.dims[1])
+        self.input = int(args.dims*args.dims)
         self.feature = int(self.input*self.feature_multiplier)
         self.output = int(args.reference_places)
 
@@ -130,7 +130,7 @@ class LENSSpeck(nn.Module):
         # Define name of the devkit
         devkit_name = "speck2fdevkit"
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, 80, 80)
+        input_shape = (1, self.roi_dim, self.roi_dim)
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
@@ -176,6 +176,13 @@ class LENSSpeck(nn.Module):
             from scipy.signal import convolve2d
             while gui_process.is_alive(): 
                 if self.qry == 4: # Wait for 4 input queries
+                    if self.save_input:
+                        # Convert the list of events to a numpy array with dtype=object
+                        events_array = np.array(self.event_sink.get_events(), dtype=object)
+                        if not os.path.exists(os.path.join(model.output_folder, 'events')):
+                            os.makedirs(os.path.join(model.output_folder, 'events'))
+                        # Save the numpy array to a file
+                        np.save(os.path.join(model.output_folder, 'events', f"{time.time()}_events.npy"), events_array)
                     # Initialize a NumPy array of zeros
                     vector = np.zeros(self.reference_places, dtype=int)
                     # Fill in the values from the dictionary
@@ -243,7 +250,7 @@ class LENSSpeck(nn.Module):
             return config_source, visualizer_config
         # Basic configuration
         streamer_endpoint = "tcp://0.0.0.0:40000"
-        gui_process = s.open_visualizer(streamer_endpoint, 0.75, 0.75)
+        gui_process = s.open_visualizer(streamer_endpoint, 0.75, 0.75, headless=self.headless)
         config = self.dynapcnn.make_config("auto",device=devkit_name)
         lyrs = self.dynapcnn.chip_layers_ordering[-1]
         # Enable layer monitoring
@@ -343,21 +350,6 @@ class LENSSpeck(nn.Module):
         # Convert lists to numpy arrays
         numpy_arrays = [np.array(data) for data in channel_data]
         np.save(f"{self.output_folder}/power_data.npy", numpy_arrays)
-
-        # Move the output spikes to the output folder
-        os.rename("spike_data.json", f"{self.output_folder}/spike_data.json")
-        # Load the JSON data
-        with open(f"{self.output_folder}/spike_data.json", 'r') as f:
-            json_data = json.load(f)
-
-        # Extract data
-        data_matrix = []
-
-        # Iterate through the JSON objects (assuming the structure as described)
-        for entry in json_data:
-            data = entry['data']
-            data_row = [data[str(i)] if str(i) in data else 0 for i in range(self.reference_places)]
-            data_matrix.append(data_row)
 
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')

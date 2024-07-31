@@ -68,7 +68,7 @@ class LENS(nn.Module):
         self.layer_counter = 0
 
         # Define layer architecture
-        self.input = int(args.dims[0]*args.dims[1])
+        self.input = int(args.dims*args.dims)
         self.feature = int(self.input*self.feature_multiplier)
         self.output = int(args.reference_places)
 
@@ -137,7 +137,7 @@ class LENS(nn.Module):
         # Define name of the devkit
         devkit_name = "speck2fdevkit"
         # Define the sinabs model, this converts torch model to sinabs model
-        input_shape = (1, 80, 80)
+        input_shape = (1, self.roi_dim, self.roi_dim)
         self.sinabs_model = from_model(
                                 self.inference, 
                                 input_shape=input_shape,
