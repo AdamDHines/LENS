@@ -1,0 +1,8 @@
+wandb_version: 1
+
+fire_h:
+  value: 0.5333333333333333
+fire_l:
+  value: 0.126
+thr_h:
+  value: 0.3857142857142858

@@ -25,7 +25,6 @@ Imports
 '''
 
 import os
-import json
 import time
 import torch
 import samna

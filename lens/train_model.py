@@ -47,11 +47,7 @@ class LENS_Trainer(nn.Module):
         for arg in vars(args):
             setattr(self, arg, getattr(args, arg))
 
-        # Set the dataset file
-        if self.reference_annotation:
-            self.dataset_file = os.path.join(self.data_dir, self.reference + '_reference.csv')
-        else:
-            self.dataset_file = os.path.join(self.data_dir, self.reference + '.csv')
+        self.dataset_file = os.path.join(self.data_dir, self.reference + '.csv')
 
         # Set the reference image folder
         self.reference_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.reference)
@@ -64,7 +60,7 @@ class LENS_Trainer(nn.Module):
         self.layer_counter = 0
 
         # Define layer architecture
-        self.input = int(args.dims[0]*args.dims[1])
+        self.input = int(args.dims*args.dims)
         self.feature = int(self.input*args.feature_multiplier)
         self.output = int(args.reference_places)
 
@@ -79,7 +75,6 @@ class LENS_Trainer(nn.Module):
             ip_rate=self.ip_rate_feat,
             stdp_rate=self.stdp_rate_feat,
             p=[self.f_exc, self.f_inh],
-            const_inp=[self.const_input_l,self.const_input_h],
             device=self.device
         )
         self.add_layer(
@@ -90,7 +85,6 @@ class LENS_Trainer(nn.Module):
             ip_rate=self.ip_rate_out,
             stdp_rate=self.stdp_rate_out,
             p=[self.o_exc, self.o_inh],
-            const_inp=[self.const_input_l,self.const_input_h],
             spk_force=True,
             device=self.device
         )

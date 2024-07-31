@@ -248,10 +248,10 @@ class LENS(nn.Module):
             dist_matrix_seq = out
 
         # Perform matching if GT is available
+        R = []
         if self.matching:
             # Recall@N
             N = [1,5,10,15,20,25] # N values to calculate
-            R = [] # Recall@N values
             # Create GT matrix
             GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
             if self.sequence_length != 0:
@@ -296,6 +296,8 @@ class LENS(nn.Module):
 
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
+
+        return R
 
     def forward(self, spikes):
         """
@@ -351,4 +353,6 @@ def run_inference(model, model_name):
     model.load_model(os.path.join('./lens/models', model_name))
 
     # Use evaluate method for inference accuracy
-    model.evaluate(test_loader, model)
+    R = model.evaluate(test_loader, model)
+
+    return R

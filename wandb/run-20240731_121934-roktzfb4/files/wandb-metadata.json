@@ -1,0 +1,88 @@
+{
+    "os": "Linux-6.5.0-44-generic-x86_64-with-glibc2.35",
+    "python": "3.11.5",
+    "heartbeatAt": "2024-07-31T02:19:35.138849",
+    "startedAt": "2024-07-31T02:19:34.333140",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/adam/repo/LENS/optimizer.py",
+    "codePathLocal": "optimizer.py",
+    "codePath": "optimizer.py",
+    "git": {
+        "remote": "https://github.com/AdamDHines/LENS.git",
+        "commit": "8e03f010f8c899c71fc640823123cfac62959f75"
+    },
+    "email": "adam.hines@qut.edu.au",
+    "root": "/home/adam/repo/LENS",
+    "host": "QUT-PA00146192L",
+    "username": "adam",
+    "executable": "/home/adam/mambaforge-pypy3/envs/sinabs/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 4671.963375,
+        "min": 800.0,
+        "max": 4900.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 4610.814,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4641.37,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4612.103,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4619.071,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4656.066,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4642.907,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4668.301,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4510.525,
+            "min": 800.0,
+            "max": 4900.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 467.8895797729492,
+            "used": 381.01202392578125
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 2080",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 2080",
+            "memory_total": 8589934592
+        }
+    ],
+    "memory": {
+        "total": 31.164764404296875
+    }
+}
