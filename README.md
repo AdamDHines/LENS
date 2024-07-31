@@ -7,7 +7,7 @@
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/lens-vpr.svg)](https://anaconda.org/conda-forge/vprtempo)
 ![PyPI - Version](https://img.shields.io/pypi/v/lens-vpr)
 
-This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algoriths, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition. LENS uses the [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) dynamic vision sensor and neuromorphic processor to learn places and perform online recognition, deployed on a hexapod robotic platform.
+This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algoriths, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition. LENS can be used with the SynSense Speck2fDevKit board which houses a [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) dynamic vision sensor and neuromorphic processor perform online place recognition.
 
 ## License & Citation
 This repository is licensed under the [MIT License](./LICENSE)
