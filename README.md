@@ -89,6 +89,18 @@ python main.py --simulated_speck --sim_mat --matching
 
 Additionally, models can be deployed onto the Speck2fDevKit for low-latency and energy efficient place recognition with sequence matching in real-time.
 
+First, install `samna`.
+
+```console
+# Install samna from pip
+pip install samna
+# Check that the package imports properly
+python
+> import samna
+```
+
+Then, parse the `--event_driven` flag to start the online inferencing system.
+
 ```console
 # Run the online inferencing model
 python main.py --event_driven
