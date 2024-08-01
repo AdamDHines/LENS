@@ -39,7 +39,7 @@ All dependencies can be instlled from our [PyPi package](), local `requirements.
 #### pip install
 ```python
 # Install from our PyPi package
-pip install lens
+pip install lens-vpr
 
 # Install from local requirements.txt
 pip install -r requirements.txt
