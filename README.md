@@ -34,7 +34,7 @@ cd ~/LENS
 ```
 
 ### Install dependencies
-All dependencies can be instlled from our [PyPi package]() or local `requirements.txt`. Please ensure your Python version is <= 3.11.
+All dependencies can be instlled from our [PyPi package](https://pypi.org/project/lens-vpr/) or local `requirements.txt`. Please ensure your Python version is <= 3.11.
 
 #### pip install
 ```python
