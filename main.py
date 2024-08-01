@@ -22,6 +22,7 @@
 
 import argparse
 
+from lens.tools import checker
 
 def generate_model_name(model):
     """
@@ -40,6 +41,8 @@ def initialize_and_run_model(args):
     """
     Initialize the model and run the desired functionality.
     """
+    # Pre-check settings to run the model
+    checker.check_args(args)
     if args.train_model: # If user wants to train a new network
         from lens.train_model import LENS_Trainer, train_model
         # Initialize the model
@@ -149,7 +152,7 @@ def parse_network():
     parser.add_argument('--dims', type=int, default=10,
                             help="Dimensions to resize the image to")
     parser.add_argument('--roi_dim', type=int, default=80,
-                            help="Dimensions to resize the image to")
+                            help="Input dimensions for the network")
     
     # Define the network functionality
     parser.add_argument('--train_model', action='store_true',

@@ -91,6 +91,8 @@ class LENS(nn.Module):
         if not hasattr(self, 'matrix'):
             self.matrix = None
 
+        self.kernel_size = self.roi_dim // self.dims
+
     def add_layer(self, name, **kwargs):
         """
         Dynamically add a layer with given name and keyword arguments.
@@ -119,11 +121,12 @@ class LENS(nn.Module):
         """
         # Define convolutional kernel to select the center pixel
         def _init_kernel():
-            kernel = torch.zeros(1, 1, 8, 8)
-            kernel[0, 0, 3, 3] = 1  # Set the center pixel to 1
+            kernel = torch.zeros(1, 1, self.kernel_size, self.kernel_size)
+            centre_coordinate = (self.kernel_size // 2) - 1
+            kernel[0, 0, centre_coordinate, centre_coordinate] = 1  # Set the center pixel to 1
             return kernel
         # Define the Conv2d selection layer
-        self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
+        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_size, padding=0, bias=False)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False) # Set the kernel weights
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
@@ -144,9 +147,6 @@ class LENS(nn.Module):
                                 num_timesteps=self.timebin,
                                 add_spiking_output=True
                                 )
-        # Adjust the spiking thresholds
-        self.sinabs_model.layers[2][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(10.),requires_grad=False)
-        self.sinabs_model.layers[4][1].spike_threshold = torch.nn.Parameter(data=torch.tensor(2.),requires_grad=False)
         # Create the DYNAPCNN model for on-chip inferencing
         self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
                                 input_shape=input_shape, 

@@ -215,9 +215,11 @@ def train_model(model, model_name):
     :param model_name: Name of the model to save after training
     """
     # Initialize the image transforms and datasets
+    kernel_size = model.roi_dim // model.dims
     image_transform = transforms.Compose([ProcessImage(is_train=True)])
     train_dataset =  CustomImageDataset(annotations_file=model.dataset_file, 
                                       img_dir=model.reference_dir,
+                                      kernel_size=kernel_size,
                                       transform=image_transform,
                                       skip=model.filter,
                                       max_samples=model.reference_places,

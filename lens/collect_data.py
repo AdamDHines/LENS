@@ -85,6 +85,7 @@ class LENS_Collector(nn.Module):
             inference=True
         )
 
+        self.kernel_size = self.roi_dim // self.dims
     def add_layer(self, name, **kwargs):
         """
         Dynamically add a layer with given name and keyword arguments.
@@ -110,10 +111,11 @@ class LENS_Collector(nn.Module):
         """
         # Define the inferencing forward pass
         def _init_kernel():
-            kernel = torch.zeros(1, 1, 8, 8)
-            kernel[0, 0, 4, 4] = 1
+            kernel = torch.zeros(1, 1, self.kernel_size, self.kernel_size)
+            centre_coordinate = (self.kernel_size // 2) - 1
+            kernel[0, 0, centre_coordinate, centre_coordinate] = 1  # Set the center pixel to 1
             return kernel
-        self.conv = nn.Conv2d(1, 1, kernel_size=8, stride=8, padding=0, bias=False)
+        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_size, padding=0, bias=False)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
         # Create a dummy sequence
         self.inference = nn.Sequential(
