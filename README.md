@@ -34,7 +34,7 @@ cd ~/LENS
 ```
 
 ### Install dependencies
-All dependencies can be instlled from our [PyPi package](), local `requirements.txt`, or from [conda-forge]() (recommended to use [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)).
+All dependencies can be instlled from our [PyPi package](), local `requirements.txt`, or from [conda-forge]() (recommended to use [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)). Please ensure your Python version is <= 3.11.
 
 #### pip install
 ```python
@@ -48,7 +48,7 @@ pip install -r requirements.txt
 #### conda install
 ```console
 # Create new environment and install dependencies from conda-forge
-conda create -n lens lens-vpr -c conda-forge
+conda create -n lens lens-vpr python=3.11 -c conda-forge
 ```
 
 ## Quick start

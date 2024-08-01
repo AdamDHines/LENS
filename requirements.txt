@@ -1,0 +1,15 @@
+torch>=2.1.1
+torchvision>=0.16.1
+numpy>=1.26.2
+pandas>=2.1.1
+tqdm>=4.65.0
+prettytable>=3.5.0
+scikit-learn>=1.2.2
+sinabs
+h5py>=3.10.0
+imageio>=2.34.1
+matplotlib>=3.8.2
+pynmea2>=1.19.0
+scipy>=1.11.4
+seaborn>=0.13.2
+wandb>=0.16.2
