@@ -91,19 +91,7 @@ If you have a SynSense Speck2fDevKit, you can try out LENS using our pre-trained
 python main.py --simulated_speck --sim_mat --matching
 ```
 
-Additionally, models can be deployed onto the Speck2fDevKit for low-latency and energy efficient VPR with sequence matching in real-time.
-
-First, install `samna`.
-
-```console
-# Install samna from pip
-pip install samna
-# Check that the package imports properly
-python
-> import samna
-```
-
-Then, use the `--event_driven` flag to start the online inferencing system.
+Additionally, models can be deployed onto the Speck2fDevKit for low-latency and energy efficient VPR with sequence matching in real-time. Use the `--event_driven` flag to start the online inferencing system.
 
 ```console
 # Run the online inferencing model
