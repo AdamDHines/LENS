@@ -34,7 +34,7 @@ cd ~/LENS
 ```
 
 ### Install dependencies
-All dependencies can be instlled from our [conda-forge package](https://anaconda.org/conda-forge/lens-vpr), ( [PyPi package](https://pypi.org/project/lens-vpr/), or local `requirements.txt`. For the conda-forge package, we recommend using [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) or [miniforge](https://github.com/conda-forge/miniforge). Please ensure your Python version is <= 3.11.
+All dependencies can be instlled from our [conda-forge package](https://anaconda.org/conda-forge/lens-vpr), [PyPi package](https://pypi.org/project/lens-vpr/), or local `requirements.txt`. For the conda-forge package, we recommend using [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) or [miniforge](https://github.com/conda-forge/miniforge). Please ensure your Python version is <= 3.11.
 
 #### conda package
 ```console
