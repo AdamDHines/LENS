@@ -4,6 +4,7 @@
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 [![stars](https://img.shields.io/github/stars/AdamDHines/LENS.svg?style=flat-square)](https://github.com/AdamDHines/LENS/stargazers)
 [![Downloads](https://static.pepy.tech/badge/lens-vpr)](https://pepy.tech/project/lens-vpr)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/lens-vpr.svg)](https://anaconda.org/conda-forge/lens-vpr)
 ![PyPI - Version](https://img.shields.io/pypi/v/lens-vpr)
 
 This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algoriths, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition (VPR). LENS can be used with the SynSense Speck2fDevKit board which houses a [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) dynamic vision sensor and neuromorphic processor for online VPR.
@@ -33,10 +34,20 @@ cd ~/LENS
 ```
 
 ### Install dependencies
-All dependencies can be instlled from our [PyPi package](https://pypi.org/project/lens-vpr/) or local `requirements.txt`. Please ensure your Python version is <= 3.11.
+All dependencies can be instlled from our [conda-forge package](https://anaconda.org/conda-forge/lens-vpr), ( [PyPi package](https://pypi.org/project/lens-vpr/), or local `requirements.txt`. For the conda-forge package, we recommend using [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) or [miniforge](https://github.com/conda-forge/miniforge). Please ensure your Python version is <= 3.11.
 
-#### pip install
-```python
+#### conda package
+```console
+# Create a new environment and install packages
+micromamba create -n lens-vpr -c conda-forge lens-vpr
+
+# samna package is not available on conda-forge, so pip install it
+micromamba activate lens-vpr
+pip install samna
+```
+
+#### pip
+```console
 # Install from our PyPi package
 pip install lens-vpr
 
