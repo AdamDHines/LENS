@@ -1,0 +1,52 @@
+
+--------------------------------------------------------------------------
+Intel(R) SoC Watch for Linux* OS Version 2023.4.0 [Aug 14 2023]
+Build Ref: d424b1e6d9128f442fdc901a2f7f09e75671d271
+Post Processed using SoC Watch for Linux* OS Version 2023.4.0 [Aug 14 2023]
+Post Processed Build Ref: d424b1e6d9128f442fdc901a2f7f09e75671d271
+Copyright (c) 2023 Intel Corporation. All Rights Reserved.
+Platform power analysis tool for use with Intel processors/chipsets/platforms.
+*Other names and brands may be claimed as the property of others. 
+--------------------------------------------------------------------------
+
+Command line options: -n 1 --feature power --max-detail --result int --output /home/adam/results// --program bash -c echo setup_socwatch_env.sh; echo ; taskset --cpu-list 1 env MPLBACKEND=Agg /home/adam/mambaforge-pypy3/envs/sinabs/bin/python3 .py 
+
+Program Started: 2024-06-21 01:38:15 GMT
+Data Collection Started: 2024-06-21 01:38:15 GMT 
+Nano Clock Frequency (MHz): 1000 
+CPU Base Operating Frequency (MHz): 3600
+Collection duration (sec): 0.0348987
+Collection begin timestamp: 1718933895903857855
+Collection end timestamp: 1718933895938684469
+
+System Name: QUT-PA00146192L
+Operating System: Linux [6.5.0-35-generic]
+CPU: Coffee Lake
+CPU ID (family.model.stepping): 0x6.0x9e.0xd
+Platform ID: 0b000
+Integrated GPU Device ID: 0x3e98
+PCH: Cannon Lake PCH-H (CNP-H)
+EDRAM Present: No 
+Total # of packages: 1 
+Total # of cores: 8 
+Total # of logical processors: 8
+
+
+Note: SoC Watch driver was not loaded; default system drivers were used to collect this result.
+
+=============
+Package Power
+=============
+
+Note: Die-level power is included in package power on platforms with a multi-die CPU topology.
+
+Package Power Summary: Average Rate and Total
+Component          , Metric Type, Average Rate (mW), Total (mJ)
+---------          , -----------, -----------------, ----------
+CPU/Package_0/Die_0, Power      , 57552.53         , 2003.66   
+
+Package Power Summary: Total Samples Received
+Component          , Total # of samples, Min sampling interval (msec), Max sampling interval (msec), Avg sampling interval (msec)
+---------          , ------------------, ----------------------------, ----------------------------, ----------------------------
+CPU/Package_0/Die_0, 2294              , 0.01                        , 1.38                        , 0.02                        
+
