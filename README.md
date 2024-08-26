@@ -6,6 +6,7 @@
 [![Downloads](https://static.pepy.tech/badge/lens-vpr)](https://pepy.tech/project/lens-vpr)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/lens-vpr.svg)](https://anaconda.org/conda-forge/lens-vpr)
 ![PyPI - Version](https://img.shields.io/pypi/v/lens-vpr)
+[![GitHub repo size](https://img.shields.io/github/repo-size/AdamDHines/LENS.svg?style=flat-square)](./README.md)
 
 This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algoriths, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition (VPR). LENS can be used with the SynSense Speck2fDevKit board which houses a [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) dynamic vision sensor and neuromorphic processor for online VPR.
 
