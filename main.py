@@ -43,6 +43,7 @@ def initialize_and_run_model(args):
     """
     # Pre-check settings to run the model
     checker.check_args(args)
+    #args.matching = True
     if args.train_model: # If user wants to train a new network
         from lens.train_model import LENS_Trainer, train_model
         # Initialize the model
@@ -81,23 +82,23 @@ def parse_network():
     parser = argparse.ArgumentParser(description="Args for base configuration file")
 
     # Define the dataset arguments
-    parser.add_argument('--dataset', type=str, default='qcr',
+    parser.add_argument('--dataset', type=str, default='example',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--camera', type=str, default='speck',
+    parser.add_argument('--camera', type=str, default='davis128',
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--data_name', type=str, default='experiment001',
                             help="Define dataset same for data collection")
-    parser.add_argument('--reference', type=str, default='indoor-reference',
+    parser.add_argument('--reference', type=str, default='example-reference',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='indoor-query',
+    parser.add_argument('--query', type=str, default='example-query',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=75,
+    parser.add_argument('--reference_places', type=int, default=100,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=75,
+    parser.add_argument('--query_places', type=int, default=100,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=4,
+    parser.add_argument('--sequence_length', type=int, default=2,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
@@ -139,9 +140,9 @@ def parse_network():
                             help="STDP learning rate")
 
     # Connection probabilities
-    parser.add_argument('--f_exc', type=float, default=0.1,
+    parser.add_argument('--f_exc', type=float, default=0.35,
                         help="Feature layer excitatory connection")
-    parser.add_argument('--f_inh', type=float, default=0.5,
+    parser.add_argument('--f_inh', type=float, default=0.75,
                         help="Feature layer inhibitory connection")
     parser.add_argument('--o_exc', type=float, default=1.0,
                         help="Output layer excitatory connection")
@@ -163,8 +164,10 @@ def parse_network():
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
-    parser.add_argument('--timebin', type=int, default=1000,
+    parser.add_argument('--timebin', type=int, default=250,
                         help="dt for spike collection window and time based simulation")
+    parser.add_argument('--nocuda', action='store_true',
+                            help="Do not use CPU")
     
     # On-chip specific parameters
     parser.add_argument('--event_driven', action='store_true', 

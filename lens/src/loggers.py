@@ -44,9 +44,13 @@ def model_logger(model):
     model.logger.info('MIT license - https://github.com/AdamDHines/LENS')
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
     model.logger.info('')
-    if not model.event_driven and not model.simulated_speck:
-        model.logger.info(f'Current device is CPU')
-        device = torch.device("cpu")
+    if not model.event_driven and not model.simulated_speck and not model.train_model:
+        if torch.cuda.is_available():
+            model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')
+            device = torch.device("cuda")
+        else:
+            model.logger.info(f'Current device is CPU')
+            device = torch.device("cpu")
     elif model.train_model:
         if torch.cuda.is_available():
             model.logger.info(f'Current device is {torch.cuda.get_device_name(torch.cuda.current_device())}')

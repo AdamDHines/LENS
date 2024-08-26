@@ -54,6 +54,9 @@ class LENS_Trainer(nn.Module):
 
         # Configure the model logger and get the device
         self.device = model_logger(self)  
+        # Change to CPU if selected
+        if self.nocuda:
+            self.device = torch.device('cpu')
 
         # Layer dict to keep track of layer names and their order
         self.layer_dict = {}

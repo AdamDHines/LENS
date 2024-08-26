@@ -27,11 +27,22 @@ class SetImageAsSpikes:
 
 class ProcessImage:
     def __init__(self, is_train=False):
-        if is_train:
-            self.intensity = 1
-        else:
-            self.intensity = 255
+        # if is_train:
+        #     self.intensity = 1
+        # else:
+        #     self.intensity = 255
+        self.intensity = 255
+        self.is_train = is_train
     def __call__(self, img):
+        if self.is_train:
+            img = img.to(torch.float32)
+            mid = 0.5
+            mean = torch.mean(img)
+            try:
+                gamma = math.log(mid * 255) / math.log(mean)
+                img = torch.pow(img, gamma).clip(0, 255)
+            except:
+                pass
         # Resize the image to the specified dimensions
         spike_maker = SetImageAsSpikes(intensity=self.intensity)
         img = spike_maker(img)
@@ -95,15 +106,14 @@ class CustomImageDataset(Dataset):
         label = self.img_labels.iloc[idx, 1]
         
         if not self.test:
-            # drop = nn.Dropout(p=0.5)
-            # image = drop(image.float())
-            image = self.forward(image.unsqueeze(0)/255)
-            image = image.squeeze(0)
+            image = self.forward(image.unsqueeze(0))
+            image = image.squeeze(0)*255
         
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
+        
         image_og = []
         if self.is_spiking:
             # Raster the input for image
@@ -117,4 +127,4 @@ class CustomImageDataset(Dataset):
         return image, label, gps_coordinate, image_og
 
     def forward(self, x):
-        return self.conv(x)
+        return self.conv(x/255)

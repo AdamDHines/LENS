@@ -62,6 +62,9 @@ class LENS(nn.Module):
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
+        # Change to CPU if selected
+        if self.nocuda:
+            self.device = torch.device('cpu')
 
         # Layer dict to keep track of layer names and their order
         self.layer_dict = {}
@@ -126,7 +129,7 @@ class LENS(nn.Module):
             kernel[0, 0, centre_coordinate, centre_coordinate] = 1  # Set the center pixel to 1
             return kernel
         # Define the Conv2d selection layer
-        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_size, padding=0, bias=False)
+        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_size, padding=0, bias=False).to(self.device)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False) # Set the kernel weights
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
@@ -142,16 +145,11 @@ class LENS(nn.Module):
         # Define the sinabs model, this converts torch model to sinabs model
         input_shape = (1, self.roi_dim, self.roi_dim)
         self.sinabs_model = from_model(
-                                self.inference, 
+                                self.inference.to(self.device), 
                                 input_shape=input_shape,
                                 num_timesteps=self.timebin,
                                 add_spiking_output=True
-                                )
-        # Create the DYNAPCNN model for on-chip inferencing
-        self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
-                                input_shape=input_shape, 
-                                discretize=True, 
-                                dvs_input=True)
+        )
 
         # Initiliaze the output spikes variable
         all_arrays = []
@@ -160,6 +158,10 @@ class LENS(nn.Module):
         with torch.no_grad():    
             # Run inference for pre-recorded DVS data    
             if self.simulated_speck:
+                self.dynapcnn = DynapcnnNetwork(snn=self.sinabs_model, 
+                        input_shape=input_shape, 
+                        discretize=True, 
+                        dvs_input=True)
                 # Deploy the model to the Speck2fDevKit
                 self.dynapcnn.to(device=devkit_name, chip_layers_ordering="auto")
                 model.logger.info(f"The SNN is deployed on the core: {self.dynapcnn.chip_layers_ordering}")
@@ -180,7 +182,7 @@ class LENS(nn.Module):
                                                             layer=first_layer_idx,
                                                             dt=1e-6)
                         # Forward pass
-                        events_out = self.forward(events_in)
+                        events_out = self.dynapcnn(events_in)
 
                         # Get prediction
                         neuron_idx = [each.feature for each in events_out]
@@ -229,7 +231,7 @@ class LENS(nn.Module):
                     spikes, labels = spikes.to(self.device), labels.to(self.device)
                     spikes = sl.FlattenTime()(spikes)
                     # Forward pass
-                    spikes = self.forward(spikes)
+                    spikes = self.sinabs_model(spikes)
                     output = spikes.sum(dim=0).squeeze()
                     # Add output spikes to list
                     out.append(output.detach().cpu().tolist())
@@ -238,7 +240,6 @@ class LENS(nn.Module):
                 pbar.close()
                 # Rehsape output spikes into a similarity matrix
                 out = np.reshape(np.array(out),(model.query_places,model.reference_places))
-
         # Perform sequence matching convolution on similarity matrix
         if self.sequence_length != 0:
             dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
@@ -256,9 +257,41 @@ class LENS(nn.Module):
             GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
             if self.sequence_length != 0:
                 GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+
+            def create_GTsoft(GT, rows_to_add=2):
+                """
+                Creates a soft ground truth matrix by adding values to specified rows around detected 1s.
+
+                Parameters:
+                - GT (numpy.ndarray): The original ground truth matrix.
+                - rows_to_add (int): Number of rows above and below to add value around the detected 1s.
+
+                Returns:
+                - GTsoft (numpy.ndarray): The modified ground truth matrix.
+                """
+                # Create GTsoft matrix as a copy of GT
+                GTsoft = np.copy(GT)
+                
+                # Iterate through each column in GT
+                for col in range(GT.shape[1]):
+                    # Find the row indices where the value is 1
+                    rows_with_ones = np.where(GT[:, col] == 1)[0]
+                    
+                    for row in rows_with_ones:
+                        # Add 1 to the rows above and below the detected 1, within the specified range
+                        for i in range(1, rows_to_add + 1):
+                            if row - i >= 0:
+                                GTsoft[row - i, col] = 1
+                            if row + i < GT.shape[0]:
+                                GTsoft[row + i, col] = 1
+                return GTsoft
+
+            # Create GTsoft with a customizable number of rows to add
+            rows_to_add = 2  
+            GTsoft = create_GTsoft(GT, rows_to_add=rows_to_add)
             # Calculate Recall@N
             for n in N:
-                R.append(round(recallAtK(dist_matrix_seq,GThard=GT,K=n),2))
+                R.append(round(recallAtK(dist_matrix_seq,GT,GTsoft=GTsoft,K=n),2))
             # Print the results
             table = PrettyTable()
             table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
@@ -267,15 +300,16 @@ class LENS(nn.Module):
          
         if self.sim_mat: # Plot only the similarity matrix
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq.T, annot=False, cmap='crest')
+            sns.heatmap(dist_matrix_seq, annot=False, cmap='crest')
             plt.title('Similarity matrix')
             plt.xlabel("Query")
             plt.ylabel("Database")
             plt.show()
+
         # Plot PR curve
         if self.PR_curve:
             # Create PR curve
-            P, R = createPR(dist_matrix_seq, GThard=GT, GTsoft=GT, matching='multi', n_thresh=100)
+            P, R = createPR(dist_matrix_seq, GT, GTsoft=GTsoft, matching='single', n_thresh=100)
             #  Combine P and R into a list of lists
             PR_data = {
                     "Precision": P,
@@ -335,6 +369,7 @@ def run_inference(model, model_name):
     test_dataset = CustomImageDataset(annotations_file=model.dataset_file,
                                       img_dir=model.query_dir,
                                       transform=image_transform,
+                                      kernel_size=model.kernel_size,
                                       skip=model.filter,
                                       max_samples=model.query_places,
                                       is_spiking=True,

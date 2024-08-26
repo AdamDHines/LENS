@@ -140,7 +140,6 @@ def recallAtK(S_in, GThard, GTsoft=None, K=1):
     The integer K>=1 defines the number of matching candidates that are selected and
     that must contain an actually matching image pair.
     """
-
     assert (S_in.shape == GThard.shape),"S_in and GThard must have the same shape"
     if GTsoft is not None:
         assert (S_in.shape == GTsoft.shape),"S_in and GTsoft must have the same shape"
@@ -149,9 +148,13 @@ def recallAtK(S_in, GThard, GTsoft=None, K=1):
 
     # ensure logical datatype in GT and GTsoft
     GT = GThard.astype('bool')
+    if GTsoft is not None:
+        GTsoft = GTsoft.astype('bool')
 
     # copy S and set elements that are only true in GTsoft to min(S) to ignore them during evaluation
     S = S_in.copy()
+    if GTsoft is not None:
+        S[GTsoft & ~GT] = S.min()
 
     # discard all query images without an actually matching database image
     j = GT.sum(0) > 0 # columns with matches

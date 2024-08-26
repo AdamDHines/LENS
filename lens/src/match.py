@@ -5,38 +5,44 @@ from prettytable import PrettyTable
 import os
 import seaborn as sns
 
-base_dir = '/home/adam/Downloads'
-subfolder = '220724-13-25-11'
+base_dir = '/home/adam/repo/LENS/lens/data/Figure3'
+subfolder = '240724-11-49-52'
 
 data = np.load(os.path.join(base_dir, subfolder, 'similarity_matrix.npy'),allow_pickle=True)
 data = data.T
 
-database_places = 75
-query_places = data.shape[1]
+row_remove = np.array([0,1,2,3])
+data_del = np.delete(data,row_remove,axis=1)
+
+database_places = data_del.shape[0]
+query_places = data_del.shape[1]
 
 # Create the GT matrix with ones down the diagonal
 GT = np.eye(min(database_places, query_places), database_places, dtype=int)
 
-# Create the GTsoft matrix with tolerance
-GTsoft = np.zeros((database_places, query_places), dtype=int)
-
 # Loop to populate the GTsoft matrix with tolerance
-tolerance = 4  # Define the tolerance range
+tolerance = 2  # Define the tolerance range
 
-GTsoft = None
+GTsoft = np.zeros((query_places, database_places), dtype=int)
 
+# Loop to populate the GTsoft matrix with ones along the diagonal and within the tolerance range
+for n in range(database_places):  # Iterate over database places
+    for i in range(max(0, n - tolerance), min(query_places, n + tolerance + 1)):  # Apply tolerance
+        GTsoft[i, n] = 1
+
+import json
 # If user specified, generate a PR curve
 if model.PR_curve:
     # Create PR curve
-    P, R = createPR(out, GThard=GT, GTsoft=GTsoft, matching='single', n_thresh=100)
+    P, R = createPR(data_del.T, GThard=GT, GTsoft=GTsoft, matching='single', n_thresh=100)
     # Combine P and R into a list of lists
     PR_data = {
             "Precision": P,
             "Recall": R
         }
-    output_file = "PR_curve_data.json"
+    output_file = "PR_curve_data_LENSindoor.json"
     # Construct the full path
-    full_path = f"{model.output_folder}/{output_file}"
+    full_path = f"/home/adam/Documents/{output_file}"
     # Write the data to a JSON file
     with open(full_path, 'w') as file:
         json.dump(PR_data, file) 
@@ -73,7 +79,7 @@ N = [1,5,10,15,20,25] # N values to calculate
 R = [] # Recall@N values
 # Calculate Recall@N
 for n in N:
-    R.append(round(recallAtK(data3,GThard=GT,GTsoft=None,K=n),2))
+    R.append(round(recallAtK(data_del,GThard=GT,GTsoft=GTsoft,K=n),2))
 # Print the results
 table = PrettyTable()
 table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
@@ -81,7 +87,7 @@ table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
 print(table)
 
 plt.figure(figsize=(10, 8))
-sns.heatmap(data3, annot=False, cmap='crest')
+sns.heatmap(data0.T, annot=False, cmap='crest')
 plt.title('Similarity matrix')
 plt.xlabel("Query")
 plt.ylabel("Database")
