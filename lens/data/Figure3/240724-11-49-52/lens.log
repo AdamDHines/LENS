@@ -1,0 +1,344 @@
+2024-07-24 11:49:52,849 INFO     
+2024-07-24 11:49:52,849 INFO     ██╗░░░░░███████╗███╗░░██╗░██████╗
+2024-07-24 11:49:52,850 INFO     ██║░░░░░██╔════╝████╗░██║██╔════╝
+2024-07-24 11:49:52,850 INFO     ██║░░░░░█████╗░░██╔██╗██║╚█████╗░
+2024-07-24 11:49:52,850 INFO     ██║░░░░░██╔══╝░░██║╚████║░╚═══██╗
+2024-07-24 11:49:52,850 INFO     ███████╗███████╗██║░╚███║██████╔╝
+2024-07-24 11:49:52,850 INFO     ╚══════╝╚══════╝╚═╝░░╚══╝╚═════╝░
+2024-07-24 11:49:52,850 INFO     
+2024-07-24 11:49:52,850 INFO     \\\\\\\\\\\\
+2024-07-24 11:49:52,850 INFO     LENS: Locational Encoding with Neuromorphic Systems v0.1.0
+2024-07-24 11:49:52,850 INFO     Queensland University of Technology, Centre for Robotics
+2024-07-24 11:49:52,850 INFO     
+2024-07-24 11:49:52,850 INFO     © 2024 Adam D Hines, Michael Milford, Tobias Fischer
+2024-07-24 11:49:52,850 INFO     MIT license - https://github.com/AdamDHines/LENS
+2024-07-24 11:49:52,850 INFO     \\\\\\\\\\\\
+2024-07-24 11:49:52,850 INFO     
+2024-07-24 11:49:52,850 INFO     Current device is: Speck2fDevKit
+2024-07-24 11:49:52,850 INFO     
+2024-07-24 11:50:04,166 INFO     Collected 0 output spikes at time 1721785804.1660197
+2024-07-24 11:50:04,166 INFO     
+2024-07-24 11:50:04,166 INFO     Starting the inferencing system
+2024-07-24 11:50:05,166 INFO     Collected 356 output spikes at time 1721785805.165978
+2024-07-24 11:50:06,166 INFO     Collected 423 output spikes at time 1721785806.1659243
+2024-07-24 11:50:07,166 INFO     Collected 353 output spikes at time 1721785807.1659105
+2024-07-24 11:50:08,166 INFO     Collected 307 output spikes at time 1721785808.1658614
+2024-07-24 11:50:09,166 INFO     Collected 320 output spikes at time 1721785809.1658635
+2024-07-24 11:50:10,166 INFO     Collected 302 output spikes at time 1721785810.165858
+2024-07-24 11:50:11,166 INFO     Collected 401 output spikes at time 1721785811.1659038
+2024-07-24 11:50:12,166 INFO     Collected 518 output spikes at time 1721785812.1658719
+2024-07-24 11:50:13,166 INFO     Collected 457 output spikes at time 1721785813.165881
+2024-07-24 11:50:14,166 INFO     Collected 330 output spikes at time 1721785814.1658611
+2024-07-24 11:50:15,166 INFO     Collected 415 output spikes at time 1721785815.1658652
+2024-07-24 11:50:16,166 INFO     Collected 433 output spikes at time 1721785816.165885
+2024-07-24 11:50:17,166 INFO     Collected 416 output spikes at time 1721785817.1658745
+2024-07-24 11:50:18,166 INFO     Collected 340 output spikes at time 1721785818.165849
+2024-07-24 11:50:19,166 INFO     Collected 347 output spikes at time 1721785819.1658683
+2024-07-24 11:50:19,893 INFO     
+2024-07-24 11:50:19,893 INFO     \\\ Place matching result ////
+2024-07-24 11:50:19,893 INFO     The sequence match location for 0 is place number: 18
+2024-07-24 11:50:19,893 INFO     The sequence match location for 1 is place number: 18
+2024-07-24 11:50:19,893 INFO     The sequence match location for 2 is place number: 18
+2024-07-24 11:50:19,893 INFO     The sequence match location for 3 is place number: 19
+2024-07-24 11:50:19,893 INFO     
+2024-07-24 11:50:20,166 INFO     Collected 433 output spikes at time 1721785820.165885
+2024-07-24 11:50:21,166 INFO     Collected 389 output spikes at time 1721785821.1658483
+2024-07-24 11:50:22,166 INFO     Collected 411 output spikes at time 1721785822.1658754
+2024-07-24 11:50:23,166 INFO     Collected 489 output spikes at time 1721785823.1658938
+2024-07-24 11:50:24,166 INFO     Collected 464 output spikes at time 1721785824.1658971
+2024-07-24 11:50:25,166 INFO     Collected 381 output spikes at time 1721785825.1658795
+2024-07-24 11:50:26,166 INFO     Collected 424 output spikes at time 1721785826.1659024
+2024-07-24 11:50:27,166 INFO     Collected 422 output spikes at time 1721785827.1658795
+2024-07-24 11:50:28,166 INFO     Collected 365 output spikes at time 1721785828.1659584
+2024-07-24 11:50:29,166 INFO     Collected 415 output spikes at time 1721785829.1660492
+2024-07-24 11:50:30,166 INFO     Collected 338 output spikes at time 1721785830.165932
+2024-07-24 11:50:31,166 INFO     Collected 351 output spikes at time 1721785831.1659198
+2024-07-24 11:50:32,166 INFO     Collected 303 output spikes at time 1721785832.1658566
+2024-07-24 11:50:33,166 INFO     Collected 871 output spikes at time 1721785833.166131
+2024-07-24 11:50:34,166 INFO     Collected 263 output spikes at time 1721785834.1659963
+2024-07-24 11:50:35,166 INFO     Collected 389 output spikes at time 1721785835.1658876
+2024-07-24 11:50:36,109 INFO     
+2024-07-24 11:50:36,110 INFO     \\\ Place matching result ////
+2024-07-24 11:50:36,110 INFO     The sequence match location for 0 is place number: 17
+2024-07-24 11:50:36,110 INFO     The sequence match location for 1 is place number: 17
+2024-07-24 11:50:36,110 INFO     The sequence match location for 2 is place number: 18
+2024-07-24 11:50:36,110 INFO     The sequence match location for 3 is place number: 19
+2024-07-24 11:50:36,110 INFO     
+2024-07-24 11:50:36,166 INFO     Collected 332 output spikes at time 1721785836.1658614
+2024-07-24 11:50:37,166 INFO     Collected 405 output spikes at time 1721785837.1660469
+2024-07-24 11:50:38,166 INFO     Collected 356 output spikes at time 1721785838.1659377
+2024-07-24 11:50:39,166 INFO     Collected 416 output spikes at time 1721785839.1659489
+2024-07-24 11:50:40,216 INFO     Collected 401 output spikes at time 1721785840.2157855
+2024-07-24 11:50:41,166 INFO     Collected 372 output spikes at time 1721785841.165986
+2024-07-24 11:50:42,166 INFO     Collected 387 output spikes at time 1721785842.1659024
+2024-07-24 11:50:43,166 INFO     Collected 421 output spikes at time 1721785843.1658883
+2024-07-24 11:50:44,166 INFO     Collected 459 output spikes at time 1721785844.1660306
+2024-07-24 11:50:45,166 INFO     Collected 512 output spikes at time 1721785845.1660826
+2024-07-24 11:50:46,166 INFO     Collected 410 output spikes at time 1721785846.1660762
+2024-07-24 11:50:47,166 INFO     Collected 457 output spikes at time 1721785847.1660175
+2024-07-24 11:50:48,166 INFO     Collected 510 output spikes at time 1721785848.1661365
+2024-07-24 11:50:49,337 INFO     Collected 495 output spikes at time 1721785849.3367887
+2024-07-24 11:50:50,166 INFO     Collected 483 output spikes at time 1721785850.166008
+2024-07-24 11:50:51,166 INFO     Collected 598 output spikes at time 1721785851.1659842
+2024-07-24 11:50:52,166 INFO     Collected 716 output spikes at time 1721785852.1659894
+2024-07-24 11:50:53,166 INFO     Collected 522 output spikes at time 1721785853.165931
+2024-07-24 11:50:54,353 INFO     Collected 382 output spikes at time 1721785854.3525639
+2024-07-24 11:50:54,388 INFO     
+2024-07-24 11:50:54,388 INFO     \\\ Place matching result ////
+2024-07-24 11:50:54,388 INFO     The sequence match location for 0 is place number: 18
+2024-07-24 11:50:54,388 INFO     The sequence match location for 1 is place number: 18
+2024-07-24 11:50:54,388 INFO     The sequence match location for 2 is place number: 19
+2024-07-24 11:50:54,388 INFO     The sequence match location for 3 is place number: 7
+2024-07-24 11:50:54,388 INFO     
+2024-07-24 11:50:55,166 INFO     Collected 449 output spikes at time 1721785855.1660326
+2024-07-24 11:50:56,167 INFO     Collected 430 output spikes at time 1721785856.166323
+2024-07-24 11:50:57,166 INFO     Collected 405 output spikes at time 1721785857.1660213
+2024-07-24 11:50:58,166 INFO     Collected 413 output spikes at time 1721785858.166017
+2024-07-24 11:50:59,256 INFO     Collected 410 output spikes at time 1721785859.2562249
+2024-07-24 11:51:00,166 INFO     Collected 348 output spikes at time 1721785860.1659694
+2024-07-24 11:51:01,166 INFO     Collected 352 output spikes at time 1721785861.1658814
+2024-07-24 11:51:02,166 INFO     Collected 437 output spikes at time 1721785862.1660511
+2024-07-24 11:51:03,166 INFO     Collected 414 output spikes at time 1721785863.1660767
+2024-07-24 11:51:04,538 INFO     Collected 440 output spikes at time 1721785864.5374596
+2024-07-24 11:51:05,166 INFO     Collected 389 output spikes at time 1721785865.166079
+2024-07-24 11:51:06,166 INFO     Collected 395 output spikes at time 1721785866.1660943
+2024-07-24 11:51:07,166 INFO     Collected 430 output spikes at time 1721785867.1661344
+2024-07-24 11:51:08,166 INFO     Collected 411 output spikes at time 1721785868.1661074
+2024-07-24 11:51:09,428 INFO     Collected 411 output spikes at time 1721785869.4277337
+2024-07-24 11:51:10,166 INFO     Collected 747 output spikes at time 1721785870.1661587
+2024-07-24 11:51:11,166 INFO     Collected 401 output spikes at time 1721785871.1660292
+2024-07-24 11:51:12,166 INFO     Collected 240 output spikes at time 1721785872.1659746
+2024-07-24 11:51:13,166 INFO     Collected 152 output spikes at time 1721785873.1659536
+2024-07-24 11:51:14,000 INFO     
+2024-07-24 11:51:14,000 INFO     \\\ Place matching result ////
+2024-07-24 11:51:14,000 INFO     The sequence match location for 0 is place number: 5
+2024-07-24 11:51:14,000 INFO     The sequence match location for 1 is place number: 5
+2024-07-24 11:51:14,000 INFO     The sequence match location for 2 is place number: 5
+2024-07-24 11:51:14,000 INFO     The sequence match location for 3 is place number: 7
+2024-07-24 11:51:14,000 INFO     
+2024-07-24 11:51:14,166 INFO     Collected 0 output spikes at time 1721785874.165964
+2024-07-24 11:51:15,166 INFO     Collected 379 output spikes at time 1721785875.1660473
+2024-07-24 11:51:16,166 INFO     Collected 506 output spikes at time 1721785876.1660864
+2024-07-24 11:51:17,166 INFO     Collected 482 output spikes at time 1721785877.1660492
+2024-07-24 11:51:18,166 INFO     Collected 465 output spikes at time 1721785878.1661263
+2024-07-24 11:51:19,166 INFO     Collected 404 output spikes at time 1721785879.166124
+2024-07-24 11:51:20,166 INFO     Collected 384 output spikes at time 1721785880.1660821
+2024-07-24 11:51:21,166 INFO     Collected 438 output spikes at time 1721785881.166225
+2024-07-24 11:51:22,305 INFO     Collected 384 output spikes at time 1721785882.3046944
+2024-07-24 11:51:23,166 INFO     Collected 373 output spikes at time 1721785883.1661515
+2024-07-24 11:51:24,166 INFO     Collected 422 output spikes at time 1721785884.1660492
+2024-07-24 11:51:25,166 INFO     Collected 389 output spikes at time 1721785885.1660414
+2024-07-24 11:51:26,166 INFO     Collected 462 output spikes at time 1721785886.1660395
+2024-07-24 11:51:27,166 INFO     Collected 400 output spikes at time 1721785887.1660647
+2024-07-24 11:51:28,166 INFO     Collected 420 output spikes at time 1721785888.166089
+2024-07-24 11:51:29,166 INFO     Collected 412 output spikes at time 1721785889.1662812
+2024-07-24 11:51:30,167 INFO     Collected 883 output spikes at time 1721785890.1664145
+2024-07-24 11:51:31,391 INFO     Collected 565 output spikes at time 1721785891.3906534
+2024-07-24 11:51:31,424 INFO     
+2024-07-24 11:51:31,424 INFO     \\\ Place matching result ////
+2024-07-24 11:51:31,424 INFO     The sequence match location for 0 is place number: 18
+2024-07-24 11:51:31,424 INFO     The sequence match location for 1 is place number: 46
+2024-07-24 11:51:31,424 INFO     The sequence match location for 2 is place number: 46
+2024-07-24 11:51:31,424 INFO     The sequence match location for 3 is place number: 47
+2024-07-24 11:51:31,424 INFO     
+2024-07-24 11:51:32,166 INFO     Collected 289 output spikes at time 1721785892.1662793
+2024-07-24 11:51:33,166 INFO     Collected 222 output spikes at time 1721785893.1661062
+2024-07-24 11:51:34,166 INFO     Collected 220 output spikes at time 1721785894.1661146
+2024-07-24 11:51:35,166 INFO     Collected 234 output spikes at time 1721785895.1661353
+2024-07-24 11:51:36,311 INFO     Collected 189 output spikes at time 1721785896.3114944
+2024-07-24 11:51:37,166 INFO     Collected 332 output spikes at time 1721785897.1662128
+2024-07-24 11:51:38,166 INFO     Collected 141 output spikes at time 1721785898.1661599
+2024-07-24 11:51:39,166 INFO     Collected 175 output spikes at time 1721785899.1660974
+2024-07-24 11:51:40,166 INFO     Collected 236 output spikes at time 1721785900.1661506
+2024-07-24 11:51:41,166 INFO     Collected 180 output spikes at time 1721785901.166074
+2024-07-24 11:51:42,166 INFO     Collected 197 output spikes at time 1721785902.1660855
+2024-07-24 11:51:43,166 INFO     Collected 215 output spikes at time 1721785903.166071
+2024-07-24 11:51:44,166 INFO     Collected 148 output spikes at time 1721785904.1660285
+2024-07-24 11:51:45,166 INFO     Collected 193 output spikes at time 1721785905.1660569
+2024-07-24 11:51:46,166 INFO     Collected 569 output spikes at time 1721785906.1661415
+2024-07-24 11:51:47,166 INFO     Collected 356 output spikes at time 1721785907.1660793
+2024-07-24 11:51:48,166 INFO     Collected 293 output spikes at time 1721785908.1661437
+2024-07-24 11:51:49,023 INFO     
+2024-07-24 11:51:49,023 INFO     \\\ Place matching result ////
+2024-07-24 11:51:49,023 INFO     The sequence match location for 0 is place number: 17
+2024-07-24 11:51:49,024 INFO     The sequence match location for 1 is place number: 17
+2024-07-24 11:51:49,024 INFO     The sequence match location for 2 is place number: 17
+2024-07-24 11:51:49,024 INFO     The sequence match location for 3 is place number: 18
+2024-07-24 11:51:49,024 INFO     
+2024-07-24 11:51:49,166 INFO     Collected 298 output spikes at time 1721785909.1661425
+2024-07-24 11:51:50,166 INFO     Collected 341 output spikes at time 1721785910.166275
+2024-07-24 11:51:51,166 INFO     Collected 304 output spikes at time 1721785911.1661527
+2024-07-24 11:51:52,166 INFO     Collected 308 output spikes at time 1721785912.166157
+2024-07-24 11:51:53,166 INFO     Collected 354 output spikes at time 1721785913.1661706
+2024-07-24 11:51:54,166 INFO     Collected 409 output spikes at time 1721785914.1662896
+2024-07-24 11:51:55,166 INFO     Collected 296 output spikes at time 1721785915.1662655
+2024-07-24 11:51:56,166 INFO     Collected 278 output spikes at time 1721785916.16619
+2024-07-24 11:51:57,166 INFO     Collected 285 output spikes at time 1721785917.166275
+2024-07-24 11:51:58,166 INFO     Collected 274 output spikes at time 1721785918.1662745
+2024-07-24 11:51:59,166 INFO     Collected 282 output spikes at time 1721785919.1661844
+2024-07-24 11:52:00,166 INFO     Collected 357 output spikes at time 1721785920.1661868
+2024-07-24 11:52:01,166 INFO     Collected 251 output spikes at time 1721785921.1661518
+2024-07-24 11:52:02,166 INFO     Collected 289 output spikes at time 1721785922.1662123
+2024-07-24 11:52:03,166 INFO     Collected 251 output spikes at time 1721785923.1662564
+2024-07-24 11:52:04,166 INFO     Collected 202 output spikes at time 1721785924.166168
+2024-07-24 11:52:04,520 INFO     
+2024-07-24 11:52:04,520 INFO     \\\ Place matching result ////
+2024-07-24 11:52:04,520 INFO     The sequence match location for 0 is place number: 42
+2024-07-24 11:52:04,520 INFO     The sequence match location for 1 is place number: 25
+2024-07-24 11:52:04,520 INFO     The sequence match location for 2 is place number: 25
+2024-07-24 11:52:04,520 INFO     The sequence match location for 3 is place number: 26
+2024-07-24 11:52:04,520 INFO     
+2024-07-24 11:52:05,166 INFO     Collected 185 output spikes at time 1721785925.1660693
+2024-07-24 11:52:06,166 INFO     Collected 712 output spikes at time 1721785926.1662946
+2024-07-24 11:52:07,166 INFO     Collected 446 output spikes at time 1721785927.1663392
+2024-07-24 11:52:08,166 INFO     Collected 346 output spikes at time 1721785928.1662707
+2024-07-24 11:52:09,238 INFO     Collected 320 output spikes at time 1721785929.2384315
+2024-07-24 11:52:10,166 INFO     Collected 381 output spikes at time 1721785930.1662462
+2024-07-24 11:52:11,166 INFO     Collected 374 output spikes at time 1721785931.1662765
+2024-07-24 11:52:12,166 INFO     Collected 386 output spikes at time 1721785932.1663415
+2024-07-24 11:52:13,166 INFO     Collected 342 output spikes at time 1721785933.1662111
+2024-07-24 11:52:14,249 INFO     Collected 393 output spikes at time 1721785934.2490792
+2024-07-24 11:52:15,167 INFO     Collected 359 output spikes at time 1721785935.1663806
+2024-07-24 11:52:16,166 INFO     Collected 384 output spikes at time 1721785936.1662567
+2024-07-24 11:52:17,166 INFO     Collected 402 output spikes at time 1721785937.166267
+2024-07-24 11:52:18,166 INFO     Collected 440 output spikes at time 1721785938.1663027
+2024-07-24 11:52:19,241 INFO     Collected 420 output spikes at time 1721785939.2412982
+2024-07-24 11:52:20,167 INFO     Collected 1107 output spikes at time 1721785940.1666117
+2024-07-24 11:52:21,166 INFO     Collected 601 output spikes at time 1721785941.1662457
+2024-07-24 11:52:22,166 INFO     Collected 511 output spikes at time 1721785942.1661735
+2024-07-24 11:52:23,166 INFO     Collected 524 output spikes at time 1721785943.1662169
+2024-07-24 11:52:24,415 INFO     Collected 535 output spikes at time 1721785944.414631
+2024-07-24 11:52:24,451 INFO     
+2024-07-24 11:52:24,451 INFO     \\\ Place matching result ////
+2024-07-24 11:52:24,452 INFO     The sequence match location for 0 is place number: 42
+2024-07-24 11:52:24,452 INFO     The sequence match location for 1 is place number: 28
+2024-07-24 11:52:24,452 INFO     The sequence match location for 2 is place number: 29
+2024-07-24 11:52:24,452 INFO     The sequence match location for 3 is place number: 30
+2024-07-24 11:52:24,452 INFO     
+2024-07-24 11:52:25,166 INFO     Collected 484 output spikes at time 1721785945.166222
+2024-07-24 11:52:26,166 INFO     Collected 675 output spikes at time 1721785946.166243
+2024-07-24 11:52:27,166 INFO     Collected 585 output spikes at time 1721785947.1663444
+2024-07-24 11:52:28,167 INFO     Collected 642 output spikes at time 1721785948.1664371
+2024-07-24 11:52:29,183 INFO     Collected 553 output spikes at time 1721785949.1832023
+2024-07-24 11:52:30,166 INFO     Collected 551 output spikes at time 1721785950.1662683
+2024-07-24 11:52:31,167 INFO     Collected 481 output spikes at time 1721785951.1664312
+2024-07-24 11:52:32,166 INFO     Collected 465 output spikes at time 1721785952.1663048
+2024-07-24 11:52:33,167 INFO     Collected 644 output spikes at time 1721785953.1665506
+2024-07-24 11:52:34,200 INFO     Collected 870 output spikes at time 1721785954.1995292
+2024-07-24 11:52:35,167 INFO     Collected 430 output spikes at time 1721785955.1664314
+2024-07-24 11:52:36,166 INFO     Collected 434 output spikes at time 1721785956.1663134
+2024-07-24 11:52:37,166 INFO     Collected 433 output spikes at time 1721785957.166289
+2024-07-24 11:52:38,166 INFO     Collected 477 output spikes at time 1721785958.1662107
+2024-07-24 11:52:39,389 INFO     Collected 460 output spikes at time 1721785959.3886693
+2024-07-24 11:52:40,166 INFO     Collected 502 output spikes at time 1721785960.166242
+2024-07-24 11:52:41,166 INFO     Collected 574 output spikes at time 1721785961.1662617
+2024-07-24 11:52:42,166 INFO     Collected 465 output spikes at time 1721785962.1663241
+2024-07-24 11:52:43,166 INFO     Collected 541 output spikes at time 1721785963.1662354
+2024-07-24 11:52:44,800 INFO     Collected 520 output spikes at time 1721785964.8001037
+2024-07-24 11:52:44,851 INFO     
+2024-07-24 11:52:44,851 INFO     \\\ Place matching result ////
+2024-07-24 11:52:44,851 INFO     The sequence match location for 0 is place number: 25
+2024-07-24 11:52:44,851 INFO     The sequence match location for 1 is place number: 43
+2024-07-24 11:52:44,851 INFO     The sequence match location for 2 is place number: 44
+2024-07-24 11:52:44,852 INFO     The sequence match location for 3 is place number: 44
+2024-07-24 11:52:44,852 INFO     
+2024-07-24 11:52:45,166 INFO     Collected 494 output spikes at time 1721785965.166322
+2024-07-24 11:52:46,166 INFO     Collected 465 output spikes at time 1721785966.1662843
+2024-07-24 11:52:47,166 INFO     Collected 480 output spikes at time 1721785967.1663425
+2024-07-24 11:52:48,166 INFO     Collected 456 output spikes at time 1721785968.166278
+2024-07-24 11:52:49,217 INFO     Collected 539 output spikes at time 1721785969.2168071
+2024-07-24 11:52:50,167 INFO     Collected 482 output spikes at time 1721785970.1664677
+2024-07-24 11:52:51,166 INFO     Collected 397 output spikes at time 1721785971.1662455
+2024-07-24 11:52:52,166 INFO     Collected 344 output spikes at time 1721785972.1663094
+2024-07-24 11:52:53,166 INFO     Collected 428 output spikes at time 1721785973.1662693
+2024-07-24 11:52:54,877 INFO     Collected 312 output spikes at time 1721785974.876853
+2024-07-24 11:52:55,166 INFO     Collected 473 output spikes at time 1721785975.1662877
+2024-07-24 11:52:56,166 INFO     Collected 438 output spikes at time 1721785976.1663332
+2024-07-24 11:52:57,167 INFO     Collected 633 output spikes at time 1721785977.1663625
+2024-07-24 11:52:58,166 INFO     Collected 443 output spikes at time 1721785978.1662428
+2024-07-24 11:52:59,318 INFO     Collected 363 output spikes at time 1721785979.3178368
+2024-07-24 11:53:00,166 INFO     Collected 430 output spikes at time 1721785980.1662037
+2024-07-24 11:53:01,166 INFO     Collected 358 output spikes at time 1721785981.1661837
+2024-07-24 11:53:02,166 INFO     Collected 342 output spikes at time 1721785982.1662273
+2024-07-24 11:53:03,166 INFO     Collected 370 output spikes at time 1721785983.1662602
+2024-07-24 11:53:04,619 INFO     Collected 373 output spikes at time 1721785984.618208
+2024-07-24 11:53:04,660 INFO     
+2024-07-24 11:53:04,660 INFO     \\\ Place matching result ////
+2024-07-24 11:53:04,660 INFO     The sequence match location for 0 is place number: 17
+2024-07-24 11:53:04,660 INFO     The sequence match location for 1 is place number: 38
+2024-07-24 11:53:04,660 INFO     The sequence match location for 2 is place number: 38
+2024-07-24 11:53:04,660 INFO     The sequence match location for 3 is place number: 19
+2024-07-24 11:53:04,661 INFO     
+2024-07-24 11:53:05,166 INFO     Collected 388 output spikes at time 1721785985.16625
+2024-07-24 11:53:06,166 INFO     Collected 388 output spikes at time 1721785986.1662571
+2024-07-24 11:53:07,166 INFO     Collected 410 output spikes at time 1721785987.166324
+2024-07-24 11:53:08,166 INFO     Collected 372 output spikes at time 1721785988.1663253
+2024-07-24 11:53:09,477 INFO     Collected 365 output spikes at time 1721785989.4769442
+2024-07-24 11:53:10,166 INFO     Collected 498 output spikes at time 1721785990.1663115
+2024-07-24 11:53:11,166 INFO     Collected 298 output spikes at time 1721785991.1662948
+2024-07-24 11:53:12,166 INFO     Collected 293 output spikes at time 1721785992.1662166
+2024-07-24 11:53:13,166 INFO     Collected 212 output spikes at time 1721785993.1661882
+2024-07-24 11:53:14,482 INFO     Collected 164 output spikes at time 1721785994.4826236
+2024-07-24 11:53:15,166 INFO     Collected 284 output spikes at time 1721785995.1662838
+2024-07-24 11:53:16,166 INFO     Collected 284 output spikes at time 1721785996.1661735
+2024-07-24 11:53:17,166 INFO     Collected 255 output spikes at time 1721785997.1661284
+2024-07-24 11:53:18,166 INFO     Collected 238 output spikes at time 1721785998.1661055
+2024-07-24 11:53:19,166 INFO     Collected 266 output spikes at time 1721785999.1661048
+2024-07-24 11:53:20,166 INFO     Collected 252 output spikes at time 1721786000.166149
+2024-07-24 11:53:21,166 INFO     Collected 224 output spikes at time 1721786001.1661386
+2024-07-24 11:53:22,166 INFO     Collected 224 output spikes at time 1721786002.1661382
+2024-07-24 11:53:22,791 INFO     
+2024-07-24 11:53:22,792 INFO     \\\ Place matching result ////
+2024-07-24 11:53:22,792 INFO     The sequence match location for 0 is place number: 19
+2024-07-24 11:53:22,792 INFO     The sequence match location for 1 is place number: 19
+2024-07-24 11:53:22,792 INFO     The sequence match location for 2 is place number: 19
+2024-07-24 11:53:22,792 INFO     The sequence match location for 3 is place number: 20
+2024-07-24 11:53:22,792 INFO     
+2024-07-24 11:53:23,166 INFO     Collected 276 output spikes at time 1721786003.1661878
+2024-07-24 11:53:24,166 INFO     Collected 285 output spikes at time 1721786004.1662211
+2024-07-24 11:53:25,166 INFO     Collected 389 output spikes at time 1721786005.16628
+2024-07-24 11:53:26,167 INFO     Collected 435 output spikes at time 1721786006.1664722
+2024-07-24 11:53:27,166 INFO     Collected 313 output spikes at time 1721786007.1663709
+2024-07-24 11:53:28,166 INFO     Collected 228 output spikes at time 1721786008.166344
+2024-07-24 11:53:29,166 INFO     Collected 237 output spikes at time 1721786009.1661906
+2024-07-24 11:53:30,166 INFO     Collected 297 output spikes at time 1721786010.166145
+2024-07-24 11:53:31,166 INFO     Collected 322 output spikes at time 1721786011.1661563
+2024-07-24 11:53:32,166 INFO     Collected 372 output spikes at time 1721786012.1663609
+2024-07-24 11:53:33,166 INFO     Collected 370 output spikes at time 1721786013.1663272
+2024-07-24 11:53:34,167 INFO     Collected 537 output spikes at time 1721786014.1663396
+2024-07-24 11:53:35,166 INFO     Collected 371 output spikes at time 1721786015.1662107
+2024-07-24 11:53:36,166 INFO     Collected 457 output spikes at time 1721786016.16633
+2024-07-24 11:53:37,166 INFO     Collected 417 output spikes at time 1721786017.166323
+2024-07-24 11:53:38,166 INFO     Collected 14 output spikes at time 1721786018.1660094
+2024-07-24 11:53:38,767 INFO     
+2024-07-24 11:53:38,767 INFO     \\\ Place matching result ////
+2024-07-24 11:53:38,767 INFO     The sequence match location for 0 is place number: 44
+2024-07-24 11:53:38,767 INFO     The sequence match location for 1 is place number: 46
+2024-07-24 11:53:38,767 INFO     The sequence match location for 2 is place number: 46
+2024-07-24 11:53:38,767 INFO     The sequence match location for 3 is place number: 47
+2024-07-24 11:53:38,768 INFO     
+2024-07-24 11:53:39,166 INFO     Collected 0 output spikes at time 1721786019.166012
+2024-07-24 11:53:40,166 INFO     Collected 129 output spikes at time 1721786020.1661124
+2024-07-24 11:53:41,166 INFO     Collected 458 output spikes at time 1721786021.1663208
+2024-07-24 11:53:42,166 INFO     Collected 435 output spikes at time 1721786022.1662993
+2024-07-24 11:53:43,166 INFO     Collected 293 output spikes at time 1721786023.166184
+2024-07-24 11:53:44,166 INFO     Collected 61 output spikes at time 1721786024.1661968
+2024-07-24 11:53:45,166 INFO     Collected 64 output spikes at time 1721786025.1660464
+2024-07-24 11:53:46,166 INFO     Collected 30 output spikes at time 1721786026.1660357
+2024-07-24 11:53:47,166 INFO     Collected 14 output spikes at time 1721786027.166068
+2024-07-24 11:53:48,166 INFO     Collected 2 output spikes at time 1721786028.1660216
+2024-07-24 11:53:49,166 INFO     Collected 0 output spikes at time 1721786029.1659904
+2024-07-24 11:53:50,166 INFO     Collected 14 output spikes at time 1721786030.1660292
+2024-07-24 11:53:51,166 INFO     Collected 155 output spikes at time 1721786031.1661692
+2024-07-24 11:53:52,166 INFO     Collected 115 output spikes at time 1721786032.1660345
+2024-07-24 11:53:53,166 INFO     Collected 50 output spikes at time 1721786033.1660092
+2024-07-24 11:53:54,166 INFO     Collected 35 output spikes at time 1721786034.165999
+2024-07-24 11:53:54,272 INFO     
+2024-07-24 11:53:54,272 INFO     \\\ Place matching result ////
+2024-07-24 11:53:54,273 INFO     The sequence match location for 0 is place number: 32
+2024-07-24 11:53:54,273 INFO     The sequence match location for 1 is place number: 19
+2024-07-24 11:53:54,273 INFO     The sequence match location for 2 is place number: 19
+2024-07-24 11:53:54,273 INFO     The sequence match location for 3 is place number: 19
+2024-07-24 11:53:54,273 INFO     
+2024-07-24 11:53:55,166 INFO     Collected 15 output spikes at time 1721786035.165994
+2024-07-24 11:53:56,166 INFO     Collected 28 output spikes at time 1721786036.1660197
