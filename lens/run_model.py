@@ -38,12 +38,15 @@ import torchvision.transforms as transforms
 
 from tqdm import tqdm
 from collections import Counter
+from lens.src.sad import run_sad
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
 from sinabs.from_torch import from_model
+from scipy.ndimage import binary_dilation
 from lens.src.loggers import model_logger
 from lens.src.metrics import recallAtK, createPR
 from sinabs.backend.dynapcnn import DynapcnnNetwork
+from lens.tools.plot_results import plot_PR, plot_recall
 from sinabs.backend.dynapcnn.chip_factory import ChipFactory
 from lens.src.dataset import CustomImageDataset, ProcessImage
 
@@ -59,6 +62,7 @@ class LENS(nn.Module):
         # Set the dataset file
         self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
         self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
+        self.reference_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.reference)
 
         # Set the model logger and return the device
         self.device = model_logger(self)    
@@ -245,8 +249,15 @@ class LENS(nn.Module):
             dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
             precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
             dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
+            dist_matrix_seq = dist_matrix_seq.T
         else:
             dist_matrix_seq = out
+
+        # save distance matrix as a pdf image
+        plt.imshow(dist_matrix_seq)
+        plt.colorbar()
+        plt.savefig(os.path.join(self.output_folder, 'distance_matrix_lens.pdf'))
+        plt.close()
 
         # Perform matching if GT is available
         R = []
@@ -258,40 +269,38 @@ class LENS(nn.Module):
             if self.sequence_length != 0:
                 GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
 
-            def create_GTsoft(GT, rows_to_add=2):
+            def create_GTtol(GT, distance=2):
                 """
-                Creates a soft ground truth matrix by adding values to specified rows around detected 1s.
+                Creates a ground truth matrix with tolerance using binary dilation.
 
                 Parameters:
                 - GT (numpy.ndarray): The original ground truth matrix.
-                - rows_to_add (int): Number of rows above and below to add value around the detected 1s.
+                - distance (int): The maximum distance to add 1s around the detected 1s.
 
                 Returns:
-                - GTsoft (numpy.ndarray): The modified ground truth matrix.
+                - GTtol (numpy.ndarray): The modified ground truth matrix.
                 """
-                # Create GTsoft matrix as a copy of GT
-                GTsoft = np.copy(GT)
+                # Define the structuring element: a square matrix with size (2*distance + 1)
+                structuring_element = np.ones((2 * distance + 1, 2 * distance + 1), dtype=int)
                 
-                # Iterate through each column in GT
-                for col in range(GT.shape[1]):
-                    # Find the row indices where the value is 1
-                    rows_with_ones = np.where(GT[:, col] == 1)[0]
-                    
-                    for row in rows_with_ones:
-                        # Add 1 to the rows above and below the detected 1, within the specified range
-                        for i in range(1, rows_to_add + 1):
-                            if row - i >= 0:
-                                GTsoft[row - i, col] = 1
-                            if row + i < GT.shape[0]:
-                                GTsoft[row + i, col] = 1
-                return GTsoft
+                # Perform binary dilation
+                GTtol = binary_dilation(GT, structure=structuring_element).astype(int)
+                
+                return GTtol
 
             # Create GTsoft with a customizable number of rows to add
-            rows_to_add = 2  
-            GTsoft = create_GTsoft(GT, rows_to_add=rows_to_add)
+            GTtol = create_GTtol(GT, distance=self.GT_tolerance)
+            # inverted GTtol
+            GTtol = GTtol.T
+            # save the GTtol matrix as a pdf image
+            plt.imshow(GTtol)
+            plt.colorbar()
+            plt.savefig(os.path.join(self.output_folder, 'GTtol.pdf'))
+            plt.close()
             # Calculate Recall@N
             for n in N:
-                R.append(round(recallAtK(dist_matrix_seq,GT,GTsoft=GTsoft,K=n),2))
+                R.append(round(recallAtK(dist_matrix_seq,GTtol,K=n),2))
+
             # Print the results
             table = PrettyTable()
             table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
@@ -309,24 +318,19 @@ class LENS(nn.Module):
         # Plot PR curve
         if self.PR_curve:
             # Create PR curve
-            P, R = createPR(dist_matrix_seq, GT, GTsoft=GTsoft, matching='single', n_thresh=100)
+            LENS_P, LENS_R = createPR(dist_matrix_seq.T, GTtol.T, self.output_folder, matching='single', n_thresh=100)
+
             #  Combine P and R into a list of lists
-            PR_data = {
-                    "Precision": P,
-                    "Recall": R
+            lens_PR = {
+                    "Precision": LENS_P,
+                    "Recall": LENS_R
                 }
-            output_file = "PR_curve_data.json"
-            # Construct the full path
-            full_path = f"{model.data_dir}/{output_file}"
-            # Write the data to a JSON file
-            with open(full_path, 'w') as file:
-                json.dump(PR_data, file) 
-            # Plot PR curve
-            plt.plot(R,P)    
-            plt.xlabel('Recall')
-            plt.ylabel('Precision')
-            plt.title('Precision-Recall Curve')
-            plt.show()
+        
+        if self.sad:
+            sad_PR, sad_Recall = run_sad(self.reference_dir, self.query_dir, GTtol, self.output_folder, self.sequence_length)
+            # plot the results
+            plot_PR(lens_PR, sad_PR, self.output_folder)
+            plot_recall(R, sad_Recall, N, self.output_folder)
 
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
@@ -350,7 +354,7 @@ class LENS(nn.Module):
         """
         Load pre-trained model and set the state dictionary keys.
         """
-        self.load_state_dict(torch.load(model_path, map_location=self.device),
+        self.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True),
                              strict=False)
 
 def run_inference(model, model_name):

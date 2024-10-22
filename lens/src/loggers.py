@@ -37,7 +37,7 @@ def model_logger(model):
     model.logger.info('╚══════╝╚══════╝╚═╝░░╚══╝╚═════╝░')  
     model.logger.info('')                                         
     model.logger.info('\\\\\\\\\\\\\\\\\\\\\\\\')
-    model.logger.info('LENS: Locational Encoding with Neuromorphic Systems v0.1.0')
+    model.logger.info('LENS: Locational Encoding with Neuromorphic Systems v0.1.1')
     model.logger.info('Queensland University of Technology, Centre for Robotics')
     model.logger.info('')
     model.logger.info('© 2024 Adam D Hines, Michael Milford, Tobias Fischer')

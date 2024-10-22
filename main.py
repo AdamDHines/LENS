@@ -158,12 +158,16 @@ def parse_network():
     # Define the network functionality
     parser.add_argument('--train_model', action='store_true',
                             help="Flag to run the training or inferencing model")
+    parser.add_argument('--GT_tolerance', type=int, default=3,
+                            help="Tolerance for GT matching")
     parser.add_argument('--sim_mat', action='store_true',
                             help="Plot a similarity matrix")
     parser.add_argument('--PR_curve', action='store_true',
                             help="Plot a precision recall curve")
     parser.add_argument('--matching', action='store_true',
                             help="Perform matching to GT, if available")
+    parser.add_argument('--sad', action='store_true',
+                            help="Perform SAD matching")
     parser.add_argument('--timebin', type=int, default=250,
                         help="dt for spike collection window and time based simulation")
     parser.add_argument('--nocuda', action='store_true',

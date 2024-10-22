@@ -361,7 +361,7 @@ class LENSSpeck(nn.Module):
         """
         Load pre-trained model and set the state dictionary keys.
         """
-        self.load_state_dict(torch.load(model_path, map_location=self.device),
+        self.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True),
                              strict=False)
 
 def run_speck(model, model_name):

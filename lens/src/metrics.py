@@ -16,9 +16,9 @@
 #   =====================================================================
 #
 import numpy as np
+import matplotlib.pyplot as plt
 
-
-def createPR(S_in, GThard, GTsoft=None, matching='multi', n_thresh=100):
+def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='multi', n_thresh=100):
     """
     Calculates the precision and recall at n_thresh equally spaced threshold values
     for a given similarity matrix S_in and ground truth matrices GThard and GTsoft for
@@ -32,10 +32,10 @@ def createPR(S_in, GThard, GTsoft=None, matching='multi', n_thresh=100):
     indicate higher similarity.
     The string matching should be set to either "single" or "multi" for single-best-
     match VPR or multi-match VPR.
-    The integer n_tresh controls the number of threshold values and should be >1.
+    The integer n_thresh controls the number of threshold values and should be >1.
     """
 
-    assert (S_in.shape == GThard.shape and S_in.shape == GTsoft.shape),"S_in, GThard and GTsoft must have the same shape"
+    assert (S_in.shape == GThard.shape),"S_in, GThard and GTsoft must have the same shape"
     assert (S_in.ndim == 2),"S_in, GThard and GTsoft must be two-dimensional"
     assert (matching in ['single', 'multi']),"matching should contain one of the following strings: [single, multi]"
     assert (n_thresh > 1),"n_thresh must be >1"
@@ -44,23 +44,23 @@ def createPR(S_in, GThard, GTsoft=None, matching='multi', n_thresh=100):
     GT = GThard.astype('bool')
     if GTsoft is not None:
         GTsoft = GTsoft.astype('bool')
+    GThard_orig = GThard.copy()
 
     # copy S and set elements that are only true in GTsoft to min(S) to ignore them during evaluation
     S = S_in.copy()
-    S[S == 0] = np.nan
     if GTsoft is not None:
         S[GTsoft & ~GT] = S.min()
 
     # single-best-match or multi-match VPR
     if matching == 'single':
+        # count the number of ground-truth positives (GTP)
+        GTP = np.count_nonzero(GT.any(0))
         # GT-values for best match per query (i.e., per column)
-        GT = GT[np.nanargmax(S, axis=0), np.arange(GT.shape[1])]
-
-         # count the number of ground-truth positives (GTP)
-        GTP = np.count_nonzero(GT)
+        GT = GT[np.argmax(S, axis=0), np.arange(GT.shape[1])]
+        selected_rows = np.nanargmax(S, axis=0)  # Shape: (n_cols,)
 
         # similarities for best match per query (i.e., per column)
-        S = np.nanmax(S, axis=0)
+        S = np.max(S, axis=0)
 
     elif matching == 'multi':
         # count the number of ground-truth positives (GTP)
@@ -71,20 +71,74 @@ def createPR(S_in, GThard, GTsoft=None, matching='multi', n_thresh=100):
     P = [1, ]
 
     # select start and end treshold
-    startV = np.nanmax(S)  # start-value for treshold
-    endV = np.nanmin(S)  # end-value for treshold
+    startV = S.max()  # start-value for treshold
+    endV = S.min()  # end-value for treshold
+    thresholds = np.linspace(startV, endV, n_thresh)
 
-    # iterate over different thresholds
-    for i in np.linspace(startV, endV, n_thresh):
-        B = S >= i  # apply threshold
+    # Iterate over different thresholds with enumeration to track the last iteration
+    for idx, i in enumerate(thresholds):
+        B = S >= i  # Apply threshold
+        
+        TP = np.count_nonzero(GT & B)  # True Positives
+        FP = np.count_nonzero((~GT) & B)  # False Positives
 
-        TP = np.count_nonzero(GT & B)  # true positives
-        FP = np.count_nonzero((~GT) & B)  # false positives
-
-        P.append(TP / (TP + FP))  # precision
-        R.append(TP / GTP)  # recall
-
+        # Handle division by zero for precision
+        precision = TP / (TP + FP)
+        recall = TP / GTP 
+        
+        P.append(precision)  # Precision
+        R.append(recall)     # Recall
+        
+        # Check if it's the last iteration
+        if idx == len(thresholds) - 1:
+            if matching == 'single':
+                # Create boolean masks for TP and FP
+                TP_mask = GT & B  # 1D array
+                FP_mask = (~GT) & B  # 1D array
+                
+                # True Positives coordinates
+                TP_cols = np.where(TP_mask)[0]
+                TP_rows = selected_rows[TP_cols]
+                
+                # False Positives coordinates
+                FP_cols = np.where(FP_mask)[0]
+                FP_rows = selected_rows[FP_cols]
+                
+                # Plotting the main similarity matrix with GT, TP, and FP
+                fig, ax = plt.subplots(figsize=(10, 8))
+                
+                # Display the similarity matrix
+                cax = ax.imshow(S_in, cmap='viridis', aspect='auto')
+                fig.colorbar(cax, ax=ax, label='Similarity Score')
+                ax.set_title(f'{datatype} Similarity Matrix with Ground Truth, TP, and FP')
+                
+                # Ground Truth: Plot as white dots
+                gt_y, gt_x = np.where(GThard_orig)
+                ax.scatter(gt_x, gt_y, facecolors='white', edgecolors='white',
+                           marker='.', label='Ground Truth', linewidths=0.5)
+                
+                # True Positives: Plot as green circles
+                ax.scatter(TP_cols, TP_rows, facecolors='none', edgecolors='green',
+                           marker='o', label='True Positives', linewidths=1.0)
+                
+                # False Positives: Plot as red crosses
+                ax.scatter(FP_cols, FP_rows, marker='x', color='red',
+                           label='False Positives', linewidths=1.0)
+                
+                # Configure legend
+                ax.legend(loc='upper right', bbox_to_anchor=(1.0, 1))
+                
+                # Configure axes labels
+                ax.set_xlabel('Query Index')
+                ax.set_ylabel('Database Index')
+                
+                plt.tight_layout()
+                plt.savefig(outputdir + f'/similarity_matrix_{datatype}.pdf', dpi=300)
+                plt.close()
+    
     return P, R
+
+
 
 
 def recallAt100precision(S_in, GThard, GTsoft=None, matching='multi', n_thresh=100):
