@@ -34,7 +34,7 @@ def generate_model_name(model):
             "IN"+str(model.input)+"_" +
             "FN"+str(model.feature)+"_" + 
             "DB"+str(model.reference_places) +
-            ".pth")
+            "_v0-1-1.pth")
     return model_name
 
 def initialize_and_run_model(args):
@@ -82,25 +82,25 @@ def parse_network():
     parser = argparse.ArgumentParser(description="Args for base configuration file")
 
     # Define the dataset arguments
-    parser.add_argument('--dataset', type=str, default='example',
+    parser.add_argument('--dataset', type=str, default='brisevent',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--camera', type=str, default='davis128',
+    parser.add_argument('--camera', type=str, default='davis346',
                             help="Camera to use for training and/or inferencing")
     parser.add_argument('--data_name', type=str, default='experiment001',
                             help="Define dataset same for data collection")
-    parser.add_argument('--reference', type=str, default='example-reference',
+    parser.add_argument('--reference', type=str, default='sunset2',
                             help="Dataset to use for training and/or inferencing")
-    parser.add_argument('--query', type=str, default='example-query',
+    parser.add_argument('--query', type=str, default='sunset1',
                             help="Dataset to use for training and/or inferencing")
     parser.add_argument('--data_dir', type=str, default='./lens/dataset/',
                             help="Directory where dataset files are stored")
-    parser.add_argument('--reference_places', type=int, default=100,
+    parser.add_argument('--reference_places', type=int, default=641,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--query_places', type=int, default=100,
+    parser.add_argument('--query_places', type=int, default=724,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=2,
+    parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
-    parser.add_argument('--feature_multiplier', type=float, default=2.0,
+    parser.add_argument('--feature_multiplier', type=float, default=1.3,
                         help="Size multiplier for the feature/hidden layer")
 
     # Define training parameters
@@ -150,9 +150,9 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', type=int, default=10,
+    parser.add_argument('--dims', type=int, default=7,
                             help="Dimensions to resize the image to")
-    parser.add_argument('--roi_dim', type=int, default=80,
+    parser.add_argument('--roi_dim', type=int, default=7,
                             help="Input dimensions for the network")
     
     # Define the network functionality
@@ -187,7 +187,9 @@ def parse_network():
     
     # Output base configuration
     args = parser.parse_args()
-
+    args.matching = True
+    args.PR_curve = True
+    args.sad = True
     # Run the network with the desired settings
     initialize_and_run_model(args)
 

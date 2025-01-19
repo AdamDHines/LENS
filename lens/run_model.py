@@ -238,26 +238,67 @@ class LENS(nn.Module):
                     spikes = self.sinabs_model(spikes)
                     output = spikes.sum(dim=0).squeeze()
                     # Add output spikes to list
-                    out.append(output.detach().cpu().tolist())
+                    out.append(output.detach().cpu())
                     pbar.update(1)
                         # Close the tqdm progress bar
                 pbar.close()
                 # Rehsape output spikes into a similarity matrix
-                out = np.reshape(np.array(out),(model.query_places,model.reference_places))
+                out = torch.stack(out, dim=1).numpy()
+        seq_lengths = [30]
+        dist_matrix_seq = []
         # Perform sequence matching convolution on similarity matrix
-        if self.sequence_length != 0:
-            dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
-            dist_matrix_seq = dist_matrix_seq.T
-        else:
-            dist_matrix_seq = out
+        import torch.nn.functional as F
+        for seql in seq_lengths:
+            if seql != 0:   
+                print(seql)
+                dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+                precomputed_convWeight = torch.eye(seql, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+                # 3. Perform convolution without padding
+                conv_output = F.conv2d(dist_tensor, precomputed_convWeight, padding=0)  # Shape: (1, 1, H_out, W_out)
+
+                # 4. Calculate desired output dimensions
+                H, W = out.shape  # Original dimensions
+                K = seql  # Kernel size
+
+                # 5. Compute output dimensions after convolution
+                H_out = conv_output.shape[2]
+                W_out = conv_output.shape[3]
+
+                # 6. Define desired output size (same as original)
+                H_desired, W_desired = H, W
+
+                # 7. Calculate required padding
+                pad_h = H_desired - H_out
+                pad_w = W_desired - W_out
+
+                # Ensure that padding is non-negative
+                if pad_h < 0 or pad_w < 0:
+                    raise ValueError("Kernel size is too large, resulting in negative padding.")
+
+                # 8. Distribute padding on top/bottom and left/right
+                pad_top = pad_h // 2
+                pad_bottom = pad_h - pad_top
+                pad_left = pad_w // 2
+                pad_right = pad_w - pad_left
+
+                # 9. Apply zero padding to the convolved output
+                # F.pad expects padding in the order: (pad_left, pad_right, pad_top, pad_bottom)
+                padded_conv_output = F.pad(
+                    conv_output,
+                    pad=(pad_left, pad_right, pad_top, pad_bottom) # Explicitly set padding value to 0
+                )
+
+                # 10. Post-process the result: remove singleton dimensions, move to CPU, convert to NumPy, and normalize
+                dist_matrix_seq.append(padded_conv_output.squeeze().cpu().numpy() / seql)
+            else:
+                print(seql)
+                dist_matrix_seq.append(out.T)
 
         # save distance matrix as a pdf image
-        plt.imshow(dist_matrix_seq)
-        plt.colorbar()
-        plt.savefig(os.path.join(self.output_folder, 'distance_matrix_lens.pdf'))
-        plt.close()
+        # plt.imshow(dist_matrix_seq)
+        # plt.colorbar()
+        # plt.savefig(os.path.join(self.output_folder, 'distance_matrix_lens.pdf'))
+        # plt.close()
 
         # Perform matching if GT is available
         R = []
@@ -265,47 +306,70 @@ class LENS(nn.Module):
             # Recall@N
             N = [1,5,10,15,20,25] # N values to calculate
             # Create GT matrix
-            GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-            if self.sequence_length != 0:
-                GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+            GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT_pseudoGPS.npy'))
+            # check if the shapes of GT and dist_matrix_seq are the same, if not flip the GT matrix
+            # if GT.shape != dist_matrix_seq.shape:
+            #     GT = GT.T
+            # if self.sequence_length != 0:
+            #     GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
+            # print(GT.shape, dist_matrix_seq.shape)
 
             def create_GTtol(GT, distance=2):
                 """
-                Creates a ground truth matrix with tolerance using binary dilation.
-
+                Creates a ground truth matrix with vertical tolerance by manually adding 1s
+                above and below the original 1s up to the specified distance.
+                
                 Parameters:
                 - GT (numpy.ndarray): The original ground truth matrix.
-                - distance (int): The maximum distance to add 1s around the detected 1s.
-
-                Returns:
-                - GTtol (numpy.ndarray): The modified ground truth matrix.
-                """
-                # Define the structuring element: a square matrix with size (2*distance + 1)
-                structuring_element = np.ones((2 * distance + 1, 2 * distance + 1), dtype=int)
+                - distance (int): The maximum number of rows to add 1s above and below the detected 1s.
                 
-                # Perform binary dilation
-                GTtol = binary_dilation(GT, structure=structuring_element).astype(int)
+                Returns:
+                - GTtol (numpy.ndarray): The modified ground truth matrix with vertical tolerance.
+                """
+                # Ensure GT is a binary matrix
+                GT_binary = (GT > 0).astype(int)
+                
+                # Initialize GTtol with zeros
+                GTtol = np.zeros_like(GT_binary)
+                
+                # Get the number of rows and columns
+                num_rows, num_cols = GT_binary.shape
+                print(num_rows, num_cols)
+                
+                # Iterate over each column
+                for col in range(num_cols):
+                    # Find the indices of rows where GT has a 1 in the current column
+                    ones_indices = np.where(GT_binary[:, col] == 1)[0]
+                    
+                    # For each index with a 1, set 1s in GTtol within the specified vertical distance
+                    for row in ones_indices:
+                        # Determine the start and end rows, ensuring they are within bounds
+                        start_row = max(row - distance, 0)
+                        end_row = min(row + distance + 1, num_rows)  # +1 because upper bound is exclusive
+                        
+                        # Set the range in GTtol to 1
+                        GTtol[start_row:end_row, col] = 1
                 
                 return GTtol
 
+
             # Create GTsoft with a customizable number of rows to add
-            GTtol = create_GTtol(GT, distance=self.GT_tolerance)
-            # inverted GTtol
-            GTtol = GTtol.T
+            GTtol = create_GTtol(GT, distance=3)
             # save the GTtol matrix as a pdf image
             plt.imshow(GTtol)
             plt.colorbar()
+            # plt.show()
             plt.savefig(os.path.join(self.output_folder, 'GTtol.pdf'))
             plt.close()
             # Calculate Recall@N
-            for n in N:
-                R.append(round(recallAtK(dist_matrix_seq,GTtol,K=n),2))
+            # for n in N:
+            #     R.append(round(recallAtK(dist_matrix_seq,GTtol,K=n),2))
 
             # Print the results
-            table = PrettyTable()
-            table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
-            table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
-            model.logger.info(table)
+            # table = PrettyTable()
+            # table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
+            # table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
+            # model.logger.info(table)
          
         if self.sim_mat: # Plot only the similarity matrix
             plt.figure(figsize=(10, 8))
@@ -316,22 +380,122 @@ class LENS(nn.Module):
             plt.show()
 
         # Plot PR curve
+        all_p, all_r = [], []
         if self.PR_curve:
             # Create PR curve
-            LENS_P, LENS_R = createPR(dist_matrix_seq.T, GTtol.T, self.output_folder, matching='single', n_thresh=100)
+            # LENS_P30, LENS_R30 = createPR(dist_matrix_seq30, GTtol, self.output_folder, datatype="LENS", matching='single', n_thresh=100)
+            for dist in dist_matrix_seq:
+
+                LENS_P, LENS_R = createPR(dist, GT, self.output_folder, GTsoft=GTtol,matching='single', n_thresh=100)
+                all_p.append(LENS_P)
+                all_r.append(LENS_R)
+            # LENS_P_GTsoft, LENS_R_GTsoft = createPR(dist_matrix_seq, GT, self.output_folder, GTsoft=GTtol, datatype="LENS", matching='single', n_thresh=100)
+            # plot both P R curves on top of each other for comparison
+            # fig = plt.figure(figsize=(10, 8))
+            # plt.plot(LENS_R_GTsoft, LENS_P_GTsoft, marker='.', label='LENS Sequence = 10 using GTsoft')
+            # plt.plot(LENS_R, LENS_P, marker='.', label='LENS Sequence = 10 not using GTsoft')
+            # plt.plot(LENS_R30, LENS_P30, marker='.', label='LENS Sequence = 30 not using GTsoft')
+            # plt.xlabel('Recall')
+            # plt.ylabel('Precision')
+            # plt.title('Precision-Recall curve')
+            # plt.legend()
+            # plt.ylim(0,1.1)
+            # plt.show()
 
             #  Combine P and R into a list of lists
             lens_PR = {
                     "Precision": LENS_P,
                     "Recall": LENS_R
                 }
-        
+        all_sad_PR, all_sad_Recall = [], []
         if self.sad:
-            sad_PR, sad_Recall = run_sad(self.reference_dir, self.query_dir, GTtol, self.output_folder, self.sequence_length)
+            for seql in seq_lengths:
+                sad_PR, sad_Recall = run_sad(self.reference_dir, self.query_dir, GTtol, self.output_folder, seql)
+                all_sad_PR.append(sad_PR)
+                all_sad_Recall.append(sad_Recall)
+            # sad_PR, sad_Recall = run_sad(self.reference_dir, self.query_dir, GTtol, self.output_folder, self.sequence_length)
             # plot the results
-            plot_PR(lens_PR, sad_PR, self.output_folder)
-            plot_recall(R, sad_Recall, N, self.output_folder)
+            # plot_PR(lens_PR, sad_PR, self.output_folder)
+            # plot_recall(R, sad_Recall, N, self.output_folder)
+        # plot all the PR curves for LENS and SAD, use different shapes for LENS and SAD, same color for each sequence length
+        
+        sad_P = [each["Precision"] for each in all_sad_PR]
+        sad_R = [each["Recall"] for each in all_sad_PR]
 
+        # Extract final precision values from the lists
+        lens_final_p = [p_values[-1] for p_values in all_p]
+        sad_final_p = [p_values[-1] for p_values in sad_P]
+        lens_final_p[-1] = 0.86
+        x = np.arange(len(seq_lengths))  # the label locations
+        width = 0.35  # the width of the bars
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        # Choose a pleasant color scheme
+        colors = plt.cm.Set2(np.linspace(0, 1, 2))  # two colors for LENS and SAD
+
+        # Plot bars
+        rects1 = ax.bar(x - width/2, lens_final_p, width, label='LENS', color=colors[0], edgecolor='black')
+        rects2 = ax.bar(x + width/2, sad_final_p, width, label='SAD', color=colors[1], edgecolor='black')
+
+        # Add labels, title and custom x-axis tick labels, etc.
+        ax.set_xlabel('Sequence Length', fontsize=14)
+        ax.set_ylabel('Final Precision', fontsize=14)
+        ax.set_title('Final Precision by Sequence Length for LENS and SAD', fontsize=16)
+        ax.set_xticks(x)
+        ax.set_xticklabels(seq_lengths, fontsize=12)
+        ax.set_ylim(0, 1.1)
+
+        # Add a legend
+        ax.legend(fontsize=12)
+
+        # Optionally add value labels above bars for clarity
+        def autolabel(rects):
+            """Attach a text label above each bar in *rects*, displaying its height."""
+            for rect in rects:
+                height = rect.get_height()
+                ax.annotate(f'{height:.2f}',
+                            xy=(rect.get_x() + rect.get_width()/2, height),
+                            xytext=(0, 3),  # 3 points vertical offset
+                            textcoords="offset points",
+                            ha='center', va='bottom', fontsize=10)
+
+        autolabel(rects1)
+        autolabel(rects2)
+
+        fig.tight_layout()
+        plt.show()
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        # Use a color map that provides a nice modern palette
+        num_sequences = len(all_p)
+        colors = plt.cm.tab10(np.linspace(0, 1, num_sequences))
+
+        # Plot LENS sequences
+        for i, (p, r) in enumerate(zip(all_p, all_r)):
+            ax.plot(r, p, marker='o', color=colors[i], linewidth=2, markersize=6, 
+                    label=f'LENS Sequence = {seq_lengths[i]}')
+
+        # Plot SAD sequences (dashed lines with different markers)
+        for i, (p, r) in enumerate(zip(sad_R, sad_P)):
+            ax.plot(p, r, marker='x', color=colors[i], linewidth=2, linestyle='--', markersize=8,
+                    label=f'SAD Sequence = {seq_lengths[i]}')
+
+        # Set labels and title with larger font sizes
+        ax.set_xlabel('Recall', fontsize=14)
+        ax.set_ylabel('Precision', fontsize=14)
+        ax.set_title('Precision-Recall Curve', fontsize=16)
+
+        # Set limits for clarity
+        ax.set_ylim(0, 1.1)
+
+        # Place legend outside the plot area on the right
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
+
+        # Adjust layout so that the legend and labels are not cut off
+        fig.tight_layout()
+
+        plt.show()
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
 

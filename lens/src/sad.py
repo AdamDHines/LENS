@@ -36,10 +36,52 @@ def run_sad(reference, query, GT, outputdir, sequence_length):
 
     # Track progress for calculating distance
     torch_dist = torch.cdist(a, b, 1)[0]
-    dist_tensor = torch_dist.clone().detach().to(device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-    precomputed_convWeight = torch.eye(sequence_length, device=device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-    dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / sequence_length
-    dist_matrix_seq = dist_matrix_seq.T
+
+    # Perform sequence matching convolution on similarity matrix
+    if sequence_length != 0:
+        import torch.nn.functional as F
+        dist_tensor = torch.tensor(torch_dist).to(device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        precomputed_convWeight = torch.eye(sequence_length, device=device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        # 3. Perform convolution without padding
+        conv_output = F.conv2d(dist_tensor, precomputed_convWeight, padding=0)  # Shape: (1, 1, H_out, W_out)
+        conv_output = 1/conv_output
+        # 4. Calculate desired output dimensions
+        H, W = torch_dist.shape  # Original dimensions
+        K = sequence_length  # Kernel size
+
+        # 5. Compute output dimensions after convolution
+        H_out = conv_output.shape[2]
+        W_out = conv_output.shape[3]
+
+        # 6. Define desired output size (same as original)
+        H_desired, W_desired = H, W
+
+        # 7. Calculate required padding
+        pad_h = H_desired - H_out
+        pad_w = W_desired - W_out
+
+        # Ensure that padding is non-negative
+        if pad_h < 0 or pad_w < 0:
+            raise ValueError("Kernel size is too large, resulting in negative padding.")
+
+        # 8. Distribute padding on top/bottom and left/right
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+
+        # 9. Apply zero padding to the convolved output
+        # F.pad expects padding in the order: (pad_left, pad_right, pad_top, pad_bottom)
+        padded_conv_output = F.pad(
+            conv_output,
+            pad=(pad_left, pad_right, pad_top, pad_bottom) # Explicitly set padding value to 0
+        )
+
+        # 10. Post-process the result: remove singleton dimensions, move to CPU, convert to NumPy, and normalize
+        dist_matrix_seq = padded_conv_output.squeeze().cpu().numpy() / sequence_length
+
+    else:
+        dist_matrix_seq = torch_dist.cpu().numpy()
 
     # save distance matrix as a pdf image
     plt.imshow(dist_matrix_seq)
@@ -49,8 +91,9 @@ def run_sad(reference, query, GT, outputdir, sequence_length):
 
     R = []
     N = [1,5,10,15,20,25] # N values to calculate
-    P, R = createPR(1/dist_matrix_seq, GT, outputdir, datatype="SAD", matching='single', n_thresh=100)   
- 
+    P, R = createPR(dist_matrix_seq.T, GT, outputdir, datatype="SAD", matching='single', n_thresh=100)   
+    print(dist_matrix_seq.T.shape)
+    print(GT.shape)
     PR_data = {
                 "Precision": P,
                 "Recall": R
@@ -59,7 +102,7 @@ def run_sad(reference, query, GT, outputdir, sequence_length):
     # Calculate Recall@N
     recallatn = []
     for n in N:
-        recallatn.append(round(recallAtK(1/dist_matrix_seq,GT,K=n),2))
+        recallatn.append(round(recallAtK(dist_matrix_seq.T,GT,K=n),2))
     # Print the results
     table = PrettyTable()
     table.field_names = ["N", "1", "5", "10", "15", "20", "25"]

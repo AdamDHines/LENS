@@ -1,0 +1,22 @@
+Ground Truth (GT) Analysis Report
+========================================
+
+Total Columns: 724
+Columns with No 1's: 0
+Columns with Multiple 1's: 65
+Total Breaks Detected: 8
+
+No columns without 1's detected.
+
+Columns with Multiple 1's:
+39, 42, 44, 46, 85, 87, 89, 91, 93, 134, 136, 138, 158, 160, 192, 220, 236, 238, 262, 296, 298, 302, 304, 306, 333, 337, 340, 368, 400, 401, 404, 418, 441, 537, 539, 541, 543, 574, 580, 582, 584, 586, 602, 604, 606, 608, 610, 612, 615, 620, 622, 624, 631, 677, 679, 681, 683, 692, 693, 694, 695, 696, 711, 713, 723
+
+Breaks Detected Between Columns:
+ - Between Column 10 and Column 11
+ - Between Column 38 and Column 40
+ - Between Column 219 and Column 221
+ - Between Column 332 and Column 334
+ - Between Column 336 and Column 338
+ - Between Column 399 and Column 402
+ - Between Column 579 and Column 581
+ - Between Column 691 and Column 697

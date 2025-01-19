@@ -18,7 +18,7 @@ def plot_PR(LENS_PR, SAD_PR, output_path):
     plt.legend()
 
     # Set the limits for x and y axes to start at 0
-    plt.xlim(0.0, 1.0)  # Assuming Recall ranges between 0 and 1
+    plt.xlim(-1e-2, 1.0)  # Assuming Recall ranges between 0 and 1
     plt.ylim(0.0, 1.05)  # Assuming Precision ranges between 0 and 1
 
     # Save the figure as a high-dpi PDF
@@ -43,7 +43,7 @@ def plot_recall(lens_recall, sad_recall, N, output_path):
     plt.title('Comparison of SAD and LENS')
     plt.xlabel('N')
     plt.ylabel('Values')
-    plt.ylim(0, 1)  # Set y-axis limits from 0 to 1
+    plt.ylim(0, 1.05)  # Set y-axis limits from 0 to 1
     plt.legend()
 
     # Save the figure as a high-dpi PDF
