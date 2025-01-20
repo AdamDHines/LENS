@@ -24,7 +24,7 @@ import argparse
 
 from lens.tools import checker
 
-def generate_model_name(model, model_type):
+def generate_model_name(model):
     """
     Generate the model name based on its parameters.
     """
@@ -43,7 +43,7 @@ def initialize_and_run_model(args):
         # Initialize the model
         model = LENS_Trainer(args)
         # Generate the model name
-        model_name = generate_model_name(model, args.model_type)
+        model_name = generate_model_name(model)
         # Train the model
         train_model(model, model_name)
     elif args.collect_data:  # If user wants to collect data to train new model
@@ -51,13 +51,13 @@ def initialize_and_run_model(args):
         # Initialize the model
         model = LENS_Collector(args)
         # Collect the data
-        run_collector(model, args.model_type)
+        run_collector(model)
     elif args.event_driven:
         from lens.run_speck import LENSSpeck, run_speck
         # Initialize the model
         model = LENSSpeck(args)
         # Generate the model name
-        model_name = generate_model_name(model, args.model_type)
+        model_name = generate_model_name(model)
         # Run the model on the Speck2fDevKit
         run_speck(model, model_name)
     else: # Run the inference network
@@ -65,7 +65,7 @@ def initialize_and_run_model(args):
         # Initialize the model
         model = LENS(args) # Runs the DynapCNN on-chip model
         # Generate the model name
-        model_name = generate_model_name(model, args.model_type)
+        model_name = generate_model_name(model)
         # Run the inference model
         run_inference(model, model_name)
 
@@ -92,7 +92,7 @@ def parse_network():
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--query_places', type=int, default=724,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=30,
+    parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=1.3,
                         help="Size multiplier for the feature/hidden layer")
@@ -183,7 +183,8 @@ def parse_network():
     
     # Output base configuration
     args = parser.parse_args()
-
+    args.PR_curve = True
+    args.matching = True
     # Run the network with the desired settings
     initialize_and_run_model(args)
 
