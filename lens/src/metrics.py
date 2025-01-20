@@ -17,7 +17,6 @@
 #
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import precision_recall_curve
 
 def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='multi', n_thresh=100):
     """
@@ -35,8 +34,6 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
     match VPR or multi-match VPR.
     The integer n_thresh controls the number of threshold values and should be >1.
     """
-    if S_in.shape != GThard.shape:
-        S_in = S_in.T
 
     assert (S_in.shape == GThard.shape),"S_in, GThard and GTsoft must have the same shape"
     assert (S_in.ndim == 2),"S_in, GThard and GTsoft must be two-dimensional"
@@ -51,141 +48,18 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
 
     # copy S and set elements that are only true in GTsoft to min(S) to ignore them during evaluation
     S = S_in.copy()
-
-    # create the y_scores matrix for precision and recall
-    a = np.argmax(GThard, axis=0)
-    b = np.argmax(S, axis=0)
-    # find where a and b match, assign 1 if it does and 0 if it does not
-    # Flatten the GThard and S_in matrices to handle multiple ground truths per column
-    # Number of columns
-    num_cols = S.shape[1]
-
-    # Find the indices of the highest scores in S for each column
-    b = np.argmax(S, axis=0)  # Shape: (num_cols,)
-
-    # Extract the corresponding scores
-    y_scores = S[b, np.arange(num_cols)]  # Shape: (num_cols,)
-    # Find the indices of the highest scores in S for each column
-    pred_indices = np.argmax(S, axis=0)  # Shape: (num_cols,)
-    # Determine if the highest score corresponds to any ground truth match
-    # Since GThard can have multiple ground truths per column, check if GThard[b[i], i] == 1
-    y_true = GThard[b, np.arange(num_cols)].astype(int)  # Shape: (num_cols,)
-
-    # Compute Precision-Recall curve
-    precisionWu, recallWu, thresholds = precision_recall_curve(y_true, y_scores)
-    # Extract Ground Truth Indices
-    gt_indices = np.argmax(GThard, axis=0)  # Shape: (num_cols,)
-
-    # Calculate Distances: Predicted Index - Ground Truth Index
-    distances = pred_indices - gt_indices  # Shape: (num_cols,)
-
-    # Define Binning Parameters
-    # Consolidate distances <= -5 and >= +5
-    bins = np.arange(-5.5, 6.5, 1)  # Bins from -5 to +5 with bin size 1
-    labels = ['<=-5'] + [str(i) for i in range(-4, 5)] + ['>=5']
-
-    # Digitize distances into bins
-    # np.digitize assigns indices such that bin_edges[i-1] <= x < bin_edges[i]
-    # To include the rightmost edge, set right=True
-    digitized = np.digitize(distances, bins, right=False)
-
-    # Initialize an array to hold the bin counts
-    hist_counts = np.zeros(len(labels), dtype=int)
-
-    # Assign counts to the corresponding labels
-    for i, bin_label in enumerate(labels):
-        if bin_label == '<=-5':
-            hist_counts[i] = np.sum(distances <= -5)
-        elif bin_label == '>=5':
-            hist_counts[i] = np.sum(distances >= 5)
-        else:
-            # For bins -4 to +4
-            lower = int(bin_label)
-            upper = lower + 1
-            hist_counts[i] = np.sum((distances >= lower) & (distances < upper))
-
-    # ---------------------------
-    # Step 5: Plot the Distance Distribution
-    # ---------------------------
-
-    # Define the positions for the bars
-    x_positions = np.arange(len(labels))
-
-    # plt.figure(figsize=(12, 6))
-    # bars = plt.bar(x_positions, hist_counts, color='skyblue', edgecolor='black')
-
-    # # Add labels and title
-    # plt.xlabel('Distance from Ground Truth (rows)')
-    # plt.ylabel('Number of Predictions')
-    # plt.title('Distribution of Distances Between Predicted and Ground Truth Indices')
-    # plt.xticks(x_positions, labels)
-    # plt.ylim(0, 600)
-    # plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-    # # Annotate bar counts on top of each bar
-    # for bar in bars:
-    #     height = bar.get_height()
-    #     plt.annotate(f'{height}',
-    #                 xy=(bar.get_x() + bar.get_width() / 2, height),
-    #                 xytext=(0, 3),  # 3 points vertical offset
-    #                 textcoords="offset points",
-    #                 ha='center', va='bottom')
-
-    # plt.tight_layout()
-    # plt.show()
-    # y_scores = np.where(a == b, 1, 0)
-    # get the max val for each from from S
-    # y_true = np.max(S, axis=0)
-    # precisionWu, recallWu, thresholds = precision_recall_curve(y_scores, y_true)
-    # plot the PR curve
-    # plt.plot(recall, precision, marker='.', label=datatype)
-    # plt.xlabel('Recall')
-    # plt.ylabel('Precision')
-    # plt.title('Precision-Recall Curve')
-    # plt.legend()
-    # plt.show()
-
-    # get the query index with the highest similarity for each database image from y_scores variable wherever = 1
-    # correct_idx = (np.where(y_scores==1)[0],b[np.where(y_scores == 1)[0]])
-    # incorrect_idx = (np.where(y_scores==0)[0],b[np.where(y_scores == 0)[0]])
-    # incorrect = np.where(y_scores == 0)[0]
-    # # find the index in S_in that matches GThard for columns where y_score == 0
-    # # Initialize a list to hold correct indices for incorrect matches
-    # correct_matches_for_incorrect = []
-
-    # for col in incorrect:
-    #     # Find the index where GThard is 1 for this column
-    #     correct_match_indices = np.where(GThard[:, col] == 1)[0]
-    #     if correct_match_indices.size > 0:
-    #         # Assuming single ground truth match per column
-    #         correct_match = correct_match_indices[0]
-    #         correct_matches_for_incorrect.append(correct_match)
-    #     else:
-    #         # Handle cases where there might be no ground truth (optional)
-    #         correct_matches_for_incorrect.append(None)
-
-    # GT_idx = (np.where(y_scores==0)[0],np.array(correct_matches_for_incorrect))
-    # # save all the idx variables into a compressed .npz file
-    # np.savez_compressed(f'{outputdir}/idx_{datatype}.npz', correct_idx=correct_idx, incorrect_idx=incorrect_idx, GT_idx=GT_idx)
     
     if GTsoft is not None:
         S[GTsoft & ~GT] = S.min()
     
     if matching == 'single':
-        # count the number of ground-truth positives (GTP)
-        # GTP = np.count_nonzero(GT.any(0))
-
         # GT-values for best match per query (i.e., per column)
         GT = GT[np.argmax(S, axis=0), np.arange(GT.shape[1])]
-        GTP = np.count_nonzero(GT)
+
         selected_rows = np.nanargmax(S, axis=0)  # Shape: (n_cols,)
 
         # similarities for best match per query (i.e., per column)
         S = np.max(S, axis=0)
-
-    elif matching == 'multi':
-        # count the number of ground-truth positives (GTP)
-        GTP = np.count_nonzero(GT) # ground truth positives
 
     # init precision and recall vectors
     R = [0, ]
@@ -254,94 +128,9 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
                 ax.set_xlabel('Query Index')
                 ax.set_ylabel('Database Index')
                 
-                # plt.tight_layout()
-                # plt.show()
-                # plt.savefig(outputdir + f'/similarity_matrix_{datatype}.pdf', dpi=300)
+                plt.tight_layout()
+                plt.savefig(outputdir + f'/similarity_matrix_{datatype}.pdf', dpi=300)
                 plt.close()
-
-                                # -------------------- Error Rate Plotting Starts Here -------------------- #
-
-                # Initialize lists to store True Positives (TP), False Positives (FP), and Error Rates
-                # Initialize lists to store Error Rates
-                error_rates = []
-
-                # Total number of columns in the similarity matrix
-                num_columns = S_in.shape[1]
-
-                # Iterate over each column to compute Error Rate
-                for col in range(num_columns):
-                    if matching == 'single':
-                        # In 'single' matching, each column has at most one detection
-                        # Selected row for this column
-                        selected_row = selected_rows[col]
-                        # Determine if it's a True Positive
-                        TP = GT[col]  # GT is already modified for 'single' matching
-                        # False Positive is 1 if TP is False, else 0
-                        FP = 0 if TP else 1
-                        # Compute error rate
-                        error = FP / TP if TP else 1  # Set error to 1 if TP is 0
-                    elif matching == 'multi':
-                        # In 'multi' matching, there can be multiple detections per column
-                        # Extract detections for this column
-                        B_col = B[:, col]
-                        GT_col = GThard_orig[:, col].astype('bool')
-
-                        # Compute TP and FP for this column
-                        TP = np.count_nonzero(GT_col & B_col)
-                        FP = np.count_nonzero((~GT_col) & B_col)
-
-                        # Compute error rate, handle TP=0
-                        error = FP / TP if TP > 0 else 0  # Define error as 0 if no TPs
-                    else:
-                        # This block should not be reached due to earlier assertion
-                        error = 0
-
-                    error_rates.append(error)
-
-                # # Define labels for the x-axis (e.g., Column indices)
-                # x_labels = np.arange(1, num_columns + 1)
-                # error =np.array(error_rates)
-                # np.save('/Users/adam/outdoor_error.npy', error)
-                # # Plotting the Error Rates
-                # plt.figure(figsize=(12, 6))
-                # plt.plot(x_labels, error_rates, marker='o', linestyle='-', color='blue', linewidth=1.5, markersize=4)
-
-                # # Adding labels and title
-                # plt.xlabel('Column Index', fontsize=12)
-                # plt.ylabel('Error Rate (FP / TP)', fontsize=12)
-                # plt.title(f'Error Rate Over Columns for {datatype}', fontsize=14)
-
-                # # Adding grid for better readability
-                # plt.grid(True, linestyle='--', alpha=0.7)
-
-                # # Optional: Annotate error rates on the plot
-                # # To prevent clutter, you might choose to skip annotations for large number of columns
-                # # Uncomment the following block if you wish to add annotations for fewer columns
-                # """
-                # for i, rate in enumerate(error_rates):
-                #     plt.text(x_labels[i], rate, f'{rate:.2f}', ha='center', va='bottom', fontsize=8, rotation=45)
-                # """
-
-                # # Adjust layout for better spacing
-                # plt.tight_layout()
-                # plt.show()
-                # Save the plot as a PDF
-                #plt.savefig(os.path.join(outputdir, f'error_rate_{datatype}.pdf'), dpi=300)
-
-                # Close the plot to free memory
-                plt.close()
-    # print the fiunal precision and recall values
-    # print(f'Precision: {P[-1]:.3f}')
-    # print(f'Recall: {R[-1]:.3f}')
-    # plt.plot(R, P, marker='.', color="green", label='Ours')
-    # # plt.plot(recallWu, precisionWu, marker='.', label='Wu et al. 2023')
-    # plt.xlabel('Recall')
-    # plt.ylabel('Precision')
-    # plt.title('Precision-Recall Curve')
-    # plt.legend()
-    # # adjust the y-axis scale to be from 0 to 1
-    # plt.ylim(0, 1.1)
-    # plt.show()
     
     return P, R
 

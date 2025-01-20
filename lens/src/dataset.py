@@ -27,10 +27,6 @@ class SetImageAsSpikes:
 
 class ProcessImage:
     def __init__(self, is_train=False):
-        # if is_train:
-        #     self.intensity = 1
-        # else:
-        #     self.intensity = 255
         self.intensity = 255
         self.is_train = is_train
     def __call__(self, img):

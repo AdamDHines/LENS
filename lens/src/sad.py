@@ -1,46 +1,51 @@
 import os
 import numpy as np
 from skimage import io
+import csv
 
 import re
 import torch
 
-from tqdm import tqdm
 from lens.src.metrics import recallAtK, createPR
+
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt   
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
-def load_and_preprocess_images(folder_path):
+def load_and_preprocess_images(csv_file,folder_dir):
     images = []
-    files = sorted(os.listdir(folder_path), key=natural_sort_key)
+    # load images based on the .csv file names in the first column index
+    csv_names = csv.reader(open(csv_file))
+    files = [row[0] for row in csv_names]
+    # remove first row
+    files = files[1:]
     for _, filename in enumerate(files):
 
         if filename.endswith('.png'):
-            img = io.imread(os.path.join(folder_path, filename))    
+            img = io.imread(os.path.join(folder_dir, filename))    
             images.append(img.flatten()) 
     return np.array(images)
 
-def run_sad(reference, query, GT, outputdir, sequence_length):
+def run_sad(reference, reference_dir, query, query_dir, GT, GTtol, outputdir, sequence_length):
 
     # Load and preprocess images from both folders
 
     # Track progress for both folders
-    images1 = load_and_preprocess_images(query)
-    images2 = load_and_preprocess_images(reference)
+    images1 = load_and_preprocess_images(query, query_dir)
+    images2 = load_and_preprocess_images(reference, reference_dir)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     a = torch.from_numpy(images1.reshape(images1.shape[0], -1).astype(np.float32)).unsqueeze(0).to(device)
     b = torch.from_numpy(images2.reshape(images2.shape[0], -1).astype(np.float32)).unsqueeze(0).to(device)
 
     # Track progress for calculating distance
-    torch_dist = torch.cdist(a, b, 1)[0]
+    torch_dist = torch.cdist(b, a, 1)[0]
 
     # Perform sequence matching convolution on similarity matrix
     if sequence_length != 0:
         import torch.nn.functional as F
-        dist_tensor = torch.tensor(torch_dist).to(device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
+        dist_tensor = torch_dist.to(device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
         precomputed_convWeight = torch.eye(sequence_length, device=device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
         # 3. Perform convolution without padding
         conv_output = F.conv2d(dist_tensor, precomputed_convWeight, padding=0)  # Shape: (1, 1, H_out, W_out)
@@ -91,9 +96,8 @@ def run_sad(reference, query, GT, outputdir, sequence_length):
 
     R = []
     N = [1,5,10,15,20,25] # N values to calculate
-    P, R = createPR(dist_matrix_seq.T, GT, outputdir, datatype="SAD", matching='single', n_thresh=100)   
-    print(dist_matrix_seq.T.shape)
-    print(GT.shape)
+    P, R = createPR(dist_matrix_seq, GTtol, outputdir, datatype="SAD", matching='single', n_thresh=100)
+    
     PR_data = {
                 "Precision": P,
                 "Recall": R
@@ -102,8 +106,9 @@ def run_sad(reference, query, GT, outputdir, sequence_length):
     # Calculate Recall@N
     recallatn = []
     for n in N:
-        recallatn.append(round(recallAtK(dist_matrix_seq.T,GT,K=n),2))
+        recallatn.append(round(recallAtK(dist_matrix_seq,GTtol,K=n),2))
     # Print the results
+    print('===== Sum-of-Absolute-Differences Recall@N =====')
     table = PrettyTable()
     table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
     table.add_row(["Recall", recallatn[0], recallatn[1], recallatn[2], recallatn[3], recallatn[4], recallatn[5]])
