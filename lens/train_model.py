@@ -236,8 +236,7 @@ def train_model(model, model_name):
     # Set the model to training mode and move to device
     model.train()
     # Keep track of trained layers to pass data through them
-    trained_layers = ['feature_layer']
-    model.layer_dict.pop('feature_layer')
+    trained_layers = []
     # Training each layer
     for layer_name, _ in sorted(model.layer_dict.items(), key=lambda item: item[1]):
         print(f"Training layer: {layer_name}")

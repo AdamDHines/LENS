@@ -301,13 +301,13 @@ class LENS(nn.Module):
             # Recall@N
             N = [1,5,10,15,20,25] # N values to calculate
             # Create GT matrix
-            GT = np.load(f'{self.data_dir}{self.dataset}/{self.camera}/{self.reference}_{self.query}_{self.GT_type}_GT.npy')
+            GT = np.load(f'{self.data_dir}{self.dataset}/{self.camera}/{self.reference}_{self.query}_GT.npy')
 
             # Create GTsoft with a customizable number of rows to add
             GTtol = create_GTtol(GT, distance=self.GT_tolerance)
 
             # save the GTtol matrix as a pdf image
-            plt.imshow(GT)
+            plt.imshow(GTtol)
             plt.colorbar()
             plt.savefig(os.path.join(self.output_folder, 'GTtol.pdf'))
             plt.close()
@@ -344,9 +344,10 @@ class LENS(nn.Module):
         if self.sad:
             # Run SAD matching
             sad_PR, sad_Recall = run_sad(self.reference_file, self.reference_dir, self.dataset_file, self.query_dir, GT, GTtol, self.output_folder, self.sequence_length)
-            # plot the results
-            plot_PR(lens_PR, sad_PR, self.output_folder)
             plot_recall(R, sad_Recall, N, self.output_folder)
+            # plot the results
+            if self.PR_curve:
+                plot_PR(lens_PR, sad_PR, self.output_folder)
         
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
