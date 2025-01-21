@@ -231,7 +231,7 @@ def train_model(model, model_name):
     train_loader = DataLoader(train_dataset, 
                               batch_size=1, 
                               shuffle=True,
-                              num_workers=8,
+                              num_workers=4,
                               persistent_workers=True)
     # Set the model to training mode and move to device
     model.train()
