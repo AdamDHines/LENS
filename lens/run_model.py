@@ -25,7 +25,6 @@ Imports
 '''
 
 import os
-import json
 import torch
 
 import numpy as np
@@ -34,6 +33,7 @@ import torch.nn as nn
 import sinabs.layers as sl
 import lens.src.blitnet as bn
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
@@ -42,8 +42,8 @@ from lens.src.sad import run_sad
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
 from sinabs.from_torch import from_model
-from scipy.ndimage import binary_dilation
 from lens.src.loggers import model_logger
+from lens.tools.create_GTtol import create_GTtol
 from lens.src.metrics import recallAtK, createPR
 from sinabs.backend.dynapcnn import DynapcnnNetwork
 from lens.tools.plot_results import plot_PR, plot_recall
@@ -61,6 +61,7 @@ class LENS(nn.Module):
 
         # Set the dataset file
         self.dataset_file = os.path.join(self.data_dir, self.query+ '.csv')
+        self.reference_file = os.path.join(self.data_dir, self.reference+ '.csv')
         self.query_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.query)
         self.reference_dir = os.path.join(self.data_dir, self.dataset, self.camera, self.reference)
 
@@ -238,18 +239,53 @@ class LENS(nn.Module):
                     spikes = self.sinabs_model(spikes)
                     output = spikes.sum(dim=0).squeeze()
                     # Add output spikes to list
-                    out.append(output.detach().cpu().tolist())
+                    out.append(output.detach().cpu())
                     pbar.update(1)
                         # Close the tqdm progress bar
                 pbar.close()
                 # Rehsape output spikes into a similarity matrix
-                out = np.reshape(np.array(out),(model.query_places,model.reference_places))
+                out = torch.stack(out, dim=1).numpy()
+
         # Perform sequence matching convolution on similarity matrix
-        if self.sequence_length != 0:
+        if self.sequence_length != 0:   
             dist_tensor = torch.tensor(out).to(self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
             precomputed_convWeight = torch.eye(self.sequence_length, device=self.device).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
-            dist_matrix_seq = torch.nn.functional.conv2d(dist_tensor, precomputed_convWeight).squeeze().cpu().numpy() / self.sequence_length
-            dist_matrix_seq = dist_matrix_seq.T
+            # 3. Perform convolution without padding
+            conv_output = F.conv2d(dist_tensor, precomputed_convWeight, padding=0)  # Shape: (1, 1, H_out, W_out)
+
+            # 4. Calculate desired output dimensions
+            H, W = out.shape  # Original dimensions
+
+            # 5. Compute output dimensions after convolution
+            H_out = conv_output.shape[2]
+            W_out = conv_output.shape[3]
+
+            # 6. Define desired output size (same as original)
+            H_desired, W_desired = H, W
+
+            # 7. Calculate required padding
+            pad_h = H_desired - H_out
+            pad_w = W_desired - W_out
+
+            # Ensure that padding is non-negative
+            if pad_h < 0 or pad_w < 0:
+                raise ValueError("Kernel size is too large, resulting in negative padding.")
+
+            # 8. Distribute padding on top/bottom and left/right
+            pad_top = pad_h // 2
+            pad_bottom = pad_h - pad_top
+            pad_left = pad_w // 2
+            pad_right = pad_w - pad_left
+
+            # 9. Apply zero padding to the convolved output
+            # F.pad expects padding in the order: (pad_left, pad_right, pad_top, pad_bottom)
+            padded_conv_output = F.pad(
+                conv_output,
+                pad=(pad_left, pad_right, pad_top, pad_bottom) # Explicitly set padding value to 0
+            )
+
+            # 10. Post-process the result: remove singleton dimensions, move to CPU, convert to NumPy, and normalize
+            dist_matrix_seq = padded_conv_output.squeeze().cpu().numpy() / self.sequence_length
         else:
             dist_matrix_seq = out
 
@@ -265,33 +301,11 @@ class LENS(nn.Module):
             # Recall@N
             N = [1,5,10,15,20,25] # N values to calculate
             # Create GT matrix
-            GT = np.load(os.path.join(self.data_dir, self.dataset, self.camera, self.reference + '_' + self.query + '_GT.npy'))
-            if self.sequence_length != 0:
-                GT = GT[self.sequence_length-2:-1,self.sequence_length-2:-1]
-
-            def create_GTtol(GT, distance=2):
-                """
-                Creates a ground truth matrix with tolerance using binary dilation.
-
-                Parameters:
-                - GT (numpy.ndarray): The original ground truth matrix.
-                - distance (int): The maximum distance to add 1s around the detected 1s.
-
-                Returns:
-                - GTtol (numpy.ndarray): The modified ground truth matrix.
-                """
-                # Define the structuring element: a square matrix with size (2*distance + 1)
-                structuring_element = np.ones((2 * distance + 1, 2 * distance + 1), dtype=int)
-                
-                # Perform binary dilation
-                GTtol = binary_dilation(GT, structure=structuring_element).astype(int)
-                
-                return GTtol
+            GT = np.load(f'{self.data_dir}{self.dataset}/{self.camera}/{self.reference}_{self.query}_GT.npy')
 
             # Create GTsoft with a customizable number of rows to add
             GTtol = create_GTtol(GT, distance=self.GT_tolerance)
-            # inverted GTtol
-            GTtol = GTtol.T
+
             # save the GTtol matrix as a pdf image
             plt.imshow(GTtol)
             plt.colorbar()
@@ -302,6 +316,7 @@ class LENS(nn.Module):
                 R.append(round(recallAtK(dist_matrix_seq,GTtol,K=n),2))
 
             # Print the results
+            model.logger.info('===== LENS Recall@N =====')
             table = PrettyTable()
             table.field_names = ["N", "1", "5", "10", "15", "20", "25"]
             table.add_row(["Recall", R[0], R[1], R[2], R[3], R[4], R[5]])
@@ -318,20 +333,22 @@ class LENS(nn.Module):
         # Plot PR curve
         if self.PR_curve:
             # Create PR curve
-            LENS_P, LENS_R = createPR(dist_matrix_seq.T, GTtol.T, self.output_folder, matching='single', n_thresh=100)
+            LENS_P, LENS_R = createPR(dist_matrix_seq, GTtol, self.output_folder, matching='single', n_thresh=100)
 
             #  Combine P and R into a list of lists
             lens_PR = {
                     "Precision": LENS_P,
                     "Recall": LENS_R
                 }
-        
-        if self.sad:
-            sad_PR, sad_Recall = run_sad(self.reference_dir, self.query_dir, GTtol, self.output_folder, self.sequence_length)
-            # plot the results
-            plot_PR(lens_PR, sad_PR, self.output_folder)
-            plot_recall(R, sad_Recall, N, self.output_folder)
 
+        if self.sad:
+            # Run SAD matching
+            sad_PR, sad_Recall = run_sad(self.reference_file, self.reference_dir, self.dataset_file, self.query_dir, GT, GTtol, self.output_folder, self.sequence_length)
+            plot_recall(R, sad_Recall, N, self.output_folder)
+            # plot the results
+            if self.PR_curve:
+                plot_PR(lens_PR, sad_PR, self.output_folder)
+        
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
 
@@ -347,8 +364,7 @@ class LENS(nn.Module):
         Returns:
         - Tensor: Output after processing.
         """
-        spikes = self.dynapcnn(spikes)
-        return spikes
+        return self.dynapcnn(spikes)
         
     def load_model(self, model_path):
         """
@@ -383,7 +399,7 @@ def run_inference(model, model_name):
     test_loader = DataLoader(test_dataset, 
                               batch_size=1, 
                               shuffle=False,
-                              num_workers=8,
+                              num_workers=4,
                               persistent_workers=True)
     # Set the model to evaluation mode and set configuration
     model.eval()

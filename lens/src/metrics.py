@@ -40,6 +40,13 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
     assert (matching in ['single', 'multi']),"matching should contain one of the following strings: [single, multi]"
     assert (n_thresh > 1),"n_thresh must be >1"
 
+    if GTsoft is not None and matching == 'single':
+        raise ValueError(
+            "GTSoft with single matching is not supported. "
+            "Please use dilated hard ground truth directly. "
+            "For more details, visit: https://github.com/stschubert/VPR_Tutorial"
+        )
+    
     # ensure logical datatype in GT and GTsoft
     GT = GThard.astype('bool')
     if GTsoft is not None:
@@ -48,23 +55,18 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
 
     # copy S and set elements that are only true in GTsoft to min(S) to ignore them during evaluation
     S = S_in.copy()
+    
     if GTsoft is not None:
         S[GTsoft & ~GT] = S.min()
-
-    # single-best-match or multi-match VPR
+    
     if matching == 'single':
-        # count the number of ground-truth positives (GTP)
-        GTP = np.count_nonzero(GT.any(0))
         # GT-values for best match per query (i.e., per column)
         GT = GT[np.argmax(S, axis=0), np.arange(GT.shape[1])]
+
         selected_rows = np.nanargmax(S, axis=0)  # Shape: (n_cols,)
 
         # similarities for best match per query (i.e., per column)
         S = np.max(S, axis=0)
-
-    elif matching == 'multi':
-        # count the number of ground-truth positives (GTP)
-        GTP = np.count_nonzero(GT) # ground truth positives
 
     # init precision and recall vectors
     R = [0, ]
@@ -81,10 +83,11 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
         
         TP = np.count_nonzero(GT & B)  # True Positives
         FP = np.count_nonzero((~GT) & B)  # False Positives
+        FN  = np.count_nonzero(GT & (~B))  # False Negatives
 
         # Handle division by zero for precision
         precision = TP / (TP + FP)
-        recall = TP / GTP 
+        recall = TP / (TP + FN) 
         
         P.append(precision)  # Precision
         R.append(recall)     # Recall
@@ -115,15 +118,15 @@ def createPR(S_in, GThard, outputdir, datatype="LENS", GTsoft=None, matching='mu
                 # Ground Truth: Plot as white dots
                 gt_y, gt_x = np.where(GThard_orig)
                 ax.scatter(gt_x, gt_y, facecolors='white', edgecolors='white',
-                           marker='.', label='Ground Truth', linewidths=0.5)
+                           marker='s', label='Ground Truth', linewidths=3.0)
                 
                 # True Positives: Plot as green circles
-                ax.scatter(TP_cols, TP_rows, facecolors='none', edgecolors='green',
-                           marker='o', label='True Positives', linewidths=1.0)
+                ax.scatter(TP_cols, TP_rows, facecolors='green', edgecolors='green',
+                           marker='.', label='True Positives', linewidths=3.0)
                 
                 # False Positives: Plot as red crosses
                 ax.scatter(FP_cols, FP_rows, marker='x', color='red',
-                           label='False Positives', linewidths=1.0)
+                           label='False Positives', linewidths=3.0)
                 
                 # Configure legend
                 ax.legend(loc='upper right', bbox_to_anchor=(1.0, 1))
@@ -166,6 +169,13 @@ def recallAt100precision(S_in, GThard, GTsoft=None, matching='multi', n_thresh=1
     assert (matching in ['single', 'multi']),"matching should contain one of the following strings: [single, multi]"
     assert (n_thresh > 1),"n_thresh must be >1"
 
+    if GTsoft is not None and matching == 'single':
+        raise ValueError(
+            "GTSoft with single matching is not supported. "
+            "Please use dilated hard ground truth directly. "
+            "For more details, visit: https://github.com/stschubert/VPR_Tutorial"
+        )
+    
     # get precision-recall curve
     P, R = createPR(S_in, GThard, GTsoft, matching=matching, n_thresh=n_thresh)
     P = np.array(P)
@@ -180,35 +190,26 @@ def recallAt100precision(S_in, GThard, GTsoft=None, matching='multi', n_thresh=1
     return R
 
 
-def recallAtK(S_in, GThard, GTsoft=None, K=1):
+def recallAtK(S, GT, K=1):
     """
-    Calculates the recall@K for a given similarity matrix S_in and ground truth matrices 
-    GThard and GTsoft.
+    Calculates the recall@K for a given similarity matrix S and ground truth matrix GT.
+    Note that this method does not support GTsoft - instead, please directly provide
+    the dilated ground truth matrix as GT.
 
-    The matrices S_in, GThard and GTsoft are two-dimensional and should all have the
-    same shape.
-    The matrices GThard and GTsoft should be binary matrices, where the entries are
-    only zeros or ones.
-    The matrix S_in should have continuous values between -Inf and Inf. Higher values
+    The matrices S and GT are two-dimensional and should all have the same shape.
+    The matrix GT should be binary, where the entries are only zeros or ones.
+    The matrix S should have continuous values between -Inf and Inf. Higher values
     indicate higher similarity.
     The integer K>=1 defines the number of matching candidates that are selected and
     that must contain an actually matching image pair.
     """
-    assert (S_in.shape == GThard.shape),"S_in and GThard must have the same shape"
-    if GTsoft is not None:
-        assert (S_in.shape == GTsoft.shape),"S_in and GTsoft must have the same shape"
-    assert (S_in.ndim == 2),"S_in, GThard and GTsoft must be two-dimensional"
+
+    assert (S.shape == GT.shape),"S and GT must have the same shape"
+    assert (S.ndim == 2),"S and GT must be two-dimensional"
     assert (K >= 1),"K must be >=1"
 
-    # ensure logical datatype in GT and GTsoft
-    GT = GThard.astype('bool')
-    if GTsoft is not None:
-        GTsoft = GTsoft.astype('bool')
-
-    # copy S and set elements that are only true in GTsoft to min(S) to ignore them during evaluation
-    S = S_in.copy()
-    if GTsoft is not None:
-        S[GTsoft & ~GT] = S.min()
+    # ensure logical datatype in GT
+    GT = GT.astype('bool')
 
     # discard all query images without an actually matching database image
     j = GT.sum(0) > 0 # columns with matches

@@ -29,13 +29,7 @@ def generate_model_name(model):
     Generate the model name based on its parameters.
     """
     # Define model name based on the parameters
-    model_name = (''.join(model.reference)+"_"+
-            "LENS_" +
-            "IN"+str(model.input)+"_" +
-            "FN"+str(model.feature)+"_" + 
-            "DB"+str(model.reference_places) +
-            ".pth")
-    return model_name
+    return f'{model.reference}_LENS_IN{model.input}_FN{model.feature}_DB{model.reference_places}.pth'
 
 def initialize_and_run_model(args):
     """
@@ -98,7 +92,7 @@ def parse_network():
                             help="Number of places to use for training and/or inferencing")
     parser.add_argument('--query_places', type=int, default=100,
                             help="Number of places to use for training and/or inferencing")
-    parser.add_argument('--sequence_length', type=int, default=2,
+    parser.add_argument('--sequence_length', type=int, default=10,
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
@@ -106,7 +100,7 @@ def parse_network():
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch_feat', type=int, default=128,
+    parser.add_argument('--epoch_feat', type=int, default=64,
                             help="Number of epochs to train the model")
     parser.add_argument('--epoch_out', type=int, default=128,
                             help="Number of epochs to train the model")
@@ -168,7 +162,7 @@ def parse_network():
                             help="Perform matching to GT, if available")
     parser.add_argument('--sad', action='store_true',
                             help="Perform SAD matching")
-    parser.add_argument('--timebin', type=int, default=250,
+    parser.add_argument('--timebin', type=int, default=1000,
                         help="dt for spike collection window and time based simulation")
     parser.add_argument('--nocuda', action='store_true',
                             help="Do not use CPU")
