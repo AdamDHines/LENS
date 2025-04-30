@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 [![stars](https://img.shields.io/github/stars/AdamDHines/LENS.svg?style=flat-square)](https://github.com/AdamDHines/LENS/stargazers)
-[![Downloads](https://static.pepy.tech/badge/lens-vpr)](https://pepy.tech/project/lens-vpr)
-[![Conda Version](https://img.shields.io/conda/vn/conda-forge/lens-vpr.svg)](https://anaconda.org/conda-forge/lens-vpr)
-![PyPI - Version](https://img.shields.io/pypi/v/lens-vpr)
+[![Downloads](https://static.pepy.tech/badge/lens-vpr?style=flat-square)](https://pepy.tech/project/lens-vpr)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/lens-vpr.svg?style=flat-square)](https://anaconda.org/conda-forge/lens-vpr)
+![PyPI - Version](https://img.shields.io/pypi/v/lens-vpr?style=flat-square)
 [![GitHub repo size](https://img.shields.io/github/repo-size/AdamDHines/LENS.svg?style=flat-square)](./README.md)
 
 This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algoriths, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition (VPR). LENS can be used with the SynSense Speck2fDevKit board which houses a [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) dynamic vision sensor and neuromorphic processor for online VPR.
@@ -103,6 +103,7 @@ python main.py --event_driven
 
 For more details on deployment to the Speck2fDevKit, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Deploying-to-Speck2fDevKit).
 
+## Dataset
 
 ## Issues, bugs, and feature requests
 If you encounter problems whilst running the code or if you have a suggestion for a feature or improvement, please report it as an [issue](https://github.com/AdamDHines/VPRTempoNeuro/issues).
