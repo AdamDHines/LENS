@@ -104,6 +104,7 @@ python main.py --event_driven
 For more details on deployment to the Speck2fDevKit, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Deploying-to-Speck2fDevKit).
 
 ## Dataset
+Please see [./lens/dataset](./lens/dataset) for details. We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/4302805.
 
 ## Issues, bugs, and feature requests
 If you encounter problems whilst running the code or if you have a suggestion for a feature or improvement, please report it as an [issue](https://github.com/AdamDHines/VPRTempoNeuro/issues).
