@@ -165,7 +165,7 @@ def parse_network():
     parser.add_argument('--timebin', type=int, default=1000,
                         help="dt for spike collection window and time based simulation")
     parser.add_argument('--nocuda', action='store_true',
-                            help="Do not use CPU")
+                            help="Do not use GPU")
     
     # On-chip specific parameters
     parser.add_argument('--event_driven', action='store_true', 
@@ -178,6 +178,10 @@ def parse_network():
                             help="Runs the Speck2fDevKit in headless mode")
     parser.add_argument('--save_input', action='store_true',
                             help="Collects and saves the input spikes as NumPy arrays")
+    
+    # run demo
+    parser.add_argument('--demo', action='store_true',
+                            help="Run the demo")
     
     # Output base configuration
     args = parser.parse_args()

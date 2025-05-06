@@ -1,110 +1,101 @@
-# :eye: LENS - Locational Encoding with Neuromorphic Systems
+<p align="center">
+  <img src="./assets/logo.png" alt="LENS Logo" width="300"/>
+</p>
+
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 [![stars](https://img.shields.io/github/stars/AdamDHines/LENS.svg?style=flat-square)](https://github.com/AdamDHines/LENS/stargazers)
 [![Downloads](https://static.pepy.tech/badge/lens-vpr?style=flat-square)](https://pepy.tech/project/lens-vpr)
+[![Pixi Badge](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/lens-vpr.svg?style=flat-square)](https://anaconda.org/conda-forge/lens-vpr)
 ![PyPI - Version](https://img.shields.io/pypi/v/lens-vpr?style=flat-square)
 [![GitHub repo size](https://img.shields.io/github/repo-size/AdamDHines/LENS.svg?style=flat-square)](./README.md)
 
-This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algoriths, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition (VPR). LENS can be used with the SynSense Speck2fDevKit board which houses a [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) dynamic vision sensor and neuromorphic processor for online VPR.
+This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algorithms, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition (VPR). 
 
-## License and citation
-This repository is licensed under the [MIT License](./LICENSE). If you use our code, please cite our arXiv paper:
+LENS performs VPR with the SynSense [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) development kits, featuring a combination of a dynamic vision sensor and neuromorphic System-on-Chip processor for real-time, energy-efficient localization. 
 
-```
-@misc{hines2024lens,
-      title={A compact neuromorphic system for ultra energy-efficient, on-device robot localization}, 
-      author={Adam D. Hines and Michael Milford and Tobias Fischer},
-      year={2024},
-      eprint={2408.16754},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO},
-      url={https://arxiv.org/abs/2408.16754}, 
-}
+LENS can also be used with conventional CPU, GPU, and Apple Silicon (MPS) devices to perform event-based VPR thanks to the [Sinabs](https://sinabs.readthedocs.io/en/v2.0.0/) spiking network architecture.
+
+## Getting started
+For reproducibility and simplicity, we use [pixi](https://prefix.dev/) for package management and installation. If not already installed, please run the following command in your terminal:
+
+```console
+curl -fsSL https://pixi.sh/install.sh | bash
 ```
 
+_You will be prompted to restart your terminal once installed. For more information, please refer to the [pixi documentation](https://pixi.sh/latest/)._ 
 
-## Installation and setup
-To run LENS, please download this repository and install the required dependencies.
-
-### Get the code
-Get the code by cloning the repository.
+Run the following in your terminal to clone the LENS repository and navigate to the project directory:
 ```console
 git clone git@github.com:AdamDHines/LENS.git
 cd ~/LENS
 ```
 
-### Install dependencies
-All dependencies can be instlled from our [conda-forge package](https://anaconda.org/conda-forge/lens-vpr), [PyPi package](https://pypi.org/project/lens-vpr/), or local `requirements.txt`. For the conda-forge package, we recommend using [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) or [miniforge](https://github.com/conda-forge/miniforge). Please ensure your Python version is <= 3.11.
+#### Alternative dependency installations
+Dependencies can alternatively be installed from our [conda-forge package](https://anaconda.org/conda-forge/lens-vpr) or [PyPi package](https://pypi.org/project/lens-vpr/), however we do recommend using pixi. _Please ensure your Python version is <= 3.11_.
 
-#### conda package
-```console
-# Create a new environment and install packages
-micromamba create -n lens-vpr -c conda-forge lens-vpr
-
-# samna package is not available on conda-forge, so pip install it
-micromamba activate lens-vpr
-pip install samna
-```
-
-#### pip
-```console
-# Install from our PyPi package
-pip install lens-vpr
-
-# Install from local requirements.txt
-pip install -r requirements.txt
-```
-
-## Quick start
-Get started using our pretrained models and datasets to evaluate the system. For a full guide on training and evaluating your own datasets, please visit our [Wiki](https://github.com/AdamDHines/LENS/wiki).
-
-### Run the inferencing model
-To run a simulated event stream, you can try our pre-trained model and datasets. Using the `--sim_mat` and `--matching` flag will display a similarity matrix and perform Recall@N matching based on a ground truth matrix.
+## Quick demo
+Get started using our demo dataset and pre-trained model to evaluate the system. Run the following in your command terminal to see the demo:
 
 ```console
-python main.py --sim_mat --matching
+pixi run demo
 ```
 
-### Train a new model
-New models can be trained by parsing the `--train_model` flag. Try training a new model with our provided reference dataset.
+### Train and evaluate new model
+Test out training and evaluating a new model with our ultra-fast learning method using our provided demo dataset by running the following in your command terminal:
 
 ```console
-# Train a new model
-python main.py --train_model
+pixi run train
+pixi run evaluate
 ```
+
+
+
+_For a full guide on training and evaluating your own datasets, please visit our [Wiki](https://github.com/AdamDHines/LENS/wiki)._
 
 ### Optimize network hyperparameters
-For new models on custom datasets, you can optimize your network hyperparameters using [Weights & Biases](https://wandb.ai/site) through our convenient `optimizer.py` script.
+To get the best localization performance on benchmark or custom datasets, you can tune your network hyperparameters using [Weights & Biases](https://wandb.ai/site) through our convenient optimizer script: 
 
 ```console
-# Optimize network hyperparameters
-python optimizer.py
+pixi run optimizer
 ```
 
-For more details, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Setting-up-and-using-the-optimizer).
+_For detailed instructions on setting up Weights & Biases and the optimizer, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Setting-up-and-using-the-optimizer)._
 
-### Deployment on neuromoprhic hardware
-If you have a SynSense Speck2fDevKit, you can try out LENS using our pre-trained model and datasets by deploying simulated event streams on-chip.
+### Deployment on neuromorphic hardware
+LENS was developed using a SynSense Speck2fDevKit. If you have one of these kits, deploying to it is simple. Try out LENS using our pre-trained model and datasets by deploying simulated event streams on-chip:
 
 ```console
-# Generate a timebased simulation of event streams with pre-recorded data
-python main.py --simulated_speck --sim_mat --matching
+pixi run sim-speck
 ```
 
-Additionally, models can be deployed onto the Speck2fDevKit for low-latency and energy efficient VPR with sequence matching in real-time. Use the `--event_driven` flag to start the online inferencing system.
-
+Additionally, models can be deployed onto the Speck2fDevKit for low-latency and energy efficient VPR with sequence matching in real-time:
 ```console
-# Run the online inferencing model
-python main.py --event_driven
+pixi run on-speck
 ```
 
-For more details on deployment to the Speck2fDevKit, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Deploying-to-Speck2fDevKit).
+_For more details on deployment to the Speck2fDevKit, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Deploying-to-Speck2fDevKit)._
 
 ## Dataset
 For all data relating to our manuscript, please see [./lens/data](./lens/data) for details. We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/4302805.
+
+## License and citation
+This repository is licensed under the permissive [MIT License](./LICENSE). If you use our code, please cite our [ paper]():
+
+```
+@article{hines2025lens,
+      title={A compact neuromorphic system for ultra energy-efficient, on-device robot localization}, 
+      author={Adam D. Hines and Michael Milford and Tobias Fischer},
+      journal={},
+      year={2025},
+      volume={},
+      number={},
+      doi={},
+      url={}, 
+}
+```
 
 ## Issues, bugs, and feature requests
 If you encounter problems whilst running the code or if you have a suggestion for a feature or improvement, please report it as an [issue](https://github.com/AdamDHines/VPRTempoNeuro/issues).
