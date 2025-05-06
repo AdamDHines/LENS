@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.png" alt="LENS Logo" width="300"/>
+  <img src="./assets/logo.png" alt="LENS Logo" width="600"/>
 </p>
 
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
