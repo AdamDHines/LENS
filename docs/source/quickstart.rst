@@ -68,7 +68,7 @@ In LENS, we also provide an in-built baseline comparison to the sum-of-absolute-
 
 .. note::
 
-    For a full list of evaluation functions, please refer to the :doc:`Evaluation <evaluation>` page for more information.    
+    For a full list of evaluation functions, please refer to the :doc:`Evaluation Parameters <eval_params>` page for more information.    
 
 Training models
 -----------------
@@ -105,7 +105,7 @@ for learning using this script. Run the following in your command terminal to ev
 
 .. note::
 
-    All training and evaluation functions are explored in the :doc:`Evaluation <evaluation>` and :doc:`Training <training>` pages.
+    All training and evaluation functions are explored in the :doc:`Evaluation Parameters <eval_params>` and :doc:`Training Parameters <train_params>` pages.
 
 Direct Python execution
 -----------------

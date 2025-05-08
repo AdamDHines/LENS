@@ -51,11 +51,36 @@
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Model training:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
 </ul>
 
         </div>
@@ -116,7 +141,7 @@ localization datasets.</p>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Model training:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="train_overview.html#background">Background</a></li>
@@ -129,16 +154,114 @@ localization datasets.</p>
 <li class="toctree-l2"><a class="reference internal" href="train_setup.html#preparing-your-data">Preparing your data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_setup.html#ground-truth-file">Ground truth file</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_setup.html#running-the-training">Running the training</a></li>
-<li class="toctree-l2"><a class="reference internal" href="train_setup.html#training-parameters">Training Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_setup.html#network-setup">Network setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_setup.html#hyperparameters">Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train_setup.html#saving-trained-models">Saving trained models</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="eval_overview.html#time-based-frame-conversion">Time-based frame conversion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_overview.html#constant-leak-integrate-and-fire-neuron">Constant leak integrate and fire neuron</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_overview.html#sequence-matching">Sequence matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_overview.html#evaluation-metrics">Evaluation metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="eval_setup.html#running-the-evaluation-network">Running the evaluation network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_setup.html#ground-truth-tolerances">Ground truth tolerances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_setup.html#sequence-matching">Sequence matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_setup.html#results-output-saving">Results output &amp; saving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eval_setup.html#additional-evaluations">Additional evaluations</a></li>
+</ul>
+</li>
+</ul>
 </div>
 <div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#running-the-optimizer-script">Running the optimizer script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#hyperparameters">Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#good-practices">Good Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#setting-up-hyperparameter-sweeps">Setting up Hyperparameter Sweeps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#wandb-sweep-setup">Wandb Sweep Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#sweep-method-configuration">Sweep Method Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#model-evaluation">Model Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizer_setup.html#custom-metrics-e-g-recall-1">Custom Metrics (e.g., Recall&#64;1)</a></li>
+</ul>
+</li>
+</ul>
 </div>
 <div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sp_dataset.html#collect-events-for-images">Collect events for images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sp_dataset.html#modify-collection-window">Modify collection window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sp_dataset.html#set-the-experimental-details">Set the experimental details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sp_dataset.html#dataset-considerations">Dataset considerations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sp_onchip.html#online-sequence-matching">Online sequence matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sp_onchip.html#power-measurements">Power measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sp_onchip.html#saving-input-event-streams">Saving input event streams</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#lens-collect-data-module">LENS.collect_data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#lens-run-model-module">LENS.run_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#lens-run-speck-module">LENS.run_speck module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#lens-train-model-module">LENS.train_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-blitnet-module">LENS.src.blitnet module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-dataset-module">LENS.src.dataset module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-demo-module">LENS.src.demo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-loggers-module">LENS.src.loggers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-match-module">LENS.src.match module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-metrics-module">LENS.src.metrics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-sad-module">LENS.src.sad module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#lens-src-speck2f-module">LENS.src.speck2f module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.src.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-checker-module">LENS.tools.checker module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-create-gttol-module">LENS.tools.create_GTtol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-create-data-csv-module">LENS.tools.create_data_csv module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-dvstools-module">LENS.tools.dvstools module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-manual-eventframe-generator-module">LENS.tools.manual_eventframe_generator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-matching-plots-module">LENS.tools.matching_plots module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-plot-results-module">LENS.tools.plot_results module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-process-dvs-module">LENS.tools.process_dvs module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-read-gps-module">LENS.tools.read_gps module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#lens-tools-rename-images-module">LENS.tools.rename_images module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LENS.tools.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </section>
 

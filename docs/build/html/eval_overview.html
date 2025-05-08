@@ -1,0 +1,242 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Evaluation Parameters" href="eval_params.html" />
+    <link rel="prev" title="Training New Models" href="train_setup.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#time-based-frame-conversion">Time-based frame conversion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#constant-leak-integrate-and-fire-neuron">Constant leak integrate and fire neuron</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sequence-matching">Sequence matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluation-metrics">Evaluation metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/eval_overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>The evaluation network for LENS operates differently to the training network. During training, we use 2D temporally flattened images of event
+streams to learn the network weights.</p>
+<p>During evaluation, however, we use the <a class="reference external" href="https://sinabs.readthedocs.io/en/v2.0.0/">Sinabs spiking network</a> to introduce constant leak integrate and fire
+(IAF) neurons into the LENS network.</p>
+<p>In this case, we move away from static temporal representations of place to timebased activation of a spiking network. This works for both the
+onboard evaluation network with the <a class="reference external" href="https://www.synsense.ai/products/speck-2/">SPECK™</a> using the development kits and the generated
+query images.</p>
+<section id="time-based-frame-conversion">
+<h2>Time-based frame conversion<a class="headerlink" href="#time-based-frame-conversion" title="Link to this heading"></a></h2>
+<p>Generating events from static images for timebased evaluation is automatically done and based on the pixel intensity of query images:</p>
+<p>Spikes are generated by comparing a uniformly random tensor against the input activation:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}I_{t,h,w} =
+\begin{cases}
+    1 &amp; \text{if } R_{t,h,w} &lt; X_{h,w} \\
+    0 &amp; \text{otherwise}
+\end{cases}\end{split}\]</div>
+<p>Here:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(I_{t,h,w}\)</span> is a boolean tensor with spatial dimensions <span class="math notranslate nohighlight">\(h\)</span> and <span class="math notranslate nohighlight">\(w\)</span> over <span class="math notranslate nohighlight">\(t\)</span> time windows, where <cite>1</cite> indicates a spike and <cite>0</cite> indicates no spike.</p></li>
+<li><p><span class="math notranslate nohighlight">\(R_{t,h,w} \in [0, 1]\)</span> is a uniformly random tensor.</p></li>
+<li><p><span class="math notranslate nohighlight">\(X_{h,w}\)</span> is the original input tensor.</p></li>
+</ul>
+<p>Inference is simulated with <span class="math notranslate nohighlight">\(\Delta t = 0.001\,\text{s}\)</span> between spikes, <cite>i.e.</cite> 1000 timesteps will correspond to 1-second of inference time.</p>
+</section>
+<section id="constant-leak-integrate-and-fire-neuron">
+<h2>Constant leak integrate and fire neuron<a class="headerlink" href="#constant-leak-integrate-and-fire-neuron" title="Link to this heading"></a></h2>
+<p>In <a class="reference external" href="https://sinabs.readthedocs.io/en/v2.0.0/">Sinabs</a>, constant leak integrate and fire neurons are added as activation layers inbetween
+the linear LENS network weights to provide event-driven spiking activity.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the inferencing forward pass</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">inference</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">feature_layer</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">nn.ReLU()</span></code> layers are replaced with spiking layers during model conversion:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sinabs.from_torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_model</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">sinabs_model</span> <span class="o">=</span> <span class="n">from_model</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+                    <span class="n">input_shape</span><span class="o">=</span><span class="n">input_shape</span><span class="p">,</span>
+                    <span class="n">num_timesteps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timebin</span><span class="p">,</span>
+                    <span class="n">add_spiking_output</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The subthreshold membrane potential dynamics are governed by the leaky integrator equation:</p>
+<div class="math notranslate nohighlight">
+\[\tau \dot{v} = -v_{\text{leak}} + R \cdot (I_{\text{syn}} + I_{\text{bias}})\]</div>
+<p>where:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\tau\)</span> is the membrane time constant.</p></li>
+<li><p><span class="math notranslate nohighlight">\(v\)</span> is the membrane potential.</p></li>
+<li><p><span class="math notranslate nohighlight">\(v_{\text{leak}}\)</span> is the leak component of the membrane potential.</p></li>
+<li><p><span class="math notranslate nohighlight">\(R\)</span> is a constant resistance factor used to match units between potential and current.</p></li>
+<li><p><span class="math notranslate nohighlight">\(I_{\text{syn}}\)</span> is the weighted sum of all input synaptic currents.</p></li>
+<li><p><span class="math notranslate nohighlight">\(I_{\text{bias}}\)</span> is a constant bias current applied to the neuron.</p></li>
+</ul>
+</section>
+<section id="sequence-matching">
+<h2>Sequence matching<a class="headerlink" href="#sequence-matching" title="Link to this heading"></a></h2>
+<p>A crucial feature of LENS is sequence matching, which highlights sequential information in a distance matrix of queries and references whilst
+diminishing off-axis matches during evaluation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We recommend reading the original <a class="reference external" href="https://ieeexplore.ieee.org/document/6224623">SeqSLAM</a> paper that first introduced sequence matching.</p>
+</div>
+</section>
+<section id="evaluation-metrics">
+<h2>Evaluation metrics<a class="headerlink" href="#evaluation-metrics" title="Link to this heading"></a></h2>
+<p>There are two main evaluation metrics used in LENS: Recall&#64;K and the Precision-Recall curve. During evaluation, the distance matrix generated
+by LENS is compared against the ground truth binary matrix to identify the number of true positives (TP), false positives (FP).</p>
+<p>Precision and recall is defined as:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}precision = TP/TP + FP\\
+recall = TP/GTP\end{split}\]</div>
+<p>where GTP is the number of ground truth positives.</p>
+<p>Recall&#64;K analyzes the top K matches found for each query, where K = 1 only considers the top match whereas K = 25 considers the top 25 matches.
+The Precision-Recall curve measures the balance between the accuracy of correctly identifying place matches against the total number of correct matches.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We highly recommend the <a class="reference external" href="https://ieeexplore.ieee.org/document/10261441">VPR Tutorial</a> for a complete guide on evaluation metrics.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="train_setup.html" class="btn btn-neutral float-left" title="Training New Models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="eval_params.html" class="btn btn-neutral float-right" title="Evaluation Parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

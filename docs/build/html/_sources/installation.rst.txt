@@ -6,7 +6,7 @@ Packages and dependencies
 
 Pixi
 ^^^^^^^^^^^^^^^^^
-.. note::
+.. important::
 
     This is the recommended method for installing LENS packages and dependencies.
 

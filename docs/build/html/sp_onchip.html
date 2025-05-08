@@ -1,0 +1,193 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>On-device localization &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="LENS package" href="LENS.html" />
+    <link rel="prev" title="Deploying to SPECK" href="sp_setup.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">On-device localization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#online-sequence-matching">Online sequence matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#power-measurements">Power measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#saving-input-event-streams">Saving input event streams</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">On-device localization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/sp_onchip.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="on-device-localization">
+<h1>On-device localization<a class="headerlink" href="#on-device-localization" title="Link to this heading"></a></h1>
+<p>We can run the online localization system, where place matching occurs on-device, by simply running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>on-speck
+</pre></div>
+</div>
+<p>This will spawn a <code class="docutils literal notranslate"><span class="pre">samnagui</span></code> GUI instance that will show you the input event stream and the power consumption for the 5 power tracks (IO, logic, RAM, VDDD, &amp; VDDA)
+measured at 20 Hz.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>It is possible to suppress this GUI by using the <code class="docutils literal notranslate"><span class="pre">--headless</span></code> arugment to reduce computational load during localization, however
+this prevents you from obtaining power measurements (described further down).</p>
+</div>
+<section id="online-sequence-matching">
+<h2>Online sequence matching<a class="headerlink" href="#online-sequence-matching" title="Link to this heading"></a></h2>
+<p>Place predictions in the default setting occurs after 4-seconds, or after 4 different <cite>places</cite> have been traversed through. This uses the same
+computational logic as the simulated events used on regular CPU hardware, where it will collect events over a 1-second timebin and use that
+event stream as a <strong>place</strong>.</p>
+<p>LENS will return the output event spikes over the 1-second timebin and concatenate 4 of these into a similarity matrix. A sequence matcher kernel
+will then run and the place predictions will occur in real-time.</p>
+<p>You can change the timewindow for collection by using the <code class="docutils literal notranslate"><span class="pre">--timebin</span></code> argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>on-speck<span class="w"> </span>--timebin<span class="w"> </span><span class="m">250</span>
+</pre></div>
+</div>
+<p>This will instead collect events for a place over 250 ms, instead of the default 1,000 ms.</p>
+</section>
+<section id="power-measurements">
+<h2>Power measurements<a class="headerlink" href="#power-measurements" title="Link to this heading"></a></h2>
+<p>During online localization, power is continually monitored and recorded. In order to save the power measurements, the <code class="docutils literal notranslate"><span class="pre">samnagui</span></code> window
+must be open during localization. Destroying the <code class="docutils literal notranslate"><span class="pre">samnsagui</span></code> window triggers the shutdown of SPECK and retrieval of stored power measurements.</p>
+<p>All power measurements are saved to the output folder created in <code class="docutils literal notranslate"><span class="pre">./lens/output/</span></code> alongside similarity matrices and the <code class="docutils literal notranslate"><span class="pre">.log</span></code> file, under
+<code class="docutils literal notranslate"><span class="pre">power_data.npy</span></code>.</p>
+<p>The power measurements are stored in 5 separate <code class="docutils literal notranslate"><span class="pre">numpy</span> <span class="pre">array</span></code> in mW and are named according to the power track.</p>
+</section>
+<section id="saving-input-event-streams">
+<h2>Saving input event streams<a class="headerlink" href="#saving-input-event-streams" title="Link to this heading"></a></h2>
+<p>The input event streams can also be saved as a <code class="docutils literal notranslate"><span class="pre">numpy</span> <span class="pre">array</span></code> if you wish to create images of them:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>on-speck<span class="w"> </span>--save_input
+</pre></div>
+</div>
+<p>These will save to the same output folder under <code class="docutils literal notranslate"><span class="pre">./lens/output/&lt;output_name&gt;/events/</span></code> as a <code class="docutils literal notranslate"><span class="pre">.npy</span></code> file.</p>
+<p>To easily turn these into images for later use, you can use the <a class="reference external" href="https://github.com/AdamDHines/LENS/blob/main/lens/tools/manual_eventframe_generator.py">event frame generator script</a>
+provided.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="sp_setup.html" class="btn btn-neutral float-left" title="Deploying to SPECK" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LENS.html" class="btn btn-neutral float-right" title="LENS package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

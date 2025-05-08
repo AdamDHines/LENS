@@ -21,7 +21,8 @@
       <script src="_static/copybutton.js?v=f281be69"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="LENS.src package" href="LENS.src.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -50,11 +51,50 @@
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Model training:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">LENS.tools package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-checker-module">LENS.tools.checker module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-create-gttol-module">LENS.tools.create_GTtol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-create-data-csv-module">LENS.tools.create_data_csv module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-dvstools-module">LENS.tools.dvstools module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-manual-eventframe-generator-module">LENS.tools.manual_eventframe_generator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-matching-plots-module">LENS.tools.matching_plots module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-plot-results-module">LENS.tools.plot_results module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-process-dvs-module">LENS.tools.process_dvs module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-read-gps-module">LENS.tools.read_gps module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lens-tools-rename-images-module">LENS.tools.rename_images module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-contents">Module contents</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -71,6 +111,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="LENS.html">LENS package</a></li>
       <li class="breadcrumb-item active">LENS.tools package</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/LENS.tools.rst.txt" rel="nofollow"> View page source</a>
@@ -124,7 +165,9 @@
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="LENS.src.html" class="btn btn-neutral float-left" title="LENS.src package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 

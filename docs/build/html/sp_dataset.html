@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create a SPECK dataset &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Deploying to SPECK" href="sp_setup.html" />
+    <link rel="prev" title="Speck Deployment Parameters" href="sp_functions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Create a SPECK dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#collect-events-for-images">Collect events for images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#modify-collection-window">Modify collection window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#set-the-experimental-details">Set the experimental details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dataset-considerations">Dataset considerations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Create a SPECK dataset</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/sp_dataset.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="create-a-speck-dataset">
+<h1>Create a SPECK dataset<a class="headerlink" href="#create-a-speck-dataset" title="Link to this heading"></a></h1>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Before proceeding, please ensure you have the <a class="reference external" href="https://synsense-sys-int.gitlab.io/samna/0.45.3/install.html#udev-rules-on-linux-systems">necessary USB permissions</a>.</p>
+</div>
+<section id="collect-events-for-images">
+<h2>Collect events for images<a class="headerlink" href="#collect-events-for-images" title="Link to this heading"></a></h2>
+<p>To create a dataset from the Speck2f Development Kit, you can simply run the following in your command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>speck_collect
+</pre></div>
+</div>
+<p>An instance of the <a class="reference external" href="https://synsense-sys-int.gitlab.io/samna/0.45.3/gui/index.html">samnsagui</a> will open and show you the events being collected.</p>
+<p>Once started, begin collecting your dataset by moving through the environment. To finish collecting, simply close the samnagui window.</p>
+<p>Our dataset generator script will automatically create and save images and create the necessary <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file for training your model.</p>
+</section>
+<section id="modify-collection-window">
+<h2>Modify collection window<a class="headerlink" href="#modify-collection-window" title="Link to this heading"></a></h2>
+<p>By default, the dataset generator will collect over a 1-second timewindow. If we want to increase or decrease the timewindow, we can
+use the <code class="docutils literal notranslate"><span class="pre">--timebin</span></code> argument to specify the number of milliseconds to collect over:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>speck_collect<span class="w"> </span>--timebin<span class="w"> </span><span class="m">250</span>
+</pre></div>
+</div>
+<p>This will collect over 250 ms, instead of the default 1,000 ms.</p>
+</section>
+<section id="set-the-experimental-details">
+<h2>Set the experimental details<a class="headerlink" href="#set-the-experimental-details" title="Link to this heading"></a></h2>
+<p>When creating the dataset, you can specify the dataset name, camera, and experiment name. Let’s for example say we’re collecting an outdoor
+dataset called <code class="docutils literal notranslate"><span class="pre">OutdoorNav</span></code>, on the in-built <code class="docutils literal notranslate"><span class="pre">davis128</span></code>, and we want to call it <code class="docutils literal notranslate"><span class="pre">traverse001</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>speck_collect<span class="w"> </span>--dataset<span class="w"> </span>OutdoorNav<span class="w"> </span>--camera<span class="w"> </span>davis128<span class="w"> </span>--data_name<span class="w"> </span>traverse001
+</pre></div>
+</div>
+<p>This will create and store all the images in the <code class="docutils literal notranslate"><span class="pre">./lens/dataset/OutdoorNav/davis128/traverse001/</span></code> and generate the necessary <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file
+for model training.</p>
+<p>Then, if we wanted to train on this dataset we’d simply need to run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--dataset<span class="w"> </span>OutdoorNav<span class="w"> </span>--camera<span class="w"> </span>davis128<span class="w"> </span>--reference<span class="w"> </span>traverse001<span class="w"> </span>--reference_places<span class="w"> </span>&lt;NUM_REFERENCES&gt;
+</pre></div>
+</div>
+</section>
+<section id="dataset-considerations">
+<h2>Dataset considerations<a class="headerlink" href="#dataset-considerations" title="Link to this heading"></a></h2>
+<p>For SPECK datasets, and indeed any datasets being deployed to the device, must consider strict model size constraints for place encoding.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Model sizes for LENS deployed on SPECK are limited to approximately 180 kB <strong>in total</strong> due to the available memory in each
+neurocore.</p>
+<p>Refer to the <a class="reference external" href="https://sinabs.readthedocs.io/en/v2.0.0/speck/overview.html#memory-constraints-and-network-sizing">Sinabs documentation</a> for
+more information.</p>
+</div>
+<p>In general, a network architecure of 100 input neurons, 200 feature neurons, and 100 output neurons is roughly the limit for SPECK datasets.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>Although larger input and feature sizes limit the number of places to encode, we have succesfully learned over 600 places on SPECK using
+smaller input and feature encodings.</p>
+<p>See our <a href="#id1"><span class="problematic" id="id2">`paper &lt;&gt;`_</span></a> for more information.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="sp_functions.html" class="btn btn-neutral float-left" title="Speck Deployment Parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sp_setup.html" class="btn btn-neutral float-right" title="Deploying to SPECK" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -25,7 +25,7 @@ To get started, follow the steps below in `Getting Started` to install and run t
 
 .. toctree::
    :maxdepth: 2
-   :caption: Model training:
+   :caption: Model Training:
 
    train_overview
    train_params
@@ -33,7 +33,7 @@ To get started, follow the steps below in `Getting Started` to install and run t
 
 .. toctree::
    :maxdepth: 2
-   :caption: Evaluation:
+   :caption: Model Evaluation:
 
    eval_overview
    eval_params
@@ -41,10 +41,10 @@ To get started, follow the steps below in `Getting Started` to install and run t
 
 .. toctree::
    :maxdepth: 2
-   :caption: Network optimization:
+   :caption: Optimization:
 
-   opt_overview
-   opt_setup
+   optimizer_overview
+   optimizer_setup
 
 .. toctree::
    :maxdepth: 2
@@ -55,3 +55,11 @@ To get started, follow the steps below in `Getting Started` to install and run t
    sp_dataset
    sp_setup
    sp_onchip
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules Reference:
+
+   LENS
+   LENS.src
+   LENS.tools
