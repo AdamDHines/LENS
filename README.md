@@ -3,7 +3,7 @@
 </p>
 
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
-![readthedocs](https://readthedocs.org/projects/LENS-VPR/badge/?version=<version>&style=<style>)
+![readthedocs](https://readthedocs.org/projects/lens-vpr/badge/?version=<version>&style=<style>)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![QUT Centre for Robotics](https://img.shields.io/badge/collection-QUT%20Robotics-%23043d71?style=flat-square)](https://qcr.ai)
 [![stars](https://img.shields.io/github/stars/AdamDHines/LENS.svg?style=flat-square)](https://github.com/AdamDHines/LENS/stargazers)
@@ -18,6 +18,8 @@ This repository contains code for **LENS** - **L**ocational **E**ncoding with **
 LENS performs VPR with the SynSense [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) development kits, featuring a combination of a dynamic vision sensor and neuromorphic System-on-Chip processor for real-time, energy-efficient localization. 
 
 LENS can also be used with conventional CPU, GPU, and Apple Silicon (MPS) devices to perform event-based VPR thanks to the [Sinabs](https://sinabs.readthedocs.io/en/v2.0.0/) spiking network architecture.
+
+_For more information, please visit the [LENS Documentation](https://lens-vpr.readthedocs.io/en/latest/)_.
 
 ## Getting started
 For reproducibility and simplicity, we use [pixi](https://prefix.dev/) for package management and installation. If not already installed, please run the following command in your terminal:
@@ -34,8 +36,7 @@ git clone git@github.com:AdamDHines/LENS.git
 cd ~/LENS
 ```
 
-#### Alternative dependency installations
-Dependencies can alternatively be installed from our [conda-forge package](https://anaconda.org/conda-forge/lens-vpr) or [PyPi package](https://pypi.org/project/lens-vpr/), however we do recommend using pixi. _Please ensure your Python version is <= 3.11_.
+_For alternative package and dependency installation, please see the [LENS documentation](https://lens-vpr.readthedocs.io/en/latest/installation.html#conda)._
 
 ## Quick demo
 Get started using our demo dataset and pre-trained model to evaluate the system. Run the following in your command terminal to see the demo:
@@ -54,7 +55,7 @@ pixi run evaluate
 
 
 
-_For a full guide on training and evaluating your own datasets, please visit our [Wiki](https://github.com/AdamDHines/LENS/wiki)._
+_For a full guide on training and evaluating your own datasets, please visit the [LENS documentation](https://lens-vpr.readthedocs.io/en/latest/train_setup.html)._
 
 ### Optimize network hyperparameters
 To get the best localization performance on benchmark or custom datasets, you can tune your network hyperparameters using [Weights & Biases](https://wandb.ai/site) through our convenient optimizer script: 
@@ -63,7 +64,7 @@ To get the best localization performance on benchmark or custom datasets, you ca
 pixi run optimizer
 ```
 
-_For detailed instructions on setting up Weights & Biases and the optimizer, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Setting-up-and-using-the-optimizer)._
+_For detailed instructions on setting up Weights & Biases and the optimizer, please refer to the [LENS documentation](https://lens-vpr.readthedocs.io/en/latest/optimizer_setup.html)._
 
 ### Deployment on neuromorphic hardware
 LENS was developed using a SynSense Speck2fDevKit. If you have one of these kits, deploying to it is simple. Try out LENS using our pre-trained model and datasets by deploying simulated event streams on-chip:
@@ -77,7 +78,7 @@ Additionally, models can be deployed onto the Speck2fDevKit for low-latency and 
 pixi run on-speck
 ```
 
-_For more details on deployment to the Speck2fDevKit, please visit the [Wiki](https://github.com/AdamDHines/LENS/wiki/Deploying-to-Speck2fDevKit)._
+_For more details on deployment to the Speck2fDevKit, please visit the [LENS documentation](https://lens-vpr.readthedocs.io/en/latest/sp_overview.html)._
 
 ## Dataset
 For all data relating to our manuscript, please see [./lens/data](./lens/data) for details. We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/4302805.
