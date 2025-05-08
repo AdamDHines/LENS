@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Using the optimizer &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview" href="sp_overview.html" />
+    <link rel="prev" title="Overview" href="optimizer_overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using the optimizer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-optimizer-script">Running the optimizer script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hyperparameters">Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#good-practices">Good Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-hyperparameter-sweeps">Setting up Hyperparameter Sweeps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wandb-sweep-setup">Wandb Sweep Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sweep-method-configuration">Sweep Method Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-evaluation">Model Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-metrics-e-g-recall-1">Custom Metrics (e.g., Recall&#64;1)</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Using the optimizer</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/optimizer_setup.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-the-optimizer">
+<h1>Using the optimizer<a class="headerlink" href="#using-the-optimizer" title="Link to this heading"></a></h1>
+<p>Before proceeding, you will need to <a class="reference external" href="https://wandb.ai/site/">sign up for a Weights &amp; Biases account</a>.</p>
+<p>Once you have an account, follow the <a class="reference external" href="https://docs.wandb.ai/quickstart/">Quickstart instructions</a> to connect your account to your local
+work environment.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Do not run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">wandb</span></code>, this is included already in the <code class="docutils literal notranslate"><span class="pre">pixi.toml</span></code> environment.</p>
+</div>
+<p>Once you have logged in, you will not be prompted to login again.</p>
+<section id="running-the-optimizer-script">
+<h2>Running the optimizer script<a class="headerlink" href="#running-the-optimizer-script" title="Link to this heading"></a></h2>
+<p>To run the optimizer, we run the following in the command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>optimizer
+</pre></div>
+</div>
+<p>Like the training and evaluation network, we can specify the dataset, camera, and reference/query data to optimize:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>optimizer<span class="w"> </span>--dataset<span class="w"> </span>example<span class="w"> </span>--camera<span class="w"> </span>davis128<span class="w"> </span>--reference<span class="w"> </span>example-reference<span class="w"> </span>--query<span class="w"> </span>example-query
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Please ensure you have set up your datasets correctly including the ground truth file. See <a class="reference internal" href="train_setup.html"><span class="doc">Training New Models</span></a> for
+more details.</p>
+</div>
+</section>
+<section id="hyperparameters">
+<h2>Hyperparameters<a class="headerlink" href="#hyperparameters" title="Link to this heading"></a></h2>
+<p>There are several hyperparameters that can be tuned for your model. LENS allows users to set different hyperparameters for the <strong>Input → Feature</strong> and <strong>Feature → Output</strong> layers to give better flexibility when training models.</p>
+<p>For a full list and description of supported training hyperparameters, see the <a class="reference internal" href="train_params.html"><span class="doc">Hyperparameter list</span></a>.</p>
+<p>All hyperparameters are of type <code class="docutils literal notranslate"><span class="pre">float</span></code> with values in the range <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>, except for <code class="docutils literal notranslate"><span class="pre">epoch_feat</span></code> and <code class="docutils literal notranslate"><span class="pre">epoch_out</span></code>, which are <code class="docutils literal notranslate"><span class="pre">int</span></code> values ≥ 1.</p>
+</section>
+<section id="good-practices">
+<h2>Good Practices<a class="headerlink" href="#good-practices" title="Link to this heading"></a></h2>
+<p>Whilst there are no hard and fast rules for setting hyperparameters, here are some general recommendations:</p>
+<ul class="simple">
+<li><p>Inhibitory connection probabilities are usually higher than excitatory ones (unless using full connectivity).</p></li>
+<li><p>For the output layer, keep the firing rate and threshold near 0.5. This helps with the delta-based learning rule.</p></li>
+<li><p>Use fewer training epochs for the Input → Feature layer to avoid overfitting the reference data.</p></li>
+<li><p>It is usually good to keep <code class="docutils literal notranslate"><span class="pre">thr_l</span></code> fixed at <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+</ul>
+<p>If you’re unsure where to start, you can:</p>
+<ul class="simple">
+<li><p>Leave most values at their defaults and modify one at a time.</p></li>
+<li><p>Open an <a class="reference external" href="https://github.com/AdamDHines/LENS/issues">issue on GitHub</a> and we can help suggest tuning strategies.</p></li>
+</ul>
+</section>
+<section id="setting-up-hyperparameter-sweeps">
+<h2>Setting up Hyperparameter Sweeps<a class="headerlink" href="#setting-up-hyperparameter-sweeps" title="Link to this heading"></a></h2>
+<p>To automatically iterate over different hyperparameters using Weights &amp; Biases (Wandb), edit the dictionary in the <cite>optimizer.py</cite> script at <strong>line 64</strong>.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;fire_l_feat&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]},</span>
+    <span class="s1">&#39;fire_h_feat&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">]},</span>
+    <span class="s1">&#39;thr_h_feat&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>You can also use <code class="docutils literal notranslate"><span class="pre">np.linspace</span></code> to generate evenly spaced ranges:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;fire_l_feat&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.49</span><span class="p">,</span> <span class="mi">3</span><span class="p">))},</span>
+    <span class="s1">&#39;fire_h_feat&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">3</span><span class="p">))},</span>
+    <span class="s1">&#39;thr_h_feat&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Wandb can struggle with large parameter spaces. To avoid overly long sweep runs, try tuning one layer at a time.</p>
+</div>
+</section>
+<section id="wandb-sweep-setup">
+<h2>Wandb Sweep Setup<a class="headerlink" href="#wandb-sweep-setup" title="Link to this heading"></a></h2>
+<p>Once you’ve defined <code class="docutils literal notranslate"><span class="pre">parameters_dict</span></code>, configure Wandb to use those values by updating the <cite>wandsearch()</cite> function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize w&amp;b search</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">wandsearch</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">wandb</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">wandb</span><span class="o">.</span><span class="n">config</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">fire_l_feat</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">fire_l_feat</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">fire_h_feat</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">fire_h_feat</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">thr_h_feat</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">thr_h_feat</span>
+</pre></div>
+</div>
+<p>Wandb will automatically assign new values to these arguments at each training iteration and log the results to your online dashboard.</p>
+</section>
+<section id="sweep-method-configuration">
+<h2>Sweep Method Configuration<a class="headerlink" href="#sweep-method-configuration" title="Link to this heading"></a></h2>
+<p>By default, Wandb uses random sampling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sweep_config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="s1">&#39;random&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>You can switch to grid search like so:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sweep_config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="s1">&#39;grid&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>You can also give your sweep a unique project name to distinguish different experiments:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sweep_id</span> <span class="o">=</span> <span class="n">wandb</span><span class="o">.</span><span class="n">sweep</span><span class="p">(</span><span class="n">sweep_config</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="s2">&quot;random-sweep-001&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-evaluation">
+<h2>Model Evaluation<a class="headerlink" href="#model-evaluation" title="Link to this heading"></a></h2>
+<p>With a provided GT (ground truth) file, LENS performs a Recall&#64;N evaluation for <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">[1,</span> <span class="pre">5,</span> <span class="pre">10,</span> <span class="pre">15,</span> <span class="pre">20,</span> <span class="pre">25]</span></code>. These values are returned as an array, and we compute the <strong>area under the curve (AUC)</strong> using <code class="docutils literal notranslate"><span class="pre">np.trapz</span></code> to produce a single performance score.</p>
+<p>Wandb will automatically log:</p>
+<ul class="simple">
+<li><p>The best model performance</p></li>
+<li><p>The hyperparameter configuration that achieved it</p></li>
+</ul>
+</section>
+<section id="custom-metrics-e-g-recall-1">
+<h2>Custom Metrics (e.g., Recall&#64;1)<a class="headerlink" href="#custom-metrics-e-g-recall-1" title="Link to this heading"></a></h2>
+<p>You can override the default metric to focus on a specific value, such as Recall&#64;1:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">metric</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;goal&#39;</span><span class="p">:</span> <span class="s1">&#39;maximize&#39;</span><span class="p">}</span>
+<span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s2">&quot;R1&quot;</span><span class="p">:</span> <span class="n">R_all</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;R1: &quot;</span><span class="p">,</span> <span class="n">R_all</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="optimizer_overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sp_overview.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

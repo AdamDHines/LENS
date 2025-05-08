@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluating Models &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview" href="optimizer_overview.html" />
+    <link rel="prev" title="Evaluation Parameters" href="eval_params.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Evaluating Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-evaluation-network">Running the evaluation network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ground-truth-tolerances">Ground truth tolerances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sequence-matching">Sequence matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-output-saving">Results output &amp; saving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-evaluations">Additional evaluations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#visualize-similarity-matrix">Visualize similarity matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#precision-recall-curve">Precision-Recall curve</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sum-of-absolute-differences">Sum of absolute differences</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Evaluating Models</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/eval_setup.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="evaluating-models">
+<h1>Evaluating Models<a class="headerlink" href="#evaluating-models" title="Link to this heading"></a></h1>
+<p>In this guide, we will explore the evaluation network and the different parameters available and analysis.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This guide assumes you have already set up your dataset and have an appropriate ground truth file. See <a class="reference internal" href="train_overview.html"><span class="doc">Model Training</span></a>
+for more details.</p>
+</div>
+<section id="running-the-evaluation-network">
+<h2>Running the evaluation network<a class="headerlink" href="#running-the-evaluation-network" title="Link to this heading"></a></h2>
+<p>To run the training network, we simply need to run the following in the command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate
+</pre></div>
+</div>
+<p>This runs the default settings with the example dataset included in the project directory. However, if we wanted to see what this would like with a custom dataset we
+can add the arguments in manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--dataset<span class="w"> </span>example<span class="w"> </span>--camera<span class="w"> </span>davis128<span class="w"> </span>--reference<span class="w"> </span>example-reference<span class="w"> </span>--reference_places<span class="w"> </span><span class="m">100</span><span class="w"> </span>--query<span class="w"> </span>example-query<span class="w"> </span>--query_places<span class="w"> </span><span class="m">100</span>
+</pre></div>
+</div>
+<p>Similar to the training, we define the <code class="docutils literal notranslate"><span class="pre">--dataset</span></code> and <code class="docutils literal notranslate"><span class="pre">--camera</span></code> we want to use, but we also still need to pass in the <code class="docutils literal notranslate"><span class="pre">--reference</span></code>
+and <code class="docutils literal notranslate"><span class="pre">--reference_places</span></code> information so that LENS knows which model to import.</p>
+<p>Additionally, any specifications made to <code class="docutils literal notranslate"><span class="pre">--dims</span></code>, <code class="docutils literal notranslate"><span class="pre">--roi_dim</span></code>, and <code class="docutils literal notranslate"><span class="pre">--feature_multiplier</span></code> must be included to ensure the evaluation
+runs.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>If training and evaluating on your own dataset, you can change the defaults in <code class="docutils literal notranslate"><span class="pre">main.py</span></code> to simplify command terminal execution.</p>
+</div>
+<p>A Recall&#64;K caluclation will run to quantify how well your network performed based on the ground truth file provided.</p>
+<a class="reference internal image-reference" href="_images/lenseval.png"><img alt="Recall&#64;K for example LENS dataset evaluation" class="align-center" src="_images/lenseval.png" style="width: 800px;" />
+</a>
+<p>This tells us we achieved a Recall&#64;1 of 0.73, meaning when only allowing each query to match to a single reference we achieve 73% accuracy.</p>
+</section>
+<section id="ground-truth-tolerances">
+<h2>Ground truth tolerances<a class="headerlink" href="#ground-truth-tolerances" title="Link to this heading"></a></h2>
+<p>Our ground truth binary matrix assumes that every single query has a singular matching reference. This can be somewhat overly strict in terms of
+localization in real world scenarios.</p>
+<p>We include a method for allowing a tolerance in the ground truth that is based on a fixed number of places:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--GT_tolerance<span class="w"> </span><span class="m">3</span>
+</pre></div>
+</div>
+<p>In the above, this will dilate the ground truth matrix to allow true positive matches to occur if the LENS network predicted a place that is
++ or - 3 places from the actual ground truth.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>To enforce the strictest matching, set the <code class="docutils literal notranslate"><span class="pre">--GT_tolerance</span></code> to 0.</p>
+</div>
+<p>In our example dataset, if we set <code class="docutils literal notranslate"><span class="pre">--GT_tolerance</span> <span class="pre">0</span></code> we drastically reduce Recall&#64;1 performance from 0.73 to 0.12.</p>
+</section>
+<section id="sequence-matching">
+<h2>Sequence matching<a class="headerlink" href="#sequence-matching" title="Link to this heading"></a></h2>
+<p>The length of the sequence matcher can be modified based on the distances between places in your images. Typically, but not always, a longer
+sequence length will enhance Recall&#64;K performance whereas shorter lengths diminish accuracy.</p>
+<p>In the case of LENS, especially in terms of the pixel selection methodology, sequence matching is required to achieve sufficient accuracy.</p>
+<p>To modify the sequence length, we use the <code class="docutils literal notranslate"><span class="pre">--sequence_length</span></code> argument which will adjust how many places to highlight sequential information for:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--sequence_length<span class="w"> </span><span class="m">3</span>
+</pre></div>
+</div>
+<p>This will set the sequence length to be 3 places. If we compare Recall&#64;1 performance when <code class="docutils literal notranslate"><span class="pre">--sequence_length</span> <span class="pre">0</span></code> is used, we see a drop from
+0.73 to 0.55.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Sequence length is a user choosable parameter that ultimately depends on the downstream application. It would be advisable in any work
+to run an ablation study on the effects of sequence length on performance. Longer sequence lengths can sometimes reverse performance gains.</p>
+</div>
+</section>
+<section id="results-output-saving">
+<h2>Results output &amp; saving<a class="headerlink" href="#results-output-saving" title="Link to this heading"></a></h2>
+<p>The results from running the LENS evaluation are automatically stored in the <code class="docutils literal notranslate"><span class="pre">./lens/output/</span></code> folder. The type of results that are stored depend
+on the evaluations run.</p>
+<p>Each time the LENS evaluation is run, a unique folder that is date and timestamped is generated to avoid overwriting information.</p>
+<p>Standard outputs from LENS are a <code class="docutils literal notranslate"><span class="pre">.log</span></code> file consisting of the command terminal output, a <code class="docutils literal notranslate"><span class="pre">.png</span></code> image of the similarity and
+ground truth matrices, as well as a high quality <code class="docutils literal notranslate"><span class="pre">.pdf</span></code> of the similarity matrix showing the ground truth and corresponding matches.</p>
+<a class="reference internal image-reference" href="_images/simmat_matches.png"><img alt="Image showing the LENS similarity matrix with ground truth and true/false positives plotted on top" class="align-center" src="_images/simmat_matches.png" style="width: 800px;" />
+</a>
+</section>
+<section id="additional-evaluations">
+<h2>Additional evaluations<a class="headerlink" href="#additional-evaluations" title="Link to this heading"></a></h2>
+<p>Additional evaluations are all stored in the same output folder described above.</p>
+<section id="visualize-similarity-matrix">
+<h3>Visualize similarity matrix<a class="headerlink" href="#visualize-similarity-matrix" title="Link to this heading"></a></h3>
+<p>We can see the matrix of output spikes from LENS directly to observe visually how the model performed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--sim_mat
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/distancemat.png"><img alt="Distance matrix of output spikes from the LENS model" class="align-center" src="_images/distancemat.png" style="width: 800px;" />
+</a>
+<p>The colorbar represents the number of output spikes from the LENS model, higher spikes indicate highler similarity between query and reference,
+and vice versa.</p>
+</section>
+<section id="precision-recall-curve">
+<h3>Precision-Recall curve<a class="headerlink" href="#precision-recall-curve" title="Link to this heading"></a></h3>
+<p>We can also output a Precision-Recall curve into a <code class="docutils literal notranslate"><span class="pre">.json</span></code> file by using the <code class="docutils literal notranslate"><span class="pre">--pr_curve</span></code> argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--PR_curve
+</pre></div>
+</div>
+</section>
+<section id="sum-of-absolute-differences">
+<h3>Sum of absolute differences<a class="headerlink" href="#sum-of-absolute-differences" title="Link to this heading"></a></h3>
+<p>We can also compare to a baseline method built in to LENS, the sum-of-absolute-differences, to see how well it relatively performs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--sad
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="eval_params.html" class="btn btn-neutral float-left" title="Evaluation Parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="optimizer_overview.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,248 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick start &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Attributions" href="attributions.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#demo">Demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluation-network">Evaluation network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-models">Training models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#direct-python-execution">Direct Python execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quick start</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quick-start">
+<h1>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All instructions for the quick start guide will focus on the recommended install method of <a class="reference external" href="https://prefix.dev/">pixi</a>. A list of commands will be provided
+at the end of this guide for conda and PyPi envrionments.</p>
+</div>
+<section id="demo">
+<h2>Demo<a class="headerlink" href="#demo" title="Link to this heading"></a></h2>
+<p>After installing the dependencies and cloning the repository, we can run a demo of the evaluation system with the provided example dataset and model.
+To run the demo evalluation, run the following in your command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>demo
+</pre></div>
+</div>
+<p>This will run the evaluation network on a model that has learned 100 places from an indoor traverse on a Hexapod robotic platform. The data for which was collected
+from a SynSense Speck2fDevKit mounted to the front of the robot.</p>
+<p>An animation showing the query, its predicted reference match, and localization performance will appear when running the demo script.</p>
+<a class="reference internal image-reference" href="_images/demo.png"><img alt="screenshot of the demo application showing the performance of a test dataset" class="align-center" src="_images/demo.png" style="width: 1000px;" />
+</a>
+<p>The images of places are 2D-temporal representations of event streams collected over a 1-second time period. The 2D images are then converted into spike trains based
+on the pixel intensity.</p>
+<p>The distance matrix that is the number of output spikes from the LENS network, where higher spike counts indicate greater similarity.
+We will explore this in more depth in later parts of the documentation.</p>
+<p>For the eavluation, we calculate the Recall&#64;K and the Precision-Recall for each query image and its corresponding matches to the reference database based on a
+ground truth of the exact corresponding matches.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We highly recommend this <a class="reference external" href="https://ieeexplore.ieee.org/document/10261441">tutorial on visual place recognition</a> which covers all evaluation metrics.</p>
+</div>
+</section>
+<section id="evaluation-network">
+<h2>Evaluation network<a class="headerlink" href="#evaluation-network" title="Link to this heading"></a></h2>
+<p>The evaluation network can run with greater control over the functionality of LENS, including specifying query/reference datasets, spiking timesteps for images,
+and evaluation metrics.</p>
+<p>To use the evaluation network, run the following in your command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate
+</pre></div>
+</div>
+<p>This runs LENS with ground-truth matching and a Recall&#64;K calculation, which requires a ground-truth binary matrix for stored as a <code class="docutils literal notranslate"><span class="pre">numpy</span> <span class="pre">array</span></code>. We will explore
+generating ground-truth files later in the documentation.</p>
+<p>We can change the number of spiking timesteps that will be generated for each image by using the <code class="docutils literal notranslate"><span class="pre">--timebin</span></code> flag. Fewer timesteps will result in less information
+passed to the network for each image, but decrease inference time. We can change the timesteps to 250 from the default 1,000:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--timebin<span class="w"> </span><span class="m">250</span>
+</pre></div>
+</div>
+<p>You will notice that the Recall&#64;K decreased with the smaller timebin.</p>
+<p>In LENS, we also provide an in-built baseline comparison to the sum-of-absolute-differences (SAD) method to compare relative performance of your models:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--sad
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a full list of evaluation functions, please refer to the <a class="reference internal" href="eval_params.html"><span class="doc">Evaluation Parameters</span></a> page for more information.</p>
+</div>
+</section>
+<section id="training-models">
+<h2>Training models<a class="headerlink" href="#training-models" title="Link to this heading"></a></h2>
+<p>New models can be easily trained and evaluated quickly. To train a new model and evaluate it, run the following in your command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train
+pixi<span class="w"> </span>run<span class="w"> </span>evaluate
+</pre></div>
+</div>
+<p>Our training method uses an efficient spike-timing dependent plasticity <cite>(STDP)</cite> regime to learn the weights across a 3-layer network (input, feature, and output).</p>
+<a class="reference internal image-reference" href="_images/lensnetwork.png"><img alt="Schematic of the LENS neural network" class="align-center" src="_images/lensnetwork.png" style="width: 300px;" />
+</a>
+<p>In this network, we have a network architecture of 100 input neurons, 200 feature neurons, and 100 output neurons where each output corresponds to a single place.</p>
+<p>If we want to improve Recall&#64;K performance, we can increase the number of feature neurons to better encode spatial information:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--feature_multiplier<span class="w"> </span><span class="m">4</span>.0
+pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--feature_multiplier<span class="w"> </span><span class="m">4</span>.0
+</pre></div>
+</div>
+<p>We can also directly alter the number of query and reference images to train on, use different datasets, and modify all the network hyperparameters
+for learning using this script. Run the following in your command terminal to evaluate fewer query images:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--reference_places<span class="w"> </span><span class="m">50</span>
+pixi<span class="w"> </span>run<span class="w"> </span>evaluate<span class="w"> </span>--reference_places<span class="w"> </span><span class="m">50</span><span class="w"> </span>--query_places<span class="w"> </span><span class="m">50</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All training and evaluation functions are explored in the <a class="reference internal" href="eval_params.html"><span class="doc">Evaluation Parameters</span></a> and <a class="reference internal" href="train_params.html"><span class="doc">Training Parameters</span></a> pages.</p>
+</div>
+</section>
+<section id="direct-python-execution">
+<h2>Direct Python execution<a class="headerlink" href="#direct-python-execution" title="Link to this heading"></a></h2>
+<p>For non-pixi environments, below is a list of the above command-line executions to run the LENS demo, evaluation, and training scripts.</p>
+<p>Run the demo:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--demo<span class="w"> </span>--matching<span class="w"> </span>--PR_curve
+</pre></div>
+</div>
+<p>Run the evaluation script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--matching
+</pre></div>
+</div>
+<p>Run the training script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--train_model
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="attributions.html" class="btn btn-neutral float-right" title="Attributions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

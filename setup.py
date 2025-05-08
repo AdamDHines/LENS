@@ -22,7 +22,6 @@ requirements = [
 		'matplotlib>=3.8.2',
 		'pynmea2>=1.19.0',
 		'scipy>=1.11.4',
-		'seaborn>=0.13.2',
 		'wandb>=0.16.2'  
                 ]
 

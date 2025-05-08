@@ -1,0 +1,205 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Training Parameters" href="train_params.html" />
+    <link rel="prev" title="Attributions" href="attributions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#connections">Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#weight-updates">Weight updates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_setup.html">Training New Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/train_overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>In this part of the documentation, we provide a detailed description and visualization of the training regime used for LENS and explain the core logic
+of the weight updates.</p>
+<p>In addition, we will also explain how you can train on custom datasets as well as the process for creating images that can be used for training new models.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We highly recommend additionally exploring the <span class="xref std std-doc">Optimizer</span> to tune the network hyperparameters for custom datasets.</p>
+</div>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading"></a></h2>
+<p>The LENS neural network uses a unique temporal spike-encoding method first introduced for visual place recognition in <a class="reference external" href="https://github.com/QVPR/VPRTempo">VPRTempo</a>. The
+key abstraction in the temporal encoding is to treat spike timing as a function of pixel intensity, <cite>i.e. spike amplitude</cite>. This results in a high spike efficiency, reducing
+the amount of information required to encode pixel information.</p>
+<a class="reference internal image-reference" href="_images/lens_spikes.gif"><img alt="Animated .gif of the temporal spike encoding paradigm that LENS uses" class="align-center" src="_images/lens_spikes.gif" style="width: 400px;" />
+</a>
+<p>In the above, a simple 2x2 example shows how the different pixel intensities results in unique spike encoding for each combination of colors.</p>
+<p>We can exploit this abstract encoding to be used with a spike-timing dependent plasticity (STDP) where the spike amplitude between layers is compared. If a spike
+in a preceeding layer has a high amplitude and connects to neuron which results in a lower amplitude spike, we strengthen that connection by assuming <cite>the preceeding
+neuron spiked first, followed by the second neuron</cite>.</p>
+<p>The inverse is also true, if the preceeding neuron had a spike that was lower in amplitude than its connecting neuron, we weaken the connection.</p>
+<a class="reference internal image-reference" href="_images/stdp.png"><img alt="Schematic example of how STDP works with our unique temporal encoding of spikes" class="align-center" src="_images/stdp.png" style="width: 300px;" />
+</a>
+<p>We train the layer connection weights in pairs, from the input to the output - in the case of LENS, we initially train the input to the feature layer and then the
+feature to the output layer. This means that each layer pair is trained using information from previously trained layers (excluding the input to feature pair).</p>
+</section>
+<section id="connections">
+<h2>Connections<a class="headerlink" href="#connections" title="Link to this heading"></a></h2>
+<p>Connections across the layers consist of an excitatory and inhibitory weight, generating positive and negative spike values, respectively. The spike amplitude in a proceeding
+layer neuron is determined by the summed value of all the excitatory and inhibitory connections.</p>
+<p>The amount of excitatory and inhibitory connections can be controlled via a connection probability, <cite>i.e.</cite> connections across layers can either be sparse or full. You can
+also imbalance the amount of excitatory and inhibitory connections.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>Input to feature representations work best with sparse connections, whereas feature to output benefits from being fully connected.</p>
+</div>
+</section>
+<section id="weight-updates">
+<h2>Weight updates<a class="headerlink" href="#weight-updates" title="Link to this heading"></a></h2>
+<p>The connection weights between neurons are updated using a biologically inspired STDP-like rule. The weight update equation is defined as:</p>
+<div class="math notranslate nohighlight">
+\[\Delta W^{nm}_{ji}(t) = \frac{\eta_\text{STDP}(t)}{f^n_j} \cdot \Big[\Theta\big(x^m_i(t-1)\big)\cdot \Theta\big(x^n_j(t)\big)\cdot \big(0.5 - x^n_j(t)\big)\Big]\]</div>
+<p>where <span class="math notranslate nohighlight">\(W^{nm}_{ji}\)</span> is the connection weight from neuron <span class="math notranslate nohighlight">\(j\)</span> in layer <span class="math notranslate nohighlight">\(n\)</span> to neuron <span class="math notranslate nohighlight">\(i\)</span> in layer <span class="math notranslate nohighlight">\(m\)</span>, <span class="math notranslate nohighlight">\(\eta_\text{STDP}\)</span> is the STDP
+learning rate, and <span class="math notranslate nohighlight">\(f_j^n\)</span> is the target firing rate of neuron <span class="math notranslate nohighlight">\(j\)</span> in layer <span class="math notranslate nohighlight">\(n\)</span>. The Heaviside step function is denoted by <span class="math notranslate nohighlight">\(\Theta(\cdot)\)</span>,
+and <span class="math notranslate nohighlight">\(x^m_i\)</span> and <span class="math notranslate nohighlight">\(x^n_j\)</span> are the neuron states in the corresponding layers and timesteps.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>The learning rule effectively calculates whether the amplitude of a spike was larger or smaller across layers, and makes a small increase or decrease in the weight,
+respectively.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each of these hyperparameters are able to be modified for training.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="attributions.html" class="btn btn-neutral float-left" title="Attributions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="train_params.html" class="btn btn-neutral float-right" title="Training Parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,390 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training New Models &mdash; LENS 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview" href="eval_overview.html" />
+    <link rel="prev" title="Training Parameters" href="train_params.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LENS
+              <img src="_static/logowhite.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attributions.html">Attributions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Training:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="train_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train_params.html">Training Parameters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Training New Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preparing-your-data">Preparing your data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ground-truth-file">Ground truth file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-training">Running the training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#network-setup">Network setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#input-layer-size">Input layer size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feature-layer-size">Feature layer size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connection-probabilities">Connection probabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#hyperparameters">Hyperparameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#training-epochs">Training epochs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#learning-rates">Learning rates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spiking-thresholds">Spiking thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firing-rates">Firing rates</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#saving-trained-models">Saving trained models</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Model Evaluation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_params.html">Evaluation Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_setup.html">Evaluating Models</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Optimization:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_setup.html">Using the optimizer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">SPECK deployment:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sp_overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_functions.html">Speck Deployment Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_dataset.html">Create a SPECK dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_setup.html">Deploying to SPECK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sp_onchip.html">On-device localization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Modules Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="LENS.html">LENS package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.src.html">LENS.src package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LENS.tools.html">LENS.tools package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LENS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Training New Models</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/train_setup.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="training-new-models">
+<h1>Training New Models<a class="headerlink" href="#training-new-models" title="Link to this heading"></a></h1>
+<p>In this guide, we explore how to train models using LENS. There are a number of options available to tune the model to best fit your data.
+LENS supports a range of DVS cameras with only minimal parameter adjustments.</p>
+<section id="preparing-your-data">
+<h2>Preparing your data<a class="headerlink" href="#preparing-your-data" title="Link to this heading"></a></h2>
+<p>LENS trains on event frames, which are created by counting the number of events detected over a specific time window. The ideal time window depends on your collection method.
+Faster robot movement speeds might require a shorter collection period, whereas slower speeds would need to be increase.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>As a guideline, aim for an average of <strong>50–100 events per pixel</strong> and a 1-second time window as a starting point.</p>
+</div>
+<p>The exact method to extract events and generate event frames will depend on your camera and how the events are stored. An example script that extracts events from a DAVIS346
+stored in a rosbag is shown <a class="reference external" href="https://github.com/AdamDHines/LENS/blob/main/lens/tools/dvstools.py">here</a>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>All event frames must be in 8-bit grayscale format and stored as <code class="docutils literal notranslate"><span class="pre">.png</span></code> files.</p>
+</div>
+<p>It is recommended that all data for LENS be placed in the <code class="docutils literal notranslate"><span class="pre">./lens/dataset/</span></code> directory. The directory structure should follow this convention:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--dataset
+  |--dataset1
+     |--camera1
+        |experiment001
+        |experiment002
+     |--camera2
+        |experiment003
+        |experiment004
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This layout supports running the same dataset across different DVS cameras.</p>
+</div>
+<p>As an example, let’s look at the example dataset that we have included in the LENS repository:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--dataset
+  |--example
+     |--davis128
+        |example-query
+        |example-reference
+</pre></div>
+</div>
+<p>To load images in for both training and evaluation, we use a <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file of image names and its index value. To simply create this file, we provide a <a class="reference external" href="https://github.com/AdamDHines/LENS/blob/main/lens/tools/create_data_csv.py">simple
+script</a> that generates one for you.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">create_csv_from_images</span><span class="p">(</span><span class="s1">&#39;./lens/dataset/example/davis128/example-query&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;./lens/dataset/example-query.csv&#39;</span><span class="p">,</span>
+                  <span class="n">gps_path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This script includes the ability to read GPS coordinates from a <code class="docutils literal notranslate"><span class="pre">.nmea</span></code> file and associate it with image timestamps to assist in ground truth creation. Please see <a class="reference external" href="https://github.com/AdamDHines/LENS/blob/main/lens/tools/read_gps.py">this script</a> for more details.</p>
+</div>
+</section>
+<section id="ground-truth-file">
+<h2>Ground truth file<a class="headerlink" href="#ground-truth-file" title="Link to this heading"></a></h2>
+<p>In order to run the evaluation and obtain matching metrics, a ground truth file is required. The ground truth file is a binary matrix stored as an <code class="docutils literal notranslate"><span class="pre">.npy</span></code> file in
+your dataset directory:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--dataset
+  |--example
+     |--davis128
+        |example-query
+        |example-reference
+        |example-reference_example-query_GT.npy
+</pre></div>
+</div>
+<p>During evaluation, this file is loaded and used to run Recall&#64;K and Precision-Recall analysis.</p>
+<p>For datasets where there is a 1:1 correspondance between queries and reference, the ground truth can simply be:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">GT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="o">&lt;</span><span class="n">NUM_REFERENCES</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">NUM_QUERIES</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">GT</span><span class="p">,</span> <span class="s1">&#39;./lens/dataset/&lt;your_dataset&gt;/&lt;camera&gt;/&lt;reference&gt;_&lt;query&gt;_GT.npy&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The naming of the ground truth file must always be &lt;REFERENCE&gt;_&lt;QUERY&gt;_GT with an underscore between the reference and query names.</p>
+</div>
+<p>For datasets with unequal references and queries, the ground truth will need to be generated from GPS coordinates or manually curated. As this will differ greatly
+across datasets, formats, and cameras - it is not easily feasible to have a generalized pipeline for ground truth generation.</p>
+</section>
+<section id="running-the-training">
+<h2>Running the training<a class="headerlink" href="#running-the-training" title="Link to this heading"></a></h2>
+<p>To run the training network, we simply run the following in the command terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train
+</pre></div>
+</div>
+<p>The default arguments for the example dataset have already been set in LENS. However, if we wanted to see what this would like with a custom dataset we
+can add the arguments in manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--dataset<span class="w"> </span>example<span class="w"> </span>--camera<span class="w"> </span>davis128<span class="w"> </span>--reference<span class="w"> </span>example-reference<span class="w"> </span>--reference_places<span class="w"> </span><span class="m">100</span>
+</pre></div>
+</div>
+<p>The arguments <code class="docutils literal notranslate"><span class="pre">--dataset</span></code>, <code class="docutils literal notranslate"><span class="pre">--camera</span></code>, <code class="docutils literal notranslate"><span class="pre">--reference</span></code>, and <code class="docutils literal notranslate"><span class="pre">-reference_places</span></code> are used to tell LENS which dataset you want to train on and how
+many references images there are in the dataset.</p>
+<p>If we had a different dataset, for example we collected two different event streams (stream001 and stream002) from an outdoor environment (OutDoorEv) on a DAVIS346 with 500 images each,
+we would modify the arguments as:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--dataset<span class="w"> </span>OutDoorEv<span class="w"> </span>--camera<span class="w"> </span>DAVIS346<span class="w"> </span>--reference<span class="w"> </span>stream001<span class="w"> </span>--reference_places<span class="w"> </span><span class="m">500</span>
+</pre></div>
+</div>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>However the data is stored in <code class="docutils literal notranslate"><span class="pre">./lens/dataset/</span></code> is what you will call in the arguments</p>
+</div>
+<p>If your dataset is in a location other than <code class="docutils literal notranslate"><span class="pre">./lens/dataset/</span></code>, you can change the root dataset directory path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--data_dir<span class="w"> </span>&lt;your_dataset_location&gt;/
+</pre></div>
+</div>
+<p>The last dataset related option available is the ability to skip images in your directory. For example, if you want to increase the physical
+distance between places trained you can ignore a set interval of images:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--filter<span class="w"> </span><span class="m">2</span>
+</pre></div>
+</div>
+<p>This will skip every 2nd image in the directory, halving the number of reference images.</p>
+</section>
+<section id="network-setup">
+<h2>Network setup<a class="headerlink" href="#network-setup" title="Link to this heading"></a></h2>
+<p>There are a plethora of training parameters that can be tuned for different datasets. In general, the default hyperparameters have been found to generalize
+well to multiple different datasets from various event cameras.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please see <a class="reference internal" href="train_params.html"><span class="doc">Training Parameters</span></a> for a full list of training hyperparameters.</p>
+</div>
+<section id="input-layer-size">
+<h3>Input layer size<a class="headerlink" href="#input-layer-size" title="Link to this heading"></a></h3>
+<p>LENS works on the basis of selecting pixels from images using a convolutional kernel to reduce input dimensionality. We can automatically
+alter the convolution to allow more or fewer pixels in for downsampling using the <code class="docutils literal notranslate"><span class="pre">--dims</span></code> argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--dims<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+<p>This tells LENS to downsample the image from its input size to a <code class="docutils literal notranslate"><span class="pre">10x10</span></code> image, <cite>i.e. 100 pixels</cite>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--roi_dim</span></code> argument informs LENS of the input dimensionality which runs a check against the downsampled size to make sure it is compatible.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--roi_dim<span class="w"> </span><span class="m">80</span>
+</pre></div>
+</div>
+<p>This argument tells LENS that the input image is of size <code class="docutils literal notranslate"><span class="pre">80x80</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, LENS only supports square input images and outputs. If using rectangular images, please select a square ROI.</p>
+</div>
+</section>
+<section id="feature-layer-size">
+<h3>Feature layer size<a class="headerlink" href="#feature-layer-size" title="Link to this heading"></a></h3>
+<p>We can modify the number of neurons in our feature layer which will affect the spatial representation of information of input images. Increasing the number of
+neurons generally increases performance, to a point, whilst decreasing the number of neurons decreases performance.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--feature_multiplier</span></code> argument controls how many feature neurons there are relative to the number of pixel encoding input neurons.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--feature_multiplier<span class="w"> </span><span class="m">4</span>.0<span class="w"> </span><span class="c1"># for 4x the number of neurons relative to input</span>
+pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--feature_multiplier<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="c1"># for 1/2x the number of neurons relative to input</span>
+</pre></div>
+</div>
+</section>
+<section id="connection-probabilities">
+<h3>Connection probabilities<a class="headerlink" href="#connection-probabilities" title="Link to this heading"></a></h3>
+<p>Altering the connection probabilities easily allows you to sparsify network connections for both excitatory and inhibitory weights. When a new
+model is randomly seeded, it will use the connection probability value to set the desired number of connections:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--f_exc<span class="w"> </span><span class="m">0</span>.35<span class="w"> </span>--f_inh<span class="w"> </span><span class="m">0</span>.75<span class="w"> </span>--o_exc<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>--o_inh<span class="w"> </span><span class="m">1</span>.0
+</pre></div>
+</div>
+<p>The above will set a 35% excitatory and 75% inhibitory connections from the input to the feature and fully connect the feature to output layers.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Whilst we specify that connections probabilities <cite>sparsify</cite> network weights, they are not true sparse matrices. Instead, a lack of connection
+is represented by a weight of <code class="docutils literal notranslate"><span class="pre">0</span></code> and does not contribute to synaptic activity or weight updates during training.</p>
+</div>
+</section>
+</section>
+<section id="hyperparameters">
+<h2>Hyperparameters<a class="headerlink" href="#hyperparameters" title="Link to this heading"></a></h2>
+<p>There are a few hyperparameters that we can modify for network training. In general, the defaults work well for a variety of datasets however
+this may not be the case for your dataset.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>Check out the <a class="reference internal" href="optimizer_overview.html"><span class="doc">Optimizer</span></a> documentation for how to tune your network parameters for custom datasets.</p>
+</div>
+<section id="training-epochs">
+<h3>Training epochs<a class="headerlink" href="#training-epochs" title="Link to this heading"></a></h3>
+<p>The number of epochs is controllable for each layer pair in LENS, meaning you can train the input –&gt; feature and feature –&gt; output differently.
+Use the <code class="docutils literal notranslate"><span class="pre">--epoch_feat</span></code> and <code class="docutils literal notranslate"><span class="pre">--epoch_out</span></code> arguments with an integer value to change how many training iterations there are:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--epoch_feat<span class="w"> </span><span class="m">64</span><span class="w"> </span>--epoch_out<span class="w"> </span><span class="m">128</span>
+</pre></div>
+</div>
+<p>This will run 64 epochs for the input –&gt; feature layer and 128 epochs for the feature –&gt; output layer.</p>
+</section>
+<section id="learning-rates">
+<h3>Learning rates<a class="headerlink" href="#learning-rates" title="Link to this heading"></a></h3>
+<p>In addition to epochs, the learning rates for training each layer pair can be different to account for the number of training iterations.
+The <code class="docutils literal notranslate"><span class="pre">--stdp_rate_feat</span></code> and <code class="docutils literal notranslate"><span class="pre">--stdp_rate_out</span></code> arguments are used to control the learning rates:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--stdp_rate_feat<span class="w"> </span>1e-2<span class="w"> </span>--stdp_rate_out<span class="w"> </span>1e-3
+</pre></div>
+</div>
+</section>
+<section id="spiking-thresholds">
+<h3>Spiking thresholds<a class="headerlink" href="#spiking-thresholds" title="Link to this heading"></a></h3>
+<p>Spiking thresholds are used to control spiking activity in individual neurons, with higher threshold values requiring bigger spike amplitudes
+to propagate information.</p>
+<p>Spike thresholds are uniformly distributed for each layer in a linspace range from <code class="docutils literal notranslate"><span class="pre">low</span></code> to <code class="docutils literal notranslate"><span class="pre">high</span></code> and are a learnable parameter during
+training:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--thr_l_feat<span class="w"> </span><span class="m">0</span><span class="w"> </span>--thr_h_feat<span class="w"> </span><span class="m">0</span>.75<span class="w"> </span>--thr_l_out<span class="w"> </span><span class="m">0</span><span class="w"> </span>--thr_h_out<span class="w"> </span><span class="m">0</span>.5
+</pre></div>
+</div>
+<p>This will set an upper spiking threshold bound of <code class="docutils literal notranslate"><span class="pre">0.75</span></code> for the input –&gt; feature layer and <code class="docutils literal notranslate"><span class="pre">0.5</span></code> for feature –&gt; output.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>It is highly recommended that the lower threshold bound is kept to 0 (default) and the output layer higher threshold is kept to 0.5 (default).
+This is based on the learning rule as explored in the <a class="reference internal" href="train_overview.html"><span class="doc">training overview</span></a>.</p>
+</div>
+</section>
+<section id="firing-rates">
+<h3>Firing rates<a class="headerlink" href="#firing-rates" title="Link to this heading"></a></h3>
+<p>The firing rates are used to adjust the spiking threshold values during weight updates. Increasing the firing rate has a greater effect
+on modifying the firing thresholds. Like the thresholds, these values are set in a linspace range from low to high:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>--fire_l_feat<span class="w"> </span><span class="m">0</span>.4<span class="w"> </span>--fire_h_feat<span class="w"> </span><span class="m">0</span>.6<span class="w"> </span>--fire_l_out<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--fire_h_out<span class="w"> </span><span class="m">0</span>.5
+</pre></div>
+</div>
+</section>
+</section>
+<section id="saving-trained-models">
+<h2>Saving trained models<a class="headerlink" href="#saving-trained-models" title="Link to this heading"></a></h2>
+<p>Models are automatically saved at the end of training all the layers. The model name uses the following convention:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;&lt;reference&gt;_&lt;query&gt;_IN&lt;NUM_INPUT_NEURONS&gt;_FN&lt;NUM_FEATURE_NEURONS&gt;_DB&lt;NUM_REFERENCE_PLACES&gt;.pth&quot;</span>
+</pre></div>
+</div>
+<p>These unique model names allow you to train multiple networks on the same dataset with different network architectures to compare performance.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All models can be found in the <code class="docutils literal notranslate"><span class="pre">./lens/models/</span></code> subfolder.</p>
+</div>
+<p>When running the evaluation network, setting up the same dataset and network configuration will load the correct corresponding model.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="train_params.html" class="btn btn-neutral float-left" title="Training Parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="eval_overview.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Adam D Hines, Michael Milford, Tobias Fischer.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

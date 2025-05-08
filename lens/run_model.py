@@ -26,9 +26,9 @@ Imports
 
 import os
 import torch
+import lens.src.demo as demo
 
 import numpy as np
-import seaborn as sns
 import torch.nn as nn
 import sinabs.layers as sl
 import lens.src.blitnet as bn
@@ -324,10 +324,12 @@ class LENS(nn.Module):
          
         if self.sim_mat: # Plot only the similarity matrix
             plt.figure(figsize=(10, 8))
-            sns.heatmap(dist_matrix_seq, annot=False, cmap='crest')
-            plt.title('Similarity matrix')
-            plt.xlabel("Query")
-            plt.ylabel("Database")
+            plt.imshow(dist_matrix_seq, aspect='auto')
+            plt.colorbar()
+            plt.title("Distance Matrix")
+            plt.xlabel("Index")
+            plt.ylabel("Index")
+            plt.tight_layout()
             plt.show()
 
         # Plot PR curve
@@ -348,6 +350,12 @@ class LENS(nn.Module):
             # plot the results
             if self.PR_curve:
                 plot_PR(lens_PR, sad_PR, self.output_folder)
+
+
+        if self.demo:
+            # Run demo
+            demo.demo(self.data_dir, self.dataset, self.camera, self.query, self.reference,
+                    dist_matrix_seq, GTtol, N, R, LENS_R, LENS_P)
         
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
