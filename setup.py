@@ -28,7 +28,7 @@ requirements = [
 # define the setup
 setup(
     name="lens-vpr",
-    version="0.1.2",
+    version="0.1.3",
     description='LENS: Locational Encoding with Neuromorphic Systems',
     long_description=long_description,
     long_description_content_type='text/markdown',
