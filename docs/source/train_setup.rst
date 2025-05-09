@@ -76,7 +76,7 @@ your dataset directory:
 
 During evaluation, this file is loaded and used to run Recall@K and Precision-Recall analysis.
 
-For datasets where there is a 1:1 correspondance between queries and reference, the ground truth can simply be:
+For datasets where there is a 1:1 correspondence between queries and reference, the ground truth can simply be:
 
 .. code-block:: python
 
