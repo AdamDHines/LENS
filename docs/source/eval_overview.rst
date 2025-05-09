@@ -95,7 +95,7 @@ Precision and recall is defined as:
 
 .. math::
 
-    precision = TP/TP + FP\\
+    precision = TP/(TP + FP)\\
     recall = TP/GTP
 
 where GTP is the number of ground truth positives.
