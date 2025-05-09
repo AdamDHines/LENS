@@ -6,8 +6,8 @@ LENS documentation
    :align: center
    :width: 400px
 
-Welcome to the LENS (Locational Encoding with Neuromorphic Systems) documentation. LENS is an event-based, neuromorphic visual place recoginition system
-to perform accurate and fast robotic localization. 
+Welcome to the LENS (Locational Encoding with Neuromorphic Systems) documentation. LENS is an event-based, neuromorphic visual place recognition system
+to perform accurate, fast, and energy-efficient robotic localization. 
 
 LENS was developed for the SynSense `SPECK™ <https://www.synsense.ai/products/speck-2/>`_, a combined neuromorphic processor and integrated dynamic vision sensor
 for ultra energy-efficient and compact place recognition. However, LENS is fully compatible with conventional compute hardware for benchmark and custom event-based
