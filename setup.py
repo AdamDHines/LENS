@@ -16,7 +16,7 @@ requirements = [
 		'tqdm>=4.65.0',
 		'prettytable>=3.5.0',
 		'scikit-learn>=1.2.2',
-		'sinabs>=2.0.0',
+		'sinabs>=3.0.1',
 		'h5py>=3.10.0',
 		'imageio>=2.34.1',
 		'matplotlib>=3.8.2',
@@ -28,7 +28,7 @@ requirements = [
 # define the setup
 setup(
     name="lens-vpr",
-    version="0.1.3",
+    version="0.1.4",
     description='LENS: Locational Encoding with Neuromorphic Systems',
     long_description=long_description,
     long_description_content_type='text/markdown',

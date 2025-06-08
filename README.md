@@ -15,7 +15,7 @@
 
 This repository contains code for **LENS** - **L**ocational **E**ncoding with **N**euromorphic **S**ystems. LENS combines neuromorphic algorithms, sensors, and hardware to perform accurate, real-time robotic localization using visual place recognition (VPR). 
 
-LENS performs VPR with the SynSense [SPECK<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) development kits, featuring a combination of a dynamic vision sensor and neuromorphic System-on-Chip processor for real-time, energy-efficient localization. 
+LENS performs VPR with the SynSense [Speck<sup>TM</sup>](https://www.synsense.ai/products/speck-2/) development kits, featuring a combination of a dynamic vision sensor and neuromorphic System-on-Chip processor for real-time, energy-efficient localization. 
 
 LENS can also be used with conventional CPU, GPU, and Apple Silicon (MPS) devices to perform event-based VPR thanks to the [Sinabs](https://sinabs.readthedocs.io/en/v2.0.0/) spiking network architecture.
 
@@ -88,7 +88,7 @@ This repository is licensed under the permissive [MIT License](./LICENSE). If yo
 
 ```
 @article{hines2025lens,
-      title={A compact neuromorphic system for ultra energy-efficient, on-device robot localization}, 
+      title={A compact neuromorphic system for ultra-energy-efficient, on-device robot localization}, 
       author={Adam D. Hines and Michael Milford and Tobias Fischer},
       journal={},
       year={2025},

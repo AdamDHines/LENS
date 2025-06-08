@@ -39,7 +39,7 @@ def demo(data_dir, dataset, camera, query, reference,
         ax.axis('off')
     ax_q.set_title('Query',  fontsize=12, weight='bold')
     ax_ref.set_title('Matched Reference', fontsize=12, weight='bold')
-    ax_heat.set_title('Distance Matrix', fontsize=12, weight='bold')
+    ax_heat.set_title('Similarity Matrix', fontsize=12, weight='bold')
 
     # ── 3.  distance matrix setup with NaN mask ────────────────────────────
     vmin, vmax = dist_matrix_seq.min(), dist_matrix_seq.max()
@@ -71,9 +71,9 @@ def demo(data_dir, dataset, camera, query, reference,
     # ── 5.  distance‑vector line (auto‑scaled) ─────────────────────────────
     line, = ax_line.plot([], [], lw=2, color='#ffb000')
     ax_line.set_xlim(0, dist_matrix_seq.shape[0] - 1)
-    ax_line.set_title('Distances for Current Query',
+    ax_line.set_title('Similarities for Current Query',
                     fontsize=12, weight='bold')
-    ax_line.set_xlabel('Reference idx'); ax_line.set_ylabel('Distance')
+    ax_line.set_xlabel('Reference idx'); ax_line.set_ylabel('Similarity')
     # global distance range for the whole run  ➜  y‑axis never jumps
     d_min, d_max = dist_matrix_seq.min(), dist_matrix_seq.max()
     if np.isclose(d_min, d_max):                      # all‑equal safeguard
