@@ -81,7 +81,9 @@ pixi run on-speck
 _For more details on deployment to the Speck2fDevKit, please visit the [LENS documentation](https://lens-vpr.readthedocs.io/en/latest/sp_overview.html)._
 
 ## Dataset
-For all data relating to our manuscript, please see [./lens/data](./lens/data) for details. We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/4302805.
+For all data relating to our manuscript, we have a dedicated permanent repository at https://zenodo.org/records/15392412, as well as including all data in this repository, which can found in the [./lens/data](./lens/data) folder.
+
+We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/4302805.
 
 ## License and citation
 This repository is licensed under the permissive [MIT License](./LICENSE). If you use our code, please cite our [ paper]():
