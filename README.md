@@ -89,15 +89,16 @@ We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/43
 This repository is licensed under the permissive [MIT License](./LICENSE). If you use our code, please cite our [ paper]():
 
 ```
-@article{hines2025lens,
-      title={A compact neuromorphic system for ultra-energy-efficient, on-device robot localization}, 
-      author={Adam D. Hines and Michael Milford and Tobias Fischer},
-      journal={},
-      year={2025},
-      volume={},
-      number={},
-      doi={},
-      url={}, 
+@article{HinesLENS2025,
+  author = {Adam D. Hines  and Michael Milford  and Tobias Fischer },
+  title = {A compact neuromorphic system for ultra–energy-efficient, on-device robot localization},
+  journal = {Science Robotics},
+  volume = {10},
+  number = {103},
+  pages = {eads3968},
+  year = {2025},
+  doi = {10.1126/scirobotics.ads3968},
+  URL = {https://www.science.org/doi/abs/10.1126/scirobotics.ads3968}
 }
 ```
 
