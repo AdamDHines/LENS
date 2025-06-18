@@ -66,4 +66,4 @@ In general, a network architecure of 100 input neurons, 200 feature neurons, and
     Although larger input and feature sizes limit the number of places to encode, we have succesfully learned over 600 places on SPECK using
     smaller input and feature encodings.
 
-    See our `paper <>`_ for more information.
+    See our `paper <https://www.science.org/doi/10.1126/scirobotics.ads3968>`_ for more information.
