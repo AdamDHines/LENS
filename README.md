@@ -86,7 +86,7 @@ For all data relating to our manuscript, we have a dedicated permanent repositor
 We acknowledge the Brisbane-Event-VPR dataset from https://zenodo.org/records/4302805.
 
 ## License and citation
-This repository is licensed under the permissive [MIT License](./LICENSE). If you use our code, please cite our [ paper]():
+This repository is licensed under the permissive [MIT License](./LICENSE). If you use our code, please cite our [paper](https://www.science.org/doi/10.1126/scirobotics.ads3968):
 
 ```
 @article{HinesLENS2025,
