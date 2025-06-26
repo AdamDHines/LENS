@@ -185,7 +185,7 @@ def parse_network():
     
     # Output base configuration
     args = parser.parse_args()
-
+    args.demo = True
     # Run the network with the desired settings
     initialize_and_run_model(args)
 

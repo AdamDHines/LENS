@@ -158,7 +158,7 @@ class LENS(nn.Module):
 
         # Initiliaze the output spikes variable
         all_arrays = []
-        
+        stored_spikes = []  
         # Run inference for event stream or pre-recorded DVS data
         with torch.no_grad():    
             # Run inference for pre-recorded DVS data    
@@ -234,6 +234,9 @@ class LENS(nn.Module):
                 out = []
                 for spikes, labels, _, _ in test_loader:
                     spikes, labels = spikes.to(self.device), labels.to(self.device)
+                    if self.demo:
+                        squeeze_spikes = spikes.squeeze(0).detach().cpu()
+                        stored_spikes.append(squeeze_spikes.squeeze(1))
                     spikes = sl.FlattenTime()(spikes)
                     # Forward pass
                     spikes = self.sinabs_model(spikes)
@@ -353,9 +356,10 @@ class LENS(nn.Module):
 
 
         if self.demo:
+            event_list = [s.numpy() for s in stored_spikes]
             # Run demo
             demo.demo(self.data_dir, self.dataset, self.camera, self.query, self.reference,
-                    dist_matrix_seq, GTtol, N, R, LENS_R, LENS_P)
+                    dist_matrix_seq, GTtol, N, R, LENS_R, LENS_P, event_list)
         
         model.logger.info('')    
         model.logger.info('Succesfully completed inferencing using LENS')
