@@ -146,9 +146,9 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', type=int, default=[10,10],
+    parser.add_argument('--dims', nargs=2, type=int, default=[10,10],
                             help="Dimensions to resize the image to")
-    parser.add_argument('--roi_dim', type=int, default=[80,80],
+    parser.add_argument('--roi_dim', nargs=2, type=int, default=[80,80],
                             help="Input dimensions for the network")
     
     # Define the network functionality
