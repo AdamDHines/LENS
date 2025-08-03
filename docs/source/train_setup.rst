@@ -152,7 +152,7 @@ alter the convolution to allow more or fewer pixels in for downsampling using th
 
 .. code-block:: bash
 
-   pixi run train --dims 10
+   pixi run train --dims [10, 10]
 
 This tells LENS to downsample the image from its input size to a ``10x10`` image, `i.e. 100 pixels`.
 
@@ -160,7 +160,7 @@ The ``--roi_dim`` argument informs LENS of the input dimensionality which runs a
 
 .. code-block:: bash
 
-   pixi run train --roi_dim 80
+   pixi run train --roi_dim [80, 80]
 
 This argument tells LENS that the input image is of size ``80x80``.
 

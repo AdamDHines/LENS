@@ -1,6 +1,6 @@
 [project]
 name = "lens"
-version = "0.1.3"
+version = "0.1.5"
 description = "Neuromorphic event-based visual place recognition"
 authors = ["Adam D Hines <adam.hines@qut.edu.au>", "Michael Milford <michael.milford@qut.edu.au", "Tobias Fischer <tobias.fischer@qut.edu.au>"]
 channels = ["conda-forge"]

@@ -48,13 +48,15 @@ class ProcessImage:
 
 
 class CustomImageDataset(Dataset):
-    def __init__(self, annotations_file, img_dir,  kernel_size, transform=None, target_transform=None, 
+    def __init__(self, annotations_file, img_dir,  kernel_size, kernel_stride, transform=None, target_transform=None, 
                  skip=1, max_samples=None, test=True, is_spiking = False, time_window=33):
         
         def _init_kernel():
-            kernel = torch.zeros(1, 1, self.kernel_size, self.kernel_size)
-            centre_coordinate = (self.kernel_size // 2) - 1
-            kernel[0, 0, centre_coordinate, centre_coordinate] = 1  # Set the center pixel to 1
+            kernel = torch.zeros(1, 1, self.kernel_size[0], self.kernel_size[1])
+            # Calculate center coordinates for height and width separately
+            center_h = self.kernel_size[0] // 2
+            center_w = self.kernel_size[1] // 2
+            kernel[0, 0, center_h, center_w] = 1 
             return kernel
         self.test = test
         self.transform = transform
@@ -63,7 +65,8 @@ class CustomImageDataset(Dataset):
         self.time_window = time_window
         self.is_spiking = is_spiking
         self.kernel_size = kernel_size
-        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_size, padding=0, bias=False)
+        self.kernel_stride = kernel_stride
+        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_stride, padding=0, bias=False)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False)
         
         # Load image labels from each directory, apply the skip and max_samples, and concatenate

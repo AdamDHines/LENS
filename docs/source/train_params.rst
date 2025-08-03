@@ -124,12 +124,12 @@ Each of the following parameters can be passed to the LENS command-line interfac
      - Probability of inhibitory connections in the output layer.
 
    * - ``--dims``
-     - ``int``
+     - ``list[int, int]``
      - Size to resize input images to before feeding into the network.
 
    * - ``--roi_dim``
-     - ``int``
-     - Size of the region of interest (ROI) that the network processes.
+     - ``list[int, int]``
+     - Size of the input images for the network.
 
    * - ``--GT_tolerance``
      - ``int``

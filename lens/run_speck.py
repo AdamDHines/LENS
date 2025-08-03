@@ -60,7 +60,7 @@ class LENSSpeck(nn.Module):
         self.layer_counter = 0
 
         # Define layer architecture
-        self.input = int(args.dims*args.dims)
+        self.input = int(args.kernel_properties['input_neurons'])
         self.feature = int(self.input*self.feature_multiplier)
         self.output = int(args.reference_places)
 
@@ -82,8 +82,6 @@ class LENSSpeck(nn.Module):
 
         if not hasattr(self, 'matrix'):
             self.matrix = None
-
-        self.kernel_size = self.roi_dim // self.dims
 
     def add_layer(self, name, **kwargs):
         """
@@ -113,12 +111,15 @@ class LENSSpeck(nn.Module):
         """
         # Define convolutional kernel to select the center pixel
         def _init_kernel():
-            kernel = torch.zeros(1, 1, self.kernel_size, self.kernel_size)
-            centre_coordinate = (self.kernel_size // 2) - 1
-            kernel[0, 0, centre_coordinate, centre_coordinate] = 1  # Set the center pixel to 1
+            kernel = torch.zeros(1, 1, self.kernel_properties['kernel_size'][0], self.kernel_properties['kernel_size'][1])
+            # Calculate center coordinates for height and width separately
+            center_h = self.kernel_properties['kernel_size'][0] // 2
+            center_w = self.kernel_properties['kernel_size'][1] // 2
+            kernel[0, 0, center_h, center_w] = 1 
             return kernel
+        
         # Define the Conv2d selection layer
-        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_size, stride=self.kernel_size, padding=0, bias=False)
+        self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_properties['kernel_size'], stride=self.kernel_properties['stride'], padding=0, bias=False).to(self.device)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False) # Set the kernel weights
         # Define the inferencing forward pass
         self.inference = nn.Sequential(

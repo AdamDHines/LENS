@@ -48,12 +48,12 @@ The following parameters are relevant when running LENS in **event-driven mode**
      - Number of reference places (images) to load into memory for place recognition.
 
    * - ``--dims``
-     - ``int``
-     - Dimensionality of each square image (height and width must match). Must align with image preprocessing.
+     - ``list[int, int]``
+     - Size to resize input images to before feeding into the network.
 
    * - ``--roi_dim``
-     - ``int``
-     - The cropped input window size to feed into the Speck-based model.
+     - ``list[int, int]``
+     - Size of the input images for the network.
 
    * - ``--timebin``
      - ``int``

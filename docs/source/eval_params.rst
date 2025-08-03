@@ -36,8 +36,12 @@ The following parameters are used during evaluation and inference of a trained L
      - Number of query images to use for evaluation.
 
    * - ``--dims``
-     - ``int``
-     - Image size (height = width) expected by the trained model. Must match the resolution used during training.
+     - ``list[int, int]``
+     - Size to resize input images to before feeding into the network.
+
+   * - ``--roi_dim``
+     - ``list[int, int]``
+     - Size of the input images for the network.
 
    * - ``--sim_mat``
      - ``flag``

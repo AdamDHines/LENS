@@ -36,7 +36,9 @@ def initialize_and_run_model(args):
     Initialize the model and run the desired functionality.
     """
     # Pre-check settings to run the model
-    checker.check_args(args)
+    kernel_properties = checker.check_args(args)
+    # Add kernel properties to args
+    args.kernel_properties = kernel_properties
     #args.matching = True
     if args.train_model: # If user wants to train a new network
         from lens.train_model import LENS_Trainer, train_model
@@ -100,7 +102,7 @@ def parse_network():
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,
                             help="Images to skip for training and/or inferencing")
-    parser.add_argument('--epoch_feat', type=int, default=64,
+    parser.add_argument('--epoch_feat', type=int, default=128,
                             help="Number of epochs to train the model")
     parser.add_argument('--epoch_out', type=int, default=128,
                             help="Number of epochs to train the model")
@@ -144,9 +146,9 @@ def parse_network():
                         help="Output layer inhibitory connection")
     
     # Define image transformation parameters
-    parser.add_argument('--dims', type=int, default=10,
+    parser.add_argument('--dims', type=int, default=[10,10],
                             help="Dimensions to resize the image to")
-    parser.add_argument('--roi_dim', type=int, default=80,
+    parser.add_argument('--roi_dim', type=int, default=[80,80],
                             help="Input dimensions for the network")
     
     # Define the network functionality
@@ -185,7 +187,7 @@ def parse_network():
     
     # Output base configuration
     args = parser.parse_args()
-    args.demo = True
+
     # Run the network with the desired settings
     initialize_and_run_model(args)
 
