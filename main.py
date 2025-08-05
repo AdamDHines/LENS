@@ -102,6 +102,8 @@ def parse_network():
                             help="Directory where model files are stored")
     parser.add_argument('--output_dir', type=str, default='./lens/output/',
                             help="Directory where output files are stored")
+    parser.add_argument('--gt_dir', type=str, default='./lens/ground_truth/',
+                            help="Directory where ground truth files are stored")
 
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,

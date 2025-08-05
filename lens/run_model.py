@@ -306,7 +306,7 @@ class LENS(nn.Module):
             # Recall@N
             N = [1,5,10,15,20,25] # N values to calculate
             # Create GT matrix
-            GT = np.load(f'{self.data_dir}{self.dataset}/{self.camera}/{self.reference}_{self.query}_GT.npy')
+            GT = np.load(f'{self.gt_dir}/{self.reference}_{self.query}_GT.npy')
 
             # Create GTsoft with a customizable number of rows to add
             GTtol = create_GTtol(GT, distance=self.GT_tolerance)
