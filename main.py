@@ -98,6 +98,10 @@ def parse_network():
                         help="Length of the sequence matcher")
     parser.add_argument('--feature_multiplier', type=float, default=2.0,
                         help="Size multiplier for the feature/hidden layer")
+    parser.add_argument('--models_dir', type=str, default='./lens/models/',
+                            help="Directory where model files are stored")
+    parser.add_argument('--output_dir', type=str, default='./lens/output/',
+                            help="Directory where output files are stored")
 
     # Define training parameters
     parser.add_argument('--filter', type=int, default=1,

@@ -376,7 +376,7 @@ def run_speck(model, model_name):
     model.eval()
 
     # Load the model
-    model.load_model(os.path.join('./lens/models', model_name))
+    model.load_model(os.path.join(model.models_dir, model_name))
 
     # Use evaluate method for inference accuracy
     model.evaluate(model)

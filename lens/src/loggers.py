@@ -9,7 +9,7 @@ def model_logger(model):
     Configure the model logger
     """   
     now = datetime.now()
-    output_base_folder = './lens/output/'
+    output_base_folder = model.output_dir
     model.output_folder = output_base_folder + now.strftime("%d%m%y-%H-%M-%S")
 
     # Create the base output folder if it does not exist
