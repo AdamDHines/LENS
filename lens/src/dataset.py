@@ -101,8 +101,9 @@ class CustomImageDataset(Dataset):
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"No file found for index {idx} at {img_path}.")
         image = read_image(img_path)
-
         label = self.img_labels.iloc[idx, 1]
+
+        img_shape = image.shape
         
         if not self.test:
             image = self.forward(image.unsqueeze(0))
@@ -119,8 +120,7 @@ class CustomImageDataset(Dataset):
             torch.manual_seed(50)
             image = (torch.rand(self.time_window, *image.shape) < image).float()
             # Prepare the spikes for deployment to speck2devkit
-            sqrt_div = math.sqrt(image[-1].size()[0])
-            image = image.view(self.time_window,int(sqrt_div),int(sqrt_div))
+            image = image.view(self.time_window,img_shape[1],img_shape[2])
             image = image.unsqueeze(1)
 
         return image, label, gps_coordinate, image_og
