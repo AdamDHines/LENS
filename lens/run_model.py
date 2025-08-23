@@ -137,6 +137,20 @@ class LENS(nn.Module):
         # Define the Conv2d selection layer
         self.conv = nn.Conv2d(1, 1, kernel_size=self.kernel_properties['kernel_size'], stride=self.kernel_properties['stride'], padding=0, bias=False).to(self.device)
         self.conv.weight = nn.Parameter(_init_kernel(), requires_grad=False) # Set the kernel weights
+        def create_trace_boost_approx_matrix(n_places, tau=.1, gamma=5.0, rho=0.50, device="cpu"):
+            """
+            Creates a weight matrix for an nn.Linear layer to approximate the TraceBoost module.
+            """
+            with torch.no_grad():
+                # 2. Create the predictive shift matrix for momentum (approximates ρ·roll(trace, +1))
+                shift_matrix = torch.roll(torch.eye(n_places, device=device), shifts=-1, dims=0) * gamma
+
+                return shift_matrix.T
+            
+        self.approx_boost_mat = create_trace_boost_approx_matrix(n_places=self.query_places,device=self.device)
+        self.approx_boost = nn.Linear(self.query_places, self.query_places, bias=False)
+        self.approx_boost.weight = nn.Parameter(self.approx_boost_mat, requires_grad=False)
+        self.approx_boost.to(torch.device(self.device))
 
         # Define the inferencing forward pass
         self.inference = nn.Sequential(
@@ -145,8 +159,11 @@ class LENS(nn.Module):
             nn.Flatten(),
             self.feature_layer.w,
             nn.ReLU(),
-            self.output_layer.w,
+            self.output_layer.w
         )
+
+        self.boost = nn.Sequential(
+            self.approx_boost)
         # Define name of the devkit
         devkit_name = "speck2fdevkit"
         # Define the sinabs model, this converts torch model to sinabs model
@@ -154,6 +171,12 @@ class LENS(nn.Module):
         self.sinabs_model = from_model(
                                 self.inference.to(self.device), 
                                 input_shape=input_shape,
+                                num_timesteps=self.timebin,
+                                add_spiking_output=True
+        )
+        self.boost_model = from_model(
+                                self.boost.to(self.device), 
+                                input_shape=(1, 1, self.query_places),
                                 num_timesteps=self.timebin,
                                 add_spiking_output=True
         )
@@ -234,6 +257,8 @@ class LENS(nn.Module):
                             desc="Running the test network",
                             position=0)
                 out = []
+                running_boost_decay = 1.0
+                running_boost = None
                 for spikes, labels, _, _ in test_loader:
                     spikes, labels = spikes.to(self.device), labels.to(self.device)
                     if self.demo:
@@ -243,10 +268,18 @@ class LENS(nn.Module):
                     # Forward pass
                     spikes = self.sinabs_model(spikes)
                     output = spikes.sum(dim=0).squeeze()
+                    boost_spikes = self.boost_model(spikes.unsqueeze(1).unsqueeze(2))
+                    output_boost = boost_spikes.sum(dim=0).squeeze()
+
+                    enhanced_output = output + output_boost
+                    if running_boost is None:
+                        running_boost = enhanced_output
+                    else:
+                        running_boost = enhanced_output + (running_boost*0.5)
                     # Add output spikes to list
-                    out.append(output.detach().cpu())
+                    out.append((output + running_boost).detach().cpu())
                     pbar.update(1)
-                        # Close the tqdm progress bar
+                    # Close the tqdm progress bar
                 pbar.close()
                 # Rehsape output spikes into a similarity matrix
                 out = torch.stack(out, dim=1).numpy()
@@ -297,7 +330,7 @@ class LENS(nn.Module):
         # save distance matrix as a pdf image
         plt.imshow(dist_matrix_seq)
         plt.colorbar()
-        plt.savefig(os.path.join(self.output_folder, 'distance_matrix_lens.pdf'))
+        plt.savefig(os.path.join(self.output_folder, 'similarity_matrix_lens.pdf'))
         plt.close()
 
         # Perform matching if GT is available
@@ -331,7 +364,7 @@ class LENS(nn.Module):
             plt.figure(figsize=(10, 8))
             plt.imshow(dist_matrix_seq, aspect='auto')
             plt.colorbar()
-            plt.title("Distance Matrix")
+            plt.title("Similarity Matrix")
             plt.xlabel("Index")
             plt.ylabel("Index")
             plt.tight_layout()

@@ -1,7 +1,7 @@
 import os
 import csv
 import numpy as np
-from lens.tools.read_gps import get_gps
+# from lens.tools.read_gps import get_gps
 
 def haversine(lon1, lat1, lon2, lat2):
     # Radius of the Earth in kilometers
@@ -19,7 +19,7 @@ def haversine(lon1, lat1, lon2, lat2):
 
 def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, distance_threshold=100):
     files = os.listdir(folder_path)
-    png_files = sorted([f for f in files if f.endswith('.png')])
+    png_files = sorted([f for f in files if f.endswith('.jpg') or f.endswith('.png')])
 
     if gps_path is not None:
         gps = get_gps(gps_path)
@@ -57,6 +57,6 @@ def create_csv_from_images(folder_path, csv_file_path, gps_path=None, fps=60, di
             for index, image_name in enumerate(png_files):
                 writer.writerow([image_name, index])
 
-# create_csv_from_images('/home/adam/repo/LENS/lens/dataset/example/davis128/example-query', 
-#                       '/home/adam/repo/LENS/lens/dataset/example-query.csv', 
+# create_csv_from_images('/Users/adam/repo/VPRTempo/vprtempo/dataset/day_right', 
+#                       '/Users/adam/repo/VPRTempo/vprtempo/dataset/gpw-day_right.csv', 
 #                       gps_path=None)
