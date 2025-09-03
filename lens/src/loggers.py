@@ -9,14 +9,19 @@ def model_logger(model):
     Configure the model logger
     """   
     now = datetime.now()
-    output_base_folder = model.output_dir
-    model.output_folder = output_base_folder + now.strftime("%d%m%y-%H-%M-%S")
+    if model.output_subfolder:
+        output_base_folder = model.output_dir
+        model.output_folder = output_base_folder + now.strftime("%d%m%y-%H-%M-%S")
 
-    # Create the base output folder if it does not exist
-    os.makedirs(output_base_folder, exist_ok=True)
-    
-    # Create the specific output folder
-    os.mkdir(model.output_folder)
+        # Create the base output folder if it does not exist
+        os.makedirs(output_base_folder, exist_ok=True)
+        
+        # Create the specific output folder
+        os.mkdir(model.output_folder)
+    else:
+        model.output_folder = model.output_dir
+        # Create the output folder if it does not exist
+        os.makedirs(model.output_folder, exist_ok=True)
     # Create the logger
     model.logger = logging.getLogger("LENS")
     if (model.logger.hasHandlers()):

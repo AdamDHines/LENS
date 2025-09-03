@@ -299,6 +299,8 @@ class LENS(nn.Module):
         plt.colorbar()
         plt.savefig(os.path.join(self.output_folder, 'distance_matrix_lens.pdf'))
         plt.close()
+        # save distance matrix as a numpy file
+        np.save(os.path.join(self.output_folder, 'distance_matrix_lens.npy'), dist_matrix_seq)
 
         # Perform matching if GT is available
         R = []
