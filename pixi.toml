@@ -29,6 +29,32 @@ wandb = ">=0.16.2"
 samna = ">=0.46.0.0"
 
 [environments]
+cuda = ["cuda"]
+
+[feature.cuda]
+platforms = ["linux-64"]
+system-requirements = {cuda = "12"}
+
+[feature.cuda.dependencies]
+cuda-version = "12.*"
+pytorch-gpu = "*"
+cuda-cudart-dev = "*"
+cuda-crt = "*"
+cudnn = "*"
+libcusparse-dev = "*"
+cuda-driver-dev = "*"
+cuda-nvcc = "*"
+cuda-nvrtc-dev = "*"
+cuda-nvtx-dev = "*"
+cuda-nvml-dev = "*"
+cuda-profiler-api = "*"
+cusparselt = "*"
+libcublas-dev = "*"
+libcudss-dev = "*"
+libcufile-dev = "*"
+libcufft-dev = "*"
+libcurand-dev = "*"
+libcusolver-dev = "*"
 
 [tasks]
 demo = {cmd = "pixi run --frozen python main.py --matching --PR_curve --demo"}
